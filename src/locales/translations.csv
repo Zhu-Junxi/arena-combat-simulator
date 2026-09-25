@@ -1,0 +1,122 @@
+key,en,zh-CN
+meta.language_name,English,简体中文
+app.title,Arena Duel · Battle Prototype,角色对决 · 战斗原型
+app.heading,Arena Duel,角色对决
+app.tagline,BLACK / WHITE · ARENA DUEL,BLACK / WHITE · 黑白对决
+accessibility.language,Language,语言
+accessibility.theme,Theme,主题
+theme.system,System,跟随系统
+theme.light,Light,浅色
+theme.dark,Dark,深色
+accessibility.stage,Character selection and battlefield,角色选择与战场
+accessibility.battlefield,Square battlefield,正方形战场
+accessibility.side_left,Left character,左方角色
+accessibility.side_right,Right character,右方角色
+accessibility.character_select,Character selection panel,角色选择板
+accessibility.category_rail,Character categories,角色分类
+accessibility.categories_up,Scroll categories up,分类向上滚动
+accessibility.categories_down,Scroll categories down,分类向下滚动
+accessibility.character_types,Character types,角色种类
+accessibility.roster,Character portraits,角色头像
+accessibility.portrait,{name} portrait,{name}立绘
+accessibility.health,{name} health,{name}血量
+accessibility.cooldown,{name} attack cooldown,{name}攻击CD
+customization.expand,Expand or collapse match settings,展开或收起对战设置
+customization.eyebrow,Match Configuration,对战配置
+customization.heading,Fighter & Arena Settings,角色与场地设置
+customization.tabs,Settings sections,设置分类
+customization.left_fighter,Left Fighter,左方角色
+customization.right_fighter,Right Fighter,右方角色
+customization.arena,Arena,场地
+customization.match_rules,Match Rules,对战规则
+customization.reset_tab,Reset Section,重置此项
+customization.reset_all,Reset All,全部重置
+customization.health,Health,生命值
+customization.attack,Attack,攻击力
+customization.attack_mode,Attack Mode {mode},第 {mode} 段攻击
+customization.cooldown,Cooldown,冷却时间
+customization.cooldown_mode,Cooldown Mode {mode},第 {mode} 段冷却
+customization.movement_speed,Movement Speed,移动速度
+customization.units,units,单位
+customization.units_per_second,units/s,单位/秒
+customization.arena_size,Arena Size,场地尺寸
+customization.fighter_size,Fighter Size,角色尺寸
+customization.time_scale,Battle Time Scale,战斗时间倍率
+customization.starting_distance,Starting Distance,初始距离
+customization.projectile_speed,Projectile Speed,投射物速度
+customization.launch_delay,Launch Delay,出发延迟
+customization.control_duration,Control Duration,控制持续时间
+customization.collision,Collision Behavior,碰撞方式
+customization.collision_bounce,Bounce,弹性反弹
+customization.collision_stop,Stop on Contact,接触停止
+customization.collision_pass,Pass Through,相互穿越
+action.start,Start Battle,开始战斗
+action.back,Back to Selection,返回选角
+action.retry,Retry / 重试,重试 / Retry
+arena.heading,Battlefield,对战场地
+arena.field_label,Battle Arena,战斗场地
+category.base,Base,基础
+category.melee,Melee,近战
+category.ranged,Ranged,远程
+category.special,Special,特殊
+category.defense,Defense,防御
+category.healing,Healing,治疗
+category.summon,Summon,召唤
+category.control,Control,控制
+category.mobility,Mobility,机动
+character.warrior.name,Warrior,战士
+character.archer.name,Archer,弓箭手
+character.guardian.name,Guardian,盾卫士
+character.mage.name,Mage,法师
+character.priest.name,Priest,牧师
+character.placeholder.portrait,Portrait pending,立绘预留
+character.placeholder.avatar,Avatar pending,头像预留
+trait.label,Trait,特性
+trait.none,—,—
+trait.plate.name,Plate Armor,板甲
+trait.plate.description,Reduces each instance of incoming damage by 1. Actual damage cannot be lower than 1.,每次受到的伤害减少 1 点，实际伤害最低为 1 点。
+trait.vine.name,Vine Arrow,藤箭
+trait.vine.description,"Every fourth arrow is empowered. On hit, it roots the target for 2 seconds, then slows movement by 50% for 3 seconds. The target can still attack while rooted.",每发射 4 支箭，第 4 支强化为藤箭。命中后禁锢目标 2 秒，随后移动速度降低 50%，持续 3 秒。禁锢期间仍可攻击。
+stats.attack,Attack,攻击
+stats.cooldown,Attack CD,攻击CD
+stats.speed,Speed,速度
+stats.health,Health,血量
+unit.seconds_short,s,秒
+side.left,Left,左方
+side.right,Right,右方
+side.badge_left,L,左
+side.badge_right,R,右
+selection.initial,Choose a character for the left side,为左方选择角色
+selection.hint,"Select a side above, then choose a portrait",点击上方角色框，再选择头像
+selection.choose_for,Choose a character for {side},为{side}选择角色
+selection.click_for,Click to select for {side},点击为{side}选角
+selection.switch_to,Switch to {side} selection,切换到{side}选角
+selection.side_character,{side} Character,{side}角色
+selection.active,Selecting,选择中
+selection.summary,{side} · {category} / {count},{side} · {category} / {count}
+selection.character_aria,Select {name},选择{name}
+status.select_prompt,"Choose characters, then start the battle",选择角色后，点击开始战斗
+status.selecting,Selecting for {side}. Choose a portrait below.,正在为{side}选角，请点击下方头像
+status.category,Category: {category} · {count} characters,当前分类：{category} · {count} 个角色
+status.selected,{side} selected {name},{side}已选择 {name}
+view.selection,01 / Selection,01 / 选角
+view.battle,02 / Battle,02 / 战场
+battle.ready,Ready to enter,准备入场
+battle.waiting,Ready · launching in {seconds} seconds,准备 · {seconds} 秒后随机方向出发
+battle.running,Battle in progress · attacks fire when ready and in range,战斗中 · 攻击就绪且目标在范围内时出手
+battle.finished,Duel over · return to selection to restart,对决结束 · 返回选角可重新开始
+battle.status_waiting,Panels open · waiting for both fighters to launch,竖板已移开 · 等待双方出发
+battle.status_running,Both fighters launched · return to selection at any time,双方已出发 · 可随时返回选角
+battle.winner,{name} wins,{name} 获胜
+battle.draw,Draw,平局
+battle.rooted,Rooted {seconds}s,禁锢 {seconds}s
+battle.slowed,Slowed {seconds}s,减速 {seconds}s
+battle.cooldown_ready,Attack ready,攻击就绪
+battle.cooldown_progress,{elapsed} / {duration} seconds,{elapsed} / {duration} 秒
+transition.lowering,Lowering the selection panel…,选角横板下移中…
+transition.opening,Opening the character panels…,角色竖板向两侧开启…
+transition.closing,Closing the character panels…,角色竖板向中间合拢…
+transition.raising,Raising the selection panel…,选角横板上移中…
+transition.reset,Animation reset. You can start again.,动画已重置，可以重新开始
+bootstrap.loading,Loading language data… / 正在加载语言数据…,Loading language data… / 正在加载语言数据…
+bootstrap.error,Unable to load language data. / 无法加载语言数据。,Unable to load language data. / 无法加载语言数据。

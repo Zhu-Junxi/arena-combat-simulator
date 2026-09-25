@@ -2,6 +2,10 @@
 
 一个无第三方依赖的纯网页 2D 对战原型。项目使用原生 HTML、CSS 和 JavaScript ES Modules，包含角色选择、开场动画、自动战斗、角色特性与回归测试。
 
+界面支持英文和简体中文。首次打开时会优先使用已保存的语言，其次匹配浏览器语言；也可以通过页头的语言选单即时切换。
+
+外观支持“跟随系统”“浅色”和“深色”三种模式。默认跟随操作系统；手动选择浅色或深色后会保存偏好。深色模式使用炭灰背景与暖白线条，切换外观不会重置选角或战斗状态。
+
 ## 本地运行
 
 需要安装 Node.js 18 或更高版本。
@@ -23,6 +27,8 @@ npm test
 ## 操作
 
 - 点击左方或右方的立绘、头像，选择要更换的一侧，再点击下方角色卡。
+- 点击选角板顶部的箭头可展开完整设置面板；使用“左方角色”“右方角色”和“场地”标签调整下一场对战，按 Esc 或再次点击箭头收起。
+- 角色设置会按“左/右方 + 角色”分别保存；各标签可单独重置，也可全部恢复默认值。
 - 左侧分类支持点击、滚动和键盘方向键操作。
 - 属性下的“特性”支持鼠标悬停、键盘聚焦和触屏点击。
 - 点击“开始战斗”，石板展开后等待 2 秒，双方随机出发并自动攻击。
@@ -46,14 +52,25 @@ arena-duel/
 ├── package.json               # 启动与测试命令
 ├── assets/                    # 运行时角色及武器图片
 ├── src/
-│   ├── styles/                # 基础、布局、选角、战斗和响应式样式
-│   └── scripts/
-│       ├── app.js             # 唯一浏览器入口
-│       ├── config/            # 角色、武器、战斗和动画配置
-│       ├── state/             # 应用状态
-│       ├── selection/         # 角色选择视图与交互
-│       ├── battle/            # 战斗引擎、渲染和武器效果
-│       └── ui/                # DOM、装饰和页面转场工具
+│   ├── styles/                # 共享结构样式
+│   │   ├── base.css
+│   │   ├── layout.css
+│   │   ├── selection.css
+│   │   ├── battle.css
+│   │   ├── customization.css
+│   │   ├── responsive.css
+│   │   └── themes/            # 独立的浅色与深色语义色板
+│   ├── scripts/
+│   │   ├── app.js             # 唯一浏览器入口
+│   │   ├── config/            # 角色、武器、战斗和动画配置
+│   │   ├── state/             # 应用状态
+│   │   ├── selection/         # 角色选择视图与交互
+│   │   ├── battle/            # 战斗引擎、渲染和武器效果
+│   │   ├── customization/     # 对战设置存储、视图、控制和战斗适配
+│   │   ├── theme/             # 首屏主题引导、状态控制和选单
+│   │   └── ui/                # DOM、装饰和页面转场工具
+│   └── locales/
+│       └── translations.csv   # 所有运行时界面翻译
 ├── tests/                     # 战斗规则及项目结构回归测试
 └── archive/artwork/           # 概念图、生成提示词和旧版素材
 ```
@@ -64,5 +81,21 @@ arena-duel/
 - `combat-renderer.js` 只负责将引擎状态绘制到页面和 SVG。
 - 新角色在 `src/scripts/config/characters.js` 中定义；武器表现及判定参数位于 `src/scripts/config/weapons.js`。
 - `archive/` 仅保存设计过程资料，运行时不应引用其中的文件。
+- 主题色只在 `src/styles/themes/light.css` 与 `dark.css` 中定义。两个文件必须保持相同的 CSS 自定义属性集合；其他样式通过语义变量引用颜色。
+- `localStorage["arena-duel.theme"]` 只保存 `light` 或 `dark`。选择“跟随系统”会删除该值，并实时响应操作系统外观变化。
+- `localStorage["arena-duel.match-settings.v1"]` 保存按角色与阵营区分的属性覆盖以及场地规则。读取时会校验版本、范围和角色 ID，损坏的数据自动回退到默认值。
+- 设置面板只生成不可变的下一场对战快照，不会直接修改角色、武器配置或正在运行的战斗。
+
+## 添加语言
+
+运行时文字统一保存在 `src/locales/translations.csv`。第一列是稳定的翻译键，后续每一列代表一种语言：
+
+```csv
+key,en,zh-CN
+app.heading,Arena Duel,角色对决
+battle.winner,{name} wins,{name} 获胜
+```
+
+添加语言时，在表头增加新的 BCP 47 语言代码列，并为每一行填写翻译。`meta.language_name` 应填写该语言在选单中显示的本地名称。带有 `{name}`、`{count}` 或 `{seconds}` 的文字必须在每种翻译中保留相同的占位符。包含英文逗号、双引号或换行的字段应使用标准 CSV 双引号转义。
 
 图片由 OpenAI 内置 image generation 工具生成。运行时只加载 `assets/` 中的当前版本。

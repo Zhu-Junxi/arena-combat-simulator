@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { CHARACTERS } from '../src/scripts/config/characters.js';
 import {
   advanceMovement,
+  applyVines,
   createCombatEngine,
   dealDamage,
   movementFactor
@@ -27,6 +28,64 @@ test('plate armor reduces damage with a minimum of one', () => {
   warrior.health = 1;
   assert.equal(dealDamage(warrior, 8), 1);
   assert.equal(dealDamage(warrior, 8), 0);
+});
+
+test('match setup applies fighter values, arena geometry, and differentiated launch speeds', () => {
+  const engine = createCombatEngine({ random: () => 0 });
+  engine.reset(selected, {
+    fighters: {
+      left: { health: 175, attack: [12], attackCD: [0.5], movementSpeed: 220 },
+      right: { health: 65, attack: [9], attackCD: [1.25], movementSpeed: 132 }
+    },
+    arena: { size: 1200, fighterSize: 120, startingDistance: 600, projectileSpeedScale: 1.5, controlDurationScale: 2, collisionMode: 'bounce' }
+  });
+  const [warrior, archer] = engine.state.fighters;
+  assert.equal(warrior.maxHealth, 175);
+  assert.equal(warrior.x, 300);
+  assert.equal(archer.x, 900);
+  assert.equal(warrior.attackCooldown, 0.5);
+  engine.launch();
+  near(Math.hypot(warrior.vx, warrior.vy), 220);
+  near(Math.hypot(archer.vx, archer.vy), 132);
+
+  engine.startAttack(archer, warrior);
+  engine.state.elapsed = archer.weapon.windup;
+  engine.updateAttacks();
+  near(Math.hypot(engine.state.projectiles[0].vx, engine.state.projectiles[0].vy), archer.weapon.projectileSpeed * 1.5);
+});
+
+test('control duration scale and all collision modes behave independently', () => {
+  const engine = createCombatEngine();
+  engine.reset(selected);
+  const [warrior] = engine.state.fighters;
+  applyVines(warrior, CHARACTERS[1].trait, 10, 2);
+  near(warrior.rootUntil, 14);
+  near(warrior.slowUntil, 20);
+
+  const makeFighters = () => [
+    { x: 400, y: 500, vx: 100, vy: 0, rootUntil: 0, slowUntil: 0, slowFactor: 1 },
+    { x: 600, y: 500, vx: -100, vy: 0, rootUntil: 0, slowUntil: 0, slowFactor: 1 }
+  ];
+  const stop = makeFighters();
+  advanceMovement(stop, 1, 0, { size: 1000, fighterSize: 100, collisionMode: 'stop' });
+  assert.deepEqual(stop.map(fighter => fighter.vx), [0, 0]);
+  near(stop[0].x, 450);
+  near(stop[1].x, 550);
+
+  const pass = makeFighters();
+  advanceMovement(pass, 1, 0, { size: 1000, fighterSize: 100, collisionMode: 'pass' });
+  near(pass[0].x, 500);
+  near(pass[1].x, 500);
+
+  const bounce = makeFighters();
+  advanceMovement(bounce, 1, 0, { size: 1000, fighterSize: 100, collisionMode: 'bounce' });
+  assert.deepEqual(bounce.map(fighter => fighter.vx), [-100, 100]);
+
+  const unequal = makeFighters();
+  unequal[1].vx = -50;
+  advanceMovement(unequal, 1, 0, { size: 1000, fighterSize: 100, collisionMode: 'bounce' });
+  near(Math.hypot(unequal[0].vx, unequal[0].vy), 100);
+  near(Math.hypot(unequal[1].vx, unequal[1].vy), 50);
 });
 
 test('every fourth fired arrow is empowered and a miss consumes its count', () => {

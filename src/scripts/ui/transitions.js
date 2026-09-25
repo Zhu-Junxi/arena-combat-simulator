@@ -1,6 +1,6 @@
 import { MOTION } from '../config/combat.js';
 
-export function createTransitions({ state, elements, panels, beginBattle, resetBattle }) {
+export function createTransitions({ state, elements, panels, beginBattle, resetBattle, collapseCustomization = () => {}, i18n }) {
   const animations = [];
 
   async function slide(element, transform, duration, from = 'translate(0, 0)') {
@@ -14,6 +14,7 @@ export function createTransitions({ state, elements, panels, beginBattle, resetB
   }
 
   function resetSelection() {
+    collapseCustomization();
     resetBattle();
     animations.forEach(animation => animation.cancel());
     animations.length = 0;
@@ -26,13 +27,14 @@ export function createTransitions({ state, elements, panels, beginBattle, resetB
     elements['start-control'].hidden = false;
     elements.start.disabled = false;
     elements.back.disabled = false;
-    elements.status.textContent = '选择角色后，点击开始战斗';
-    elements['view-label'].textContent = '01 / 选角';
+    elements.status.textContent = i18n.t('status.select_prompt');
+    elements['view-label'].textContent = i18n.t('view.selection');
     elements.start.focus({ preventScroll: true });
   }
 
   async function enterArena() {
     if (state.phase !== 'select') return;
+    collapseCustomization();
     state.phase = 'lowering';
     elements.stage.dataset.phase = state.phase;
     elements.start.disabled = true;
@@ -42,11 +44,11 @@ export function createTransitions({ state, elements, panels, beginBattle, resetB
     resetBattle();
     const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
     try {
-      elements.status.textContent = '选角横板下移中…';
+      elements.status.textContent = i18n.t('transition.lowering');
       await slide(elements.dock, 'translateY(102%)', reduceMotion ? 120 : MOTION.dockDuration);
       state.phase = 'opening';
       elements.stage.dataset.phase = state.phase;
-      elements.status.textContent = '角色竖板向两侧开启…';
+      elements.status.textContent = i18n.t('transition.opening');
       await Promise.all([
         slide(panels[0], 'translateX(-102%)', reduceMotion ? 120 : MOTION.panelDuration),
         slide(panels[1], 'translateX(102%)', reduceMotion ? 120 : MOTION.panelDuration)
@@ -56,11 +58,11 @@ export function createTransitions({ state, elements, panels, beginBattle, resetB
       elements.arena.inert = false;
       elements.arena.setAttribute('aria-hidden', 'false');
       beginBattle({ left: state.left, right: state.right });
-      elements['view-label'].textContent = '02 / 战场';
+      elements['view-label'].textContent = i18n.t('view.battle');
       elements.back.focus({ preventScroll: true });
     } catch (error) {
       resetSelection();
-      elements.status.textContent = '动画已重置，可以重新开始';
+      elements.status.textContent = i18n.t('transition.reset');
       console.error(error);
     }
   }
@@ -74,7 +76,7 @@ export function createTransitions({ state, elements, panels, beginBattle, resetB
     elements.arena.inert = true;
     const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
     try {
-      elements.status.textContent = '角色竖板向中间合拢…';
+      elements.status.textContent = i18n.t('transition.closing');
       await Promise.all([
         slide(panels[0], 'translateX(0)', reduceMotion ? 120 : MOTION.panelDuration, 'translateX(-102%)'),
         slide(panels[1], 'translateX(0)', reduceMotion ? 120 : MOTION.panelDuration, 'translateX(102%)')
@@ -82,12 +84,12 @@ export function createTransitions({ state, elements, panels, beginBattle, resetB
       state.phase = 'raising';
       elements.stage.dataset.phase = state.phase;
       elements.arena.setAttribute('aria-hidden', 'true');
-      elements.status.textContent = '选角横板上移中…';
+      elements.status.textContent = i18n.t('transition.raising');
       await slide(elements.dock, 'translateY(0)', reduceMotion ? 120 : MOTION.dockDuration, 'translateY(102%)');
       resetSelection();
     } catch (error) {
       resetSelection();
-      elements.status.textContent = '动画已重置，可以重新开始';
+      elements.status.textContent = i18n.t('transition.reset');
       console.error(error);
     }
   }
@@ -100,5 +102,17 @@ export function createTransitions({ state, elements, panels, beginBattle, resetB
     });
   }
 
-  return { bind, enterArena, returnToSelection, resetSelection };
+  function refreshLocalization() {
+    const statusKeys = {
+      select: 'status.select_prompt',
+      lowering: 'transition.lowering',
+      opening: 'transition.opening',
+      closing: 'transition.closing',
+      raising: 'transition.raising'
+    };
+    if (statusKeys[state.phase]) elements.status.textContent = i18n.t(statusKeys[state.phase]);
+    elements['view-label'].textContent = i18n.t(state.phase === 'arena' ? 'view.battle' : 'view.selection');
+  }
+
+  return { bind, enterArena, returnToSelection, resetSelection, refreshLocalization };
 }

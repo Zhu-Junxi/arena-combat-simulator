@@ -99,10 +99,10 @@ export function isVineShot(fighter, shotNumber) {
   return trait?.id === 'vine' && shotNumber > 0 && shotNumber % trait.every === 0;
 }
 
-export function applyVines(target, trait, elapsed = 0) {
+export function applyVines(target, trait, elapsed = 0, durationScale = 1) {
   if (target.health <= 0) return;
-  target.rootUntil = Math.max(target.rootUntil, elapsed + trait.rootDuration);
-  target.slowUntil = Math.max(target.slowUntil, target.rootUntil + trait.slowDuration);
+  target.rootUntil = Math.max(target.rootUntil, elapsed + trait.rootDuration * durationScale);
+  target.slowUntil = Math.max(target.slowUntil, target.rootUntil + trait.slowDuration * durationScale);
   target.slowFactor = trait.slowFactor;
 }
 
@@ -128,16 +128,23 @@ export function segmentBoxTime(x0, y0, x1, y1, half) {
   return enter;
 }
 
-export function createFighter(side, character, weapon, index) {
-  const x = index === 0 ? 250 : 750;
+export function createFighter(side, character, weapon, index, settings = null, rules = BATTLE_RULES) {
+  const health = settings?.health ?? character.stats.health;
+  const attackValues = settings?.attack ?? character.stats.attack;
+  const attackCooldownValues = settings?.attackCD ?? character.stats.attackCD;
+  const movementSpeed = settings?.movementSpeed ?? rules.speed;
+  const x = rules.size / 2 + (index === 0 ? -1 : 1) * rules.startingDistance / 2;
   return {
     side,
     character,
     weapon,
-    health: character.stats.health,
-    maxHealth: character.stats.health,
+    health,
+    maxHealth: health,
+    attackValues,
+    attackCooldownValues,
+    movementSpeed,
     attackMode: 0,
-    attackCooldown: modeValue(character.stats.attackCD, 0),
+    attackCooldown: modeValue(attackCooldownValues, 0),
     cooldownElapsed: 0,
     attack: null,
     hitUntil: 0,
@@ -146,9 +153,9 @@ export function createFighter(side, character, weapon, index) {
     slowUntil: 0,
     slowFactor: 1,
     x,
-    y: 500,
+    y: rules.size / 2,
     prevX: x,
-    prevY: 500,
+    prevY: rules.size / 2,
     vx: 0,
     vy: 0
   };
@@ -186,23 +193,25 @@ export function advanceMovement(fighters, seconds, now, rules = BATTLE_RULES) {
     });
 
     const [first, second] = fighters;
-    let entry = -Infinity;
-    let exit = Infinity;
-    let possible = true;
-    for (const axis of ['x', 'y']) {
-      const distance = second[axis] - first[axis];
-      const relative = velocity(second, axis) - velocity(first, axis);
-      if (Math.abs(relative) < epsilon) {
-        if (Math.abs(distance) >= rules.fighterSize - epsilon) possible = false;
-      } else {
-        const firstTime = (-rules.fighterSize - distance) / relative;
-        const secondTime = (rules.fighterSize - distance) / relative;
-        entry = Math.max(entry, Math.min(firstTime, secondTime));
-        exit = Math.min(exit, Math.max(firstTime, secondTime));
+    if (rules.collisionMode !== 'pass') {
+      let entry = -Infinity;
+      let exit = Infinity;
+      let possible = true;
+      for (const axis of ['x', 'y']) {
+        const distance = second[axis] - first[axis];
+        const relative = velocity(second, axis) - velocity(first, axis);
+        if (Math.abs(relative) < epsilon) {
+          if (Math.abs(distance) >= rules.fighterSize - epsilon) possible = false;
+        } else {
+          const firstTime = (-rules.fighterSize - distance) / relative;
+          const secondTime = (rules.fighterSize - distance) / relative;
+          entry = Math.max(entry, Math.min(firstTime, secondTime));
+          exit = Math.min(exit, Math.max(firstTime, secondTime));
+        }
       }
-    }
-    if (possible && entry >= -epsilon && entry <= exit + epsilon && exit > epsilon) {
-      consider(entry, { type: 'fighters' });
+      if (possible && entry >= -epsilon && entry <= exit + epsilon && exit > epsilon) {
+        consider(entry, { type: 'fighters' });
+      }
     }
 
     fighters.forEach(fighter => {
@@ -213,9 +222,20 @@ export function advanceMovement(fighters, seconds, now, rules = BATTLE_RULES) {
     if (!contacts.length) break;
 
     if (contacts.some(contact => contact.type === 'fighters')) {
-      if (Math.abs(factor(first) - factor(second)) < epsilon) {
-        [first.vx, second.vx] = [second.vx, first.vx];
-        [first.vy, second.vy] = [second.vy, first.vy];
+      if (rules.collisionMode === 'stop') {
+        fighters.forEach(fighter => { fighter.vx = 0; fighter.vy = 0; });
+      } else if (Math.abs(factor(first) - factor(second)) < epsilon) {
+        const firstSpeed = Math.hypot(first.vx, first.vy);
+        const secondSpeed = Math.hypot(second.vx, second.vy);
+        if (firstSpeed > epsilon && secondSpeed > epsilon) {
+          const firstVelocity = { x: first.vx, y: first.vy };
+          first.vx = second.vx / secondSpeed * firstSpeed;
+          first.vy = second.vy / secondSpeed * firstSpeed;
+          second.vx = firstVelocity.x / firstSpeed * secondSpeed;
+          second.vy = firstVelocity.y / firstSpeed * secondSpeed;
+        } else {
+          fighters.forEach(fighter => { fighter.vx *= -1; fighter.vy *= -1; });
+        }
       } else {
         fighters.forEach(fighter => {
           if (factor(fighter) > 0) {
@@ -246,16 +266,19 @@ export function createCombatEngine({
   random = Math.random,
   onEvent = () => {}
 } = {}) {
-  const battle = { phase: 'idle', elapsed: 0, fighters: [], projectiles: [] };
+  const baseRules = Object.freeze({ ...BATTLE_RULES, ...rules });
+  const battle = { phase: 'idle', elapsed: 0, fighters: [], projectiles: [], winner: null, rules: baseRules };
   const emit = (type, detail = {}) => onEvent({ type, battle, ...detail });
 
-  function reset(selectedCharacters) {
+  function reset(selectedCharacters, matchSetup = null) {
     battle.phase = 'idle';
     battle.elapsed = 0;
     battle.projectiles = [];
+    battle.winner = null;
+    battle.rules = Object.freeze({ ...baseRules, ...matchSetup?.arena });
     battle.fighters = ['left', 'right'].map((side, index) => {
       const character = selectedCharacters[side];
-      return createFighter(side, character, weapons[character.id], index);
+      return createFighter(side, character, weapons[character.id], index, matchSetup?.fighters?.[side], battle.rules);
     });
     emit('reset');
     return battle;
@@ -268,7 +291,7 @@ export function createCombatEngine({
       angle: facingAngle(fighter, target),
       empowered: isVineShot(fighter, fighter.attacksFired + 1),
       mode: fighter.attackMode,
-      damage: modeValue(fighter.character.stats.attack, fighter.attackMode),
+      damage: modeValue(fighter.attackValues, fighter.attackMode),
       released: false,
       hit: false
     };
@@ -291,8 +314,8 @@ export function createCombatEngine({
       x: muzzle.x,
       y: muzzle.y,
       angle: pose.angle,
-      vx: Math.cos(pose.angle) * fighter.weapon.projectileSpeed,
-      vy: Math.sin(pose.angle) * fighter.weapon.projectileSpeed,
+      vx: Math.cos(pose.angle) * fighter.weapon.projectileSpeed * battle.rules.projectileSpeedScale,
+      vy: Math.sin(pose.angle) * fighter.weapon.projectileSpeed * battle.rules.projectileSpeedScale,
       radius: fighter.weapon.radius,
       age: 0
     };
@@ -305,7 +328,7 @@ export function createCombatEngine({
     const alive = battle.phase === 'running';
     battle.fighters.forEach((fighter, index) => {
       const target = battle.fighters[1 - index];
-      if (alive && !fighter.attack && fighter.cooldownElapsed >= fighter.attackCooldown - 1e-9 && canAttack(fighter, target, rules)) {
+      if (alive && !fighter.attack && fighter.cooldownElapsed >= fighter.attackCooldown - 1e-9 && canAttack(fighter, target, battle.rules)) {
         startAttack(fighter, target);
       }
       const { attack } = fighter;
@@ -320,15 +343,15 @@ export function createCombatEngine({
           fighter.attacksFired += 1;
           attack.empowered = isVineShot(fighter, fighter.attacksFired);
           if (weapon.type === 'ranged') spawnProjectile(fighter);
-          const modeCount = Array.isArray(fighter.character.stats.attack) ? fighter.character.stats.attack.length : 1;
+          const modeCount = Array.isArray(fighter.attackValues) ? fighter.attackValues.length : 1;
           fighter.attackMode = (attack.mode + 1) % modeCount;
-          fighter.attackCooldown = modeValue(fighter.character.stats.attackCD, fighter.attackMode);
+          fighter.attackCooldown = modeValue(fighter.attackCooldownValues, fighter.attackMode);
           emit('attack-released', { fighter, attack });
         }
       }
       if (alive && attack.released && !attack.hit && fighter.health > 0 && target.health > 0 &&
           weapon.type === 'melee' && age <= weapon.windup + weapon.active &&
-          weaponIntersectsTarget(fighter, target, weaponPose(fighter, battle.elapsed), rules)) {
+          weaponIntersectsTarget(fighter, target, weaponPose(fighter, battle.elapsed), battle.rules)) {
         dealDamage(target, attack.damage, battle.elapsed);
         attack.hit = true;
         emit('damage', { fighter, target, amount: attack.damage });
@@ -350,19 +373,19 @@ export function createCombatEngine({
         projectile.y - target.prevY,
         nextX - target.x,
         nextY - target.y,
-        rules.fighterSize / 2 + projectile.radius
+        battle.rules.fighterSize / 2 + projectile.radius
       ) : null;
       projectile.age += seconds;
       if (hit !== null) {
         dealDamage(target, projectile.damage, battle.elapsed);
-        if (projectile.empowered) applyVines(target, projectile.owner.character.trait, battle.elapsed);
+        if (projectile.empowered) applyVines(target, projectile.owner.character.trait, battle.elapsed, battle.rules.controlDurationScale);
         emit('projectile-removed', { projectile, reason: 'hit' });
         emit('damage', { fighter: projectile.owner, target, amount: projectile.damage });
         return false;
       }
       projectile.x = nextX;
       projectile.y = nextY;
-      if (projectile.age > 5 || nextX < -30 || nextX > rules.size + 30 || nextY < -30 || nextY > rules.size + 30) {
+      if (projectile.age > 5 || nextX < -30 || nextX > battle.rules.size + 30 || nextY < -30 || nextY > battle.rules.size + 30) {
         emit('projectile-removed', { projectile, reason: 'expired' });
         return false;
       }
@@ -380,7 +403,7 @@ export function createCombatEngine({
           if (expiry > now + 1e-9 && expiry < until) until = expiry;
         }
       });
-      advanceMovement(battle.fighters, until - now, now, rules);
+      advanceMovement(battle.fighters, until - now, now, battle.rules);
       now = until;
     }
   }
@@ -394,9 +417,9 @@ export function createCombatEngine({
       fighter.vy = 0;
     });
     const winner = battle.fighters.find(fighter => fighter.health > 0);
-    const result = winner ? `${winner.character.name} 获胜` : '平局';
-    emit('finished', { winner, result });
-    return result;
+    battle.winner = winner ?? null;
+    emit('finished', { winner });
+    return winner;
   }
 
   function step(seconds) {
@@ -419,8 +442,8 @@ export function createCombatEngine({
     const firstAngle = random() * Math.PI * 2;
     const angles = [firstAngle, firstAngle + Math.PI / 3 + random() * Math.PI * 4 / 3];
     battle.fighters.forEach((fighter, index) => {
-      fighter.vx = Math.cos(angles[index]) * rules.speed;
-      fighter.vy = Math.sin(angles[index]) * rules.speed;
+      fighter.vx = Math.cos(angles[index]) * fighter.movementSpeed;
+      fighter.vy = Math.sin(angles[index]) * fighter.movementSpeed;
     });
     battle.phase = 'running';
     emit('launched');

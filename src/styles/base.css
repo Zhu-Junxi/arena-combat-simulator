@@ -1,19 +1,27 @@
-/* 纯白与黑框；项目无需第三方运行时依赖。 */
-:root { color-scheme: light; --ink: #000; --paper: #fff; --dock-height: 218px; }
+/* 颜色由单独的主题样式表提供；这里仅保留共享结构。 */
+:root { --dock-height: 218px; }
 
 * { box-sizing: border-box; }
 
-body { margin: 0; background: var(--paper); color: var(--ink); font-family: Arial, "Microsoft YaHei", sans-serif; }
+body { margin: 0; background: var(--color-page); color: var(--color-ink); font-family: Arial, "Microsoft YaHei", sans-serif; }
 
-button { font: inherit; color: #000; background: #fff; border: 1px solid #000; cursor: pointer; }
+button { font: inherit; color: var(--color-ink); background: var(--color-surface); border: 1px solid var(--color-border); cursor: pointer; }
 
-button:focus-visible { outline: 2px solid #000; outline-offset: 4px; }
+button:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 4px; }
 
 button:disabled { cursor: default; }
 
-button:hover:not(:disabled) { outline: 1px solid #000; outline-offset: -4px; }
+button:hover:not(:disabled) { outline: 1px solid var(--color-focus); outline-offset: -4px; }
 
 [hidden] { display: none !important; }
+
+body[data-i18n-ready="false"] .page { visibility: hidden; }
+
+.bootstrap-status, .bootstrap-error { position: fixed; inset: 0; display: grid; place-content: center; gap: 14px; padding: 24px; text-align: center; z-index: 100; background: var(--color-page); color: var(--color-ink); }
+
+.bootstrap-error p { margin: 0; }
+
+.bootstrap-error button { justify-self: center; padding: 8px 14px; }
 
 .cooldown-bar { height: 4px; }
 

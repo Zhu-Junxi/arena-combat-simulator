@@ -1,0 +1,34 @@
+:root {
+  color-scheme: dark;
+  --color-page: #181715;
+  --color-surface: #23211e;
+  --color-ink: #f2ede3;
+  --color-text-muted: #c0b8aa;
+  --color-border: #d8d0c3;
+  --color-focus: #fff3cf;
+  --color-selected-bg: #eee7dc;
+  --color-selected-fg: #1b1a18;
+  --color-tooltip-bg: #302d29;
+  --color-tooltip-text: #fff8ec;
+  --color-tooltip-border: #d8d0c3;
+  --color-tooltip-shadow: #00000066;
+  --color-meter-track: #100f0e;
+  --color-meter-outline: #d8d0c3;
+  --color-cooldown: #f2ede3;
+  --color-hit: #4c4842;
+  --color-health-healthy: #62cf7e;
+  --color-health-wounded: #ffb64e;
+  --color-health-critical: #ff6969;
+  --color-control-border: #9bcf7c;
+  --color-control-bg: #293522;
+  --color-control-text: #d7f5c1;
+  --color-control-ring: #85bd67;
+  --color-control-highlight: #4e683d;
+  --color-vine-stem: #8dc861;
+  --color-vine-leaf: #a7d879;
+  --color-vine-outline: #c7e7ae;
+  --color-bow-string: #d0ae71;
+  --color-effect: #f2ede3;
+  --color-effect-fill: #23211e;
+  --color-weapon-trail: #d8d0c3;
+}

@@ -1,4 +1,4 @@
-export function createSelectionController({ state, characterById, elements, view }) {
+export function createSelectionController({ state, characterById, elements, view, i18n, onSelectionChange = () => {} }) {
   function scrollCategories(direction) {
     if (state.phase !== 'select') return;
     elements.categories.scrollBy({
@@ -34,19 +34,28 @@ export function createSelectionController({ state, characterById, elements, view
         view.renderPanel('left');
         view.renderPanel('right');
         view.syncSelection();
+        onSelectionChange(state.side);
         elements[`panel-${state.side}`].querySelector('.avatar').focus({ preventScroll: true });
-        elements.status.textContent = `正在为${state.side === 'left' ? '左方' : '右方'}选角，请点击下方头像`;
+        elements.status.textContent = i18n.t('status.selecting', { side: view.sideName(state.side) });
       }
       if (category) {
         state.category = category.dataset.category;
         view.renderRoster();
-        elements.status.textContent = `当前分类：${state.category} · ${view.visibleCharacters().length} 个角色`;
+        onSelectionChange();
+        elements.status.textContent = i18n.t('status.category', {
+          category: view.categoryName(state.category),
+          count: view.visibleCharacters().length
+        });
       }
       if (character) {
         state[state.side] = characterById[character.dataset.character];
         view.renderPanel(state.side);
         view.syncSelection();
-        elements.status.textContent = `${state.side === 'left' ? '左方' : '右方'}已选择 ${state[state.side].name}`;
+        onSelectionChange(state.side);
+        elements.status.textContent = i18n.t('status.selected', {
+          side: view.sideName(state.side),
+          name: view.characterName(state[state.side])
+        });
       }
     });
   }

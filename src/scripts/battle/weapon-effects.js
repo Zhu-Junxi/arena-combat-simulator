@@ -18,8 +18,8 @@ function arrowSpriteMarkup(x, width) {
 }
 
 function vineTrailMarkup() {
-  return '<path d="M-30 -4Q-18 -10-8 1T12 3" fill="none" stroke="#59952e" stroke-width="2.5"/>' +
-    '<path d="M-20-6q-5-10-10-5 0 7 10 5M-3 2q0 9 8 7-1-6-8-7" fill="#79b746" stroke="#356a2b" stroke-width="1"/>';
+  return '<path class="vine-trail-line" d="M-30 -4Q-18 -10-8 1T12 3" fill="none" stroke="currentColor" stroke-width="2.5"/>' +
+    '<path class="vine-trail-leaf" d="M-20-6q-5-10-10-5 0 7 10 5M-3 2q0 9 8 7-1-6-8-7" stroke="currentColor" stroke-width="1"/>';
 }
 
 export function weaponMarkup(weapon, empowered = false) {
@@ -29,31 +29,31 @@ export function weaponMarkup(weapon, empowered = false) {
     '" x="0" y="0" width="' + sprite.source[0] + '" height="' + sprite.source[1] + '"/></svg>';
   if (weapon.art === 'bow') {
     const arrowLength = weapon.muzzle - (sprite.string.x - 24);
-    return image + '<path class="bow-string" fill="none" stroke="#765c30" stroke-width="1.5"/>' +
+    return image + '<path class="bow-string" fill="none" stroke="currentColor" stroke-width="1.5"/>' +
       '<g class="nocked-arrow">' + arrowSpriteMarkup(0, arrowLength) +
       (empowered ? '<g transform="translate(' + (arrowLength / 2) + ' 0)">' + vineTrailMarkup() + '</g>' : '') + '</g>';
   }
   if (weapon.art === 'sword') {
-    return '<path class="sword-trail" d="M126 -66Q176 -43 185 -5" fill="none" stroke="#333" stroke-width="2" opacity="0"/>' + image;
+    return '<path class="sword-trail" d="M126 -66Q176 -43 185 -5" fill="none" stroke="currentColor" stroke-width="2" opacity="0"/>' + image;
   }
   if (weapon.art === 'shield') {
-    return image + '<path class="shield-impact" d="M129 -21l12 -7M132 0h16M129 21l12 7" fill="none" stroke="#111" stroke-width="2" opacity="0"/>';
+    return image + '<path class="shield-impact" d="M129 -21l12 -7M132 0h16M129 21l12 7" fill="none" stroke="currentColor" stroke-width="2" opacity="0"/>';
   }
   return image + '<g class="cast-charge" opacity="0"><circle class="charge-ring" cx="' + sprite.focus +
-    '" cy="0" r="12" fill="none" stroke="#111" stroke-width="1.6"/><path class="charge-rays" d="M-20 0H-13M13 0H20M0 -20V-13M0 13V20" fill="none" stroke="#111" stroke-width="2"/></g>' +
-    '<circle class="release-ring" cx="' + weapon.muzzle + '" cy="0" r="3" fill="none" stroke="#111" stroke-width="1.4" opacity="0"/>';
+    '" cy="0" r="12" fill="none" stroke="currentColor" stroke-width="1.6"/><path class="charge-rays" d="M-20 0H-13M13 0H20M0 -20V-13M0 13V20" fill="none" stroke="currentColor" stroke-width="2"/></g>' +
+    '<circle class="release-ring" cx="' + weapon.muzzle + '" cy="0" r="3" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0"/>';
 }
 
 export function projectileMarkup(fighter, mode, empowered = false) {
   if (fighter.weapon.art === 'bow') return (empowered ? vineTrailMarkup() : '') + arrowSpriteMarkup(-46, 56);
   if (fighter.weapon.art === 'staff') {
     return [
-      '<circle r="9" fill="#fff" stroke="#000" stroke-width="3"/>',
-      '<path d="M-10 0 0 -10 10 0 0 10Z" fill="#fff" stroke="#000" stroke-width="3"/>',
-      '<path d="M11 0 -8 -10 -8 10Z" fill="#fff" stroke="#000" stroke-width="3"/>'
+      '<circle r="9" fill="var(--color-effect-fill)" stroke="currentColor" stroke-width="3"/>',
+      '<path d="M-10 0 0 -10 10 0 0 10Z" fill="var(--color-effect-fill)" stroke="currentColor" stroke-width="3"/>',
+      '<path d="M11 0 -8 -10 -8 10Z" fill="var(--color-effect-fill)" stroke="currentColor" stroke-width="3"/>'
     ][mode % 3];
   }
-  return '<path d="M-9 -3H-3V-9H3V-3H9V3H3V9H-3V3H-9Z" fill="#fff" stroke="#000" stroke-width="2"/>';
+  return '<path d="M-9 -3H-3V-9H3V-3H9V3H3V9H-3V3H-9Z" fill="var(--color-effect-fill)" stroke="currentColor" stroke-width="2"/>';
 }
 
 export function updateWeaponVisual(element, fighter, elapsed) {

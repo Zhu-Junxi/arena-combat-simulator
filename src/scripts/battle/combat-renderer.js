@@ -2,10 +2,11 @@ import { BATTLE_RULES } from '../config/combat.js';
 import { cooldownProgress, healthBand, healthRatio } from './combat-engine.js';
 import { createSvgEffect, projectileMarkup, updateWeaponVisual, weaponMarkup } from './weapon-effects.js';
 
-export function createCombatRenderer(elements, rules = BATTLE_RULES) {
+export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES) {
   const fighterElements = new Map();
   const attackElements = new WeakMap();
   const projectileElements = new WeakMap();
+  let rules = initialRules;
 
   function buildFighterElement(fighter) {
     const element = elements[`fighter-${fighter.side}`];
@@ -15,7 +16,8 @@ export function createCombatRenderer(elements, rules = BATTLE_RULES) {
       '<span class="fighter-name"></span><span class="control-label" hidden></span><div class="fighter-status">' +
       '<div class="fighter-meter health-bar" role="progressbar" aria-valuemin="0"><span class="fighter-meter-fill"></span></div>' +
       '<div class="fighter-meter cooldown-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><span class="fighter-meter-fill"></span></div></div>';
-    element.querySelector('.fighter-name').textContent = character.name;
+    const name = i18n.t(character.nameKey);
+    element.querySelector('.fighter-name').textContent = name;
     const view = {
       element,
       controlLabel: element.querySelector('.control-label'),
@@ -24,9 +26,9 @@ export function createCombatRenderer(elements, rules = BATTLE_RULES) {
       cooldownBar: element.querySelector('.cooldown-bar'),
       cooldownFill: element.querySelector('.cooldown-bar .fighter-meter-fill')
     };
-    view.healthBar.setAttribute('aria-label', `${character.name}血量`);
-    view.healthBar.setAttribute('aria-valuemax', String(character.stats.health));
-    view.cooldownBar.setAttribute('aria-label', `${character.name}攻击CD`);
+    view.healthBar.setAttribute('aria-label', i18n.t('accessibility.health', { name }));
+    view.healthBar.setAttribute('aria-valuemax', String(fighter.maxHealth));
+    view.cooldownBar.setAttribute('aria-label', i18n.t('accessibility.cooldown', { name }));
     fighterElements.set(fighter, view);
   }
 
@@ -43,14 +45,19 @@ export function createCombatRenderer(elements, rules = BATTLE_RULES) {
     const control = elapsed < fighter.rootUntil ? 'rooted' : elapsed < fighter.slowUntil ? 'slowed' : '';
     view.element.dataset.control = control;
     view.controlLabel.hidden = !control || fighter.health <= 0;
-    view.controlLabel.textContent = control ? `${control === 'rooted' ? '禁锢 ' : '减速 '}${Math.max(0, (control === 'rooted' ? fighter.rootUntil : fighter.slowUntil) - elapsed).toFixed(1)}s` : '';
+    view.controlLabel.textContent = control ? i18n.t(`battle.${control}`, {
+      seconds: Math.max(0, (control === 'rooted' ? fighter.rootUntil : fighter.slowUntil) - elapsed).toFixed(1)
+    }) : '';
     view.healthBar.dataset.band = healthBand(ratio);
     view.healthBar.setAttribute('aria-valuenow', String(currentHealth));
     view.healthBar.setAttribute('aria-valuetext', `${currentHealth} / ${fighter.maxHealth}`);
     view.healthFill.style.transform = `scaleX(${ratio})`;
     view.cooldownBar.dataset.ready = String(progress >= 1);
     view.cooldownBar.setAttribute('aria-valuenow', String(Math.round(progress * 100)));
-    view.cooldownBar.setAttribute('aria-valuetext', progress >= 1 ? '攻击就绪' : `${fighter.cooldownElapsed.toFixed(1)} / ${fighter.attackCooldown} 秒`);
+    view.cooldownBar.setAttribute('aria-valuetext', progress >= 1 ? i18n.t('battle.cooldown_ready') : i18n.t('battle.cooldown_progress', {
+      elapsed: fighter.cooldownElapsed.toFixed(1),
+      duration: fighter.attackCooldown
+    }));
     view.cooldownFill.style.transform = `scaleX(${progress})`;
     if (fighter.attack) updateWeaponVisual(attackElements.get(fighter.attack), fighter, elapsed);
   }
@@ -63,14 +70,22 @@ export function createCombatRenderer(elements, rules = BATTLE_RULES) {
   }
 
   function reset(battle) {
+    rules = battle.rules ?? initialRules;
     elements['weapon-effects'].replaceChildren();
     elements['projectile-effects'].replaceChildren();
+    elements['combat-effects'].setAttribute('viewBox', `0 0 ${rules.size} ${rules.size}`);
     fighterElements.clear();
     battle.fighters.forEach(buildFighterElement);
+    const fighterPercent = rules.fighterSize / rules.size * 100;
+    battle.fighters.forEach(fighter => {
+      const element = elements[`fighter-${fighter.side}`];
+      element.style.width = `${fighterPercent}%`;
+      element.style.height = `${fighterPercent}%`;
+    });
     elements.battlefield.dataset.battlePhase = 'idle';
     elements.countdown.hidden = true;
     elements.countdown.textContent = '';
-    elements['battle-note'].textContent = '准备入场';
+    elements['battle-note'].textContent = i18n.t('battle.ready');
     render(battle);
   }
 
@@ -101,22 +116,49 @@ export function createCombatRenderer(elements, rules = BATTLE_RULES) {
     if (type === 'launched') {
       elements.battlefield.dataset.battlePhase = 'running';
       elements.countdown.hidden = true;
-      elements['battle-note'].textContent = '战斗中 · 攻击就绪且目标在范围内时出手';
-      elements.status.textContent = '双方已出发 · 可随时返回选角';
+      elements['battle-note'].textContent = i18n.t('battle.running');
+      elements.status.textContent = i18n.t('battle.status_running');
     }
     if (type === 'finished') {
       elements.battlefield.dataset.battlePhase = 'finished';
-      elements.countdown.textContent = event.result;
+      elements.countdown.textContent = event.winner ? i18n.t('battle.winner', { name: i18n.t(event.winner.character.nameKey) }) : i18n.t('battle.draw');
       elements.countdown.hidden = false;
-      elements['battle-note'].textContent = '对决结束 · 返回选角可重新开始';
-      elements.status.textContent = event.result;
+      elements['battle-note'].textContent = i18n.t('battle.finished');
+      elements.status.textContent = elements.countdown.textContent;
     }
   }
 
-  return { handleEvent, render, reset };
+  function refreshLocalization(battle) {
+    battle.fighters.forEach(fighter => {
+      const view = fighterElements.get(fighter);
+      if (!view) return;
+      const name = i18n.t(fighter.character.nameKey);
+      view.element.querySelector('.fighter-name').textContent = name;
+      view.healthBar.setAttribute('aria-label', i18n.t('accessibility.health', { name }));
+      view.cooldownBar.setAttribute('aria-label', i18n.t('accessibility.cooldown', { name }));
+    });
+    if (battle.phase === 'idle') elements['battle-note'].textContent = i18n.t('battle.ready');
+    if (battle.phase === 'waiting') {
+      elements['battle-note'].textContent = i18n.t('battle.waiting', { seconds: Math.ceil(battle.rules.launchDelay / 1000) });
+      elements.status.textContent = i18n.t('battle.status_waiting');
+    }
+    if (battle.phase === 'running') {
+      elements['battle-note'].textContent = i18n.t('battle.running');
+      elements.status.textContent = i18n.t('battle.status_running');
+    }
+    if (battle.phase === 'finished') {
+      const result = battle.winner ? i18n.t('battle.winner', { name: i18n.t(battle.winner.character.nameKey) }) : i18n.t('battle.draw');
+      elements.countdown.textContent = result;
+      elements['battle-note'].textContent = i18n.t('battle.finished');
+      elements.status.textContent = result;
+    }
+    render(battle);
+  }
+
+  return { handleEvent, render, reset, refreshLocalization };
 }
 
-export function createBattleRuntime({ engine, renderer, elements, getAppPhase }) {
+export function createBattleRuntime({ engine, renderer, elements, getAppPhase, i18n }) {
   let frame = 0;
   let launchAt = 0;
   let lastTime = 0;
@@ -144,10 +186,10 @@ export function createBattleRuntime({ engine, renderer, elements, getAppPhase })
     if (engine.state.phase === 'running') {
       const seconds = Math.min(0.25, Math.max(0, (now - lastTime) / 1000));
       lastTime = now;
-      accumulator += seconds;
-      while (accumulator >= BATTLE_RULES.step && engine.state.phase === 'running') {
-        engine.step(BATTLE_RULES.step);
-        accumulator -= BATTLE_RULES.step;
+      accumulator += seconds * engine.state.rules.timeScale;
+      while (accumulator >= engine.state.rules.step && engine.state.phase === 'running') {
+        engine.step(engine.state.rules.step);
+        accumulator -= engine.state.rules.step;
       }
       renderer.render(engine.state);
     } else if (engine.state.phase === 'finished') {
@@ -161,16 +203,16 @@ export function createBattleRuntime({ engine, renderer, elements, getAppPhase })
     }
   }
 
-  function begin(selectedCharacters) {
+  function begin(selectedCharacters, matchSetup = null) {
     stop();
-    engine.reset(selectedCharacters);
+    engine.reset(selectedCharacters, matchSetup);
     engine.state.phase = 'waiting';
-    launchAt = performance.now() + BATTLE_RULES.launchDelay;
+    launchAt = performance.now() + engine.state.rules.launchDelay;
     elements.battlefield.dataset.battlePhase = 'waiting';
-    elements.countdown.textContent = '2';
+    elements.countdown.textContent = String(Math.ceil(engine.state.rules.launchDelay / 1000));
     elements.countdown.hidden = false;
-    elements['battle-note'].textContent = '准备 · 2 秒后随机方向出发';
-    elements.status.textContent = '竖板已移开 · 等待双方出发';
+    elements['battle-note'].textContent = i18n.t('battle.waiting', { seconds: Math.ceil(engine.state.rules.launchDelay / 1000) });
+    elements.status.textContent = i18n.t('battle.status_waiting');
     frame = requestAnimationFrame(tick);
   }
 
