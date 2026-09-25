@@ -1,6 +1,6 @@
 .dock { display: block; height: var(--dock-height); transition: height 420ms cubic-bezier(.22, .75, .2, 1); }
 
-.dock-main { position: absolute; left: 0; right: 0; bottom: 0; height: var(--dock-height); display: grid; grid-template-columns: 16% 1fr; background: var(--color-surface); }
+.dock-main { position: absolute; left: 0; right: 0; bottom: 0; height: calc(100% - 6px); display: grid; grid-template-columns: 16% 1fr; background: var(--color-surface); }
 
 .settings-toggle { position: absolute; left: 50%; top: 0; width: 54px; height: 28px; padding: 0; transform: translate(-50%, -50%); z-index: 8; border: 1px solid var(--color-border); background: var(--color-surface); display: grid; place-items: center; transition: top 240ms ease; }
 
@@ -14,7 +14,9 @@
 
 .dock[data-expanded="true"] { height: 100%; }
 
-.settings-panel { position: absolute; inset: 0 0 var(--dock-height); padding: clamp(42px, 4vw, 54px) clamp(22px, 4vw, 58px) 22px; overflow: hidden; background: var(--color-surface); opacity: 0; visibility: hidden; transform: translateY(18px); transition: opacity 180ms ease, transform 300ms ease, visibility 0s linear 420ms; }
+.dock[data-expanded="true"] .dock-main { height: calc(var(--dock-height) - 6px); }
+
+.settings-panel { position: absolute; inset: 0 0 calc(var(--dock-height) - 6px); padding: clamp(42px, 4vw, 54px) clamp(22px, 4vw, 58px) 22px; overflow: hidden; background: var(--color-surface); opacity: 0; visibility: hidden; transform: translateY(18px); transition: opacity 180ms ease, transform 300ms ease, visibility 0s linear 420ms; }
 
 .dock[data-expanded="true"] .settings-panel { opacity: 1; visibility: visible; transform: none; transition-delay: 120ms, 80ms, 0s; }
 
