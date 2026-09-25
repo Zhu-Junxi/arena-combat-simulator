@@ -1,0 +1,56 @@
+.page { width: min(1440px, calc(100% - 64px)); margin: 0 auto; }
+
+header { height: 82px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+
+header h1 { margin: 0; font-size: 22px; font-weight: 500; letter-spacing: 4px; }
+
+header span { font-size: 12px; letter-spacing: 2px; }
+
+.stage { height: min(780px, calc(100svh - 138px)); min-height: 570px; border: 2px solid #000; position: relative; overflow: hidden; isolation: isolate; }
+
+.panel { position: absolute; top: 0; bottom: 0; width: 50%; z-index: 2; background: #fff; will-change: transform; }
+
+.panel.left { left: 0; border-right: 1px solid #000; }
+
+.panel.right { right: 0; border-left: 1px solid #000; }
+
+.dock { position: absolute; bottom: 0; left: 0; width: 100%; height: var(--dock-height); z-index: 5; background: #fff; border-top: 2px solid #000; display: grid; grid-template-columns: 112px 1fr; will-change: transform; }
+
+footer { min-height: 48px; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 12px; }
+
+/* 分类独立滚动；角色卡片在自己的区域内滚动。 */
+.dock { grid-template-rows: minmax(0, 1fr); }
+
+.page { width: min(1320px, calc(100% - 48px)); }
+
+header { height: 74px; }
+
+header h1 { font-family: var(--serif); font-size: 25px; letter-spacing: 5px; }
+
+header span { font-size: 10px; letter-spacing: 2px; }
+
+.stage { height: auto; min-height: 0; aspect-ratio: 1.615; border: 1.5px solid #000; }
+
+.panel { border-top: 0; }
+
+.panel.left { border-right: 1px solid #000; }
+
+.panel.right { border-left: 1px solid #000; }
+
+.panel::before { content: ""; position: absolute; top: 7px; bottom: 7px; border: 1px solid #000; pointer-events: none; }
+
+.panel.left::before { left: 7px; right: 0; border-right: 0; }
+
+.panel.right::before { left: 0; right: 7px; border-left: 0; }
+
+.panel::after { content: ""; position: absolute; bottom: calc(var(--dock-height) + 10%); width: 9px; height: 9px; transform: rotate(45deg); background: #000; pointer-events: none; }
+
+.panel.left::after { display: none; }
+
+.panel.right::after { left: -5px; }
+
+.dock { border-top: 6px double #000; border-bottom: 0; grid-template-columns: 16% 1fr; }
+
+.dock::after { content: ""; position: absolute; inset: 0 7px 7px; border: 1px solid #000; border-top: 0; pointer-events: none; }
+
+footer { font-size: 11px; letter-spacing: 1px; }

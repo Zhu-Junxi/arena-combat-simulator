@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>角色对决 · 战斗原型</title>
+<link rel="preload" as="image" href="assets/weapons/warrior-sword-color.png">
+<link rel="preload" as="image" href="assets/weapons/archer-forest-bow.png">
+<link rel="preload" as="image" href="assets/weapons/archer-forest-arrow.png">
+<link rel="preload" as="image" href="assets/characters/archer/portrait.png">
+<link rel="preload" as="image" href="assets/characters/archer/avatar.png">
+<link rel="preload" as="image" href="assets/characters/archer/battle.png">
+<link rel="preload" as="image" href="assets/weapons/guardian-shield.png">
+<link rel="preload" as="image" href="assets/weapons/mage-staff.png">
+<link rel="preload" as="image" href="assets/weapons/priest-scepter.png">
+<link rel="preload" as="image" href="assets/characters/warrior/portrait-color.png">
+<link rel="preload" as="image" href="assets/characters/warrior/avatar-color.png">
+<link rel="preload" as="image" href="assets/characters/warrior/battle-orb-color.png">
+<link rel="stylesheet" href="src/styles/base.css">
+<link rel="stylesheet" href="src/styles/layout.css">
+<link rel="stylesheet" href="src/styles/selection.css">
+<link rel="stylesheet" href="src/styles/battle.css">
+<link rel="stylesheet" href="src/styles/responsive.css">
+</head>
+<body>
+<main class="page">
+  <header><h1>角色对决</h1><span>BLACK / WHITE · 黑白对决</span></header>
+  <section class="stage" id="stage" aria-label="角色选择与战场">
+    <div class="arena-view" id="arena" inert aria-hidden="true">
+      <div class="arena-heading"><h2>对战场地</h2><button id="back">返回选角</button></div>
+      <div class="battlefield" id="battlefield" data-battle-phase="idle" aria-label="正方形战场">
+        <span class="field-label">战斗场地</span>
+        <svg id="combat-effects" class="combat-effects" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true"><g id="weapon-effects"></g><g id="projectile-effects"></g></svg>
+        <div class="fighter left" id="fighter-left">战士</div>
+        <span class="field-center" id="countdown" hidden></span>
+        <div class="fighter right" id="fighter-right">弓箭手</div>
+      </div>
+      <p class="arena-note" id="battle-note">准备入场</p>
+    </div>
+    <article class="panel left" id="panel-left" aria-label="左方角色"></article>
+    <article class="panel right" id="panel-right" aria-label="右方角色"></article>
+    <div class="start-control" id="start-control"><button id="start" aria-label="开始战斗"><svg class="start-art" viewBox="0 0 300 150" aria-hidden="true" focusable="false">
+<g fill="#fff" stroke="#000" stroke-width="1.2"><path d="M150 7 218 75 150 143 82 75Z"/><path d="M150 14 211 75 150 136 89 75Z"/></g>
+<g fill="none" stroke="#000" stroke-width="1"><path d="m111 33-4 4 4 4m78-8 4 4-4 4m-78 68-4 4 4 4m78-8 4 4-4 4"/><path d="M42 34 7 75l35 41M258 34l35 41-35 41"/></g>
+<path d="M44 38H256L291 75 256 112H44L9 75Z" fill="#fff" stroke="#000" stroke-width="1.5"/>
+<path d="M49 42H251L282 75 251 108H49L18 75Z" fill="#000"/>
+<path d="M54 47H246L273 75 246 103H54L27 75Z" fill="none" stroke="#fff" stroke-width=".8"/>
+<path d="m35 71 4 4-4 4-4-4Zm230 0 4 4-4 4-4-4Z" fill="#fff"/>
+</svg><span>开始战斗</span></button></div>
+    <section class="dock" id="dock" aria-label="角色选择板">
+      <aside class="category-rail" aria-label="角色分类">
+        <button class="category-scroll" id="categories-up" aria-label="分类向上滚动" title="向上滚动">▲</button>
+        <nav class="categories" id="categories" aria-label="角色种类"></nav>
+        <button class="category-scroll" id="categories-down" aria-label="分类向下滚动" title="向下滚动">▼</button>
+      </aside>
+      <div class="roster-area">
+        <div class="roster-heading"><strong id="selection-label">为左方选择角色</strong><span>点击上方角色框，再选择头像</span></div>
+        <div class="roster" id="roster" aria-label="角色头像"></div>
+      </div>
+    </section>
+  </section>
+  <footer><span id="status" role="status" aria-live="polite">选择角色后，点击开始战斗</span><span id="view-label">01 / 选角</span></footer>
+</main>
+<script type="module" src="src/scripts/app.js"></script>
+</body>
+</html>

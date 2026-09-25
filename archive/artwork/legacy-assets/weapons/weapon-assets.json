@@ -1,0 +1,110 @@
+{
+  "description": "Original generated PNGs preserved; viewBox crops and logical placement are presentation metadata only.",
+  "assets": {
+    "sword": {
+      "file": "warrior-sword-color.png",
+      "source": [
+        2172,
+        724
+      ],
+      "crop": [
+        20,
+        112,
+        2118,
+        471
+      ],
+      "x": 28,
+      "width": 156,
+      "height": 34.69121813031161,
+      "y": -17.345609065155806
+    },
+    "bow": {
+      "file": "archer-forest-bow.png",
+      "source": [
+        724,
+        2172
+      ],
+      "crop": [
+        201,
+        50,
+        328,
+        2017
+      ],
+      "x": 62,
+      "height": 144,
+      "width": 23.416955875061973,
+      "y": -72,
+      "string": {
+        "x": 62.7,
+        "top": -71,
+        "bottom": 71
+      }
+    },
+    "shield": {
+      "file": "guardian-shield.png",
+      "source": [
+        1144,
+        1375
+      ],
+      "crop": [
+        145,
+        23,
+        855,
+        1322
+      ],
+      "x": 50,
+      "width": 72,
+      "height": 111.32631578947368,
+      "y": -55.66315789473684
+    },
+    "staff": {
+      "file": "mage-staff.png",
+      "source": [
+        2172,
+        724
+      ],
+      "crop": [
+        41,
+        173,
+        2090,
+        377
+      ],
+      "x": 24,
+      "width": 112,
+      "focus": 118,
+      "height": 20.20287081339713,
+      "y": -10.101435406698565
+    },
+    "scepter": {
+      "file": "priest-scepter.png",
+      "source": [
+        1774,
+        887
+      ],
+      "crop": [
+        5,
+        215,
+        1768,
+        450
+      ],
+      "x": 24,
+      "width": 112,
+      "focus": 122,
+      "height": 28.506787330316744,
+      "y": -14.253393665158372
+    }
+  },
+  "arrow": {
+    "file": "archer-forest-arrow.png",
+    "source": [
+      2172,
+      724
+    ],
+    "crop": [
+      52,
+      252,
+      2070,
+      205
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+/* 纯白与黑框；项目无需第三方运行时依赖。 */
+:root { color-scheme: light; --ink: #000; --paper: #fff; --dock-height: 218px; }
+
+* { box-sizing: border-box; }
+
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: Arial, "Microsoft YaHei", sans-serif; }
+
+button { font: inherit; color: #000; background: #fff; border: 1px solid #000; cursor: pointer; }
+
+button:focus-visible { outline: 2px solid #000; outline-offset: 4px; }
+
+button:disabled { cursor: default; }
+
+button:hover:not(:disabled) { outline: 1px solid #000; outline-offset: -4px; }
+
+[hidden] { display: none !important; }
+
+.cooldown-bar { height: 4px; }
+
+/* 依照 01 黑白极简草稿重建比例与线稿。所有装饰均可随石板移动。 */
+*, *::before, *::after { box-sizing: border-box; }
+
+:root { --dock-height: 35%; --serif: "Noto Serif SC", "Songti SC", SimSun, serif; }
