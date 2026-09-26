@@ -31,6 +31,11 @@ customization.arena,Arena,场地
 customization.match_rules,Match Rules,对战规则
 customization.reset_tab,Reset Section,重置此项
 customization.reset_all,Reset All,全部重置
+customization.export,Export Duel,导出对决
+customization.import,Import Duel,导入对决
+customization.export_success,Duel recipe exported.,对决配置已导出。
+customization.import_success,Duel recipe imported.,对决配置已导入。
+customization.import_error,Unable to import that duel recipe.,无法导入该对决配置。
 customization.health,Health,生命值
 customization.attack,Attack,攻击力
 customization.attack_mode,Attack Mode {mode},第 {mode} 段攻击

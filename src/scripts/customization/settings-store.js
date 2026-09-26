@@ -163,10 +163,24 @@ export function createMatchSettingsStore({ characters, storage = globalThis.loca
     });
   }
 
+  function applyDuel(duel) {
+    const nextFighters = {};
+    for (const side of SIDES) {
+      const imported = duel?.fighters?.[side];
+      const character = characterById[imported?.characterId];
+      if (!character) throw new Error('Unknown imported fighter');
+      nextFighters[side] = { characterId: character.id, values: normalizeFighter(imported.stats, character) };
+    }
+    const nextArena = normalizeArena(duel?.arena);
+    for (const side of SIDES) fighters[side][nextFighters[side].characterId] = nextFighters[side].values;
+    arena = nextArena;
+    notify({ scope: 'duel', imported: true });
+  }
+
   function subscribe(listener) {
     listeners.add(listener);
     return () => listeners.delete(listener);
   }
 
-  return Object.freeze({ getFighter, setFighterValue, getArena, setArenaValue, resetFighter, resetArena, resetAll, snapshot, subscribe });
+  return Object.freeze({ getFighter, setFighterValue, getArena, setArenaValue, resetFighter, resetArena, resetAll, snapshot, applyDuel, subscribe });
 }

@@ -98,6 +98,8 @@ test('all JavaScript module imports resolve', async () => {
     'src/scripts/customization/settings-controller.js',
     'src/scripts/customization/settings-store.js',
     'src/scripts/customization/settings-view.js',
+    'src/scripts/share/duel-share-codec.js',
+    'src/scripts/share/duel-transfer-controller.js',
     'src/scripts/theme/theme-controller.js',
     'src/scripts/theme/theme-view.js',
     'src/scripts/selection/selection-controller.js',

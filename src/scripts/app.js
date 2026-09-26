@@ -9,6 +9,7 @@ import { buildCombatSetup } from './customization/combat-setup.js';
 import { createSettingsController } from './customization/settings-controller.js';
 import { createMatchSettingsStore } from './customization/settings-store.js';
 import { createSettingsView } from './customization/settings-view.js';
+import { createDuelTransferController } from './share/duel-transfer-controller.js';
 import { createGameState } from './state/game-state.js';
 import { createThemeController } from './theme/theme-controller.js';
 import { populateThemeSelector } from './theme/theme-view.js';
@@ -23,7 +24,7 @@ async function initialize() {
   const elements = requireElements([
     'arena', 'back', 'battlefield', 'battle-note', 'categories', 'categories-down', 'categories-up', 'combat-effects',
     'countdown', 'dock', 'fighter-left', 'fighter-right', 'language-select', 'panel-left', 'panel-right',
-    'projectile-effects', 'roster', 'selection-label', 'settings-content', 'settings-panel', 'settings-reset-all',
+    'projectile-effects', 'roster', 'selection-label', 'settings-content', 'settings-export', 'settings-import', 'settings-import-file', 'settings-panel', 'settings-reset-all',
     'settings-tabs', 'settings-toggle', 'stage', 'start', 'start-control', 'status', 'theme-select', 'view-label',
     'weapon-effects'
   ]);
@@ -97,11 +98,27 @@ async function initialize() {
     },
     collapseCustomization: () => settingsController.setExpanded(false)
   });
+  const duelTransfer = createDuelTransferController({
+    elements,
+    state,
+    settings,
+    i18n,
+    characters: CHARACTERS,
+    characterById: CHARACTER_BY_ID,
+    getSetup: matchSetup,
+    onImported: recipe => {
+      selectionView.renderPanel('left');
+      selectionView.renderPanel('right');
+      selectionView.syncSelection();
+      settingsView.render();
+    }
+  });
 
   selectionView.render();
   selectionController.bind();
   settingsView.render();
   settingsController.bind();
+  duelTransfer.bind();
   transitions.bind();
   engine.reset({ left: state.left, right: state.right }, matchSetup());
   transitions.refreshLocalization();

@@ -61,7 +61,12 @@
       <section class="settings-panel" id="settings-panel" aria-hidden="true" inert data-i18n-aria-label="customization.heading">
         <header class="settings-toolbar">
           <div><span data-i18n="customization.eyebrow"></span><h2 data-i18n="customization.heading"></h2></div>
-          <button type="button" id="settings-reset-all"></button>
+          <div class="settings-actions">
+            <button type="button" id="settings-export" data-i18n="customization.export"></button>
+            <button type="button" id="settings-import" data-i18n="customization.import"></button>
+            <input id="settings-import-file" type="file" accept="application/json,.json" hidden>
+            <button type="button" id="settings-reset-all"></button>
+          </div>
         </header>
         <div class="settings-tabs" id="settings-tabs" role="tablist" data-i18n-aria-label="customization.tabs"></div>
         <div class="settings-content" id="settings-content"></div>
