@@ -1,7 +1,8 @@
-import { ARENA_CONTROLS, COLLISION_MODES, FIGHTER_CONTROLS, defaultFighterSettings } from '../config/customization.js';
+import { ARENA_CONTROLS, COLLISION_MODES, FIGHTER_CONTROLS, PRIEST_ABILITY_CONTROLS, TRAIT_CONTROLS, defaultFighterSettings } from '../config/customization.js';
+import { normalizeMageAbilities, normalizePriestAbilities } from '../customization/settings-store.js';
 
 export const DUEL_SHARE_FORMAT = 'arena-duel.duel';
-export const DUEL_SHARE_VERSION = 1;
+export const DUEL_SHARE_VERSION = 8;
 
 const SIDES = Object.freeze(['left', 'right']);
 const FIGHTER_KEYS = Object.freeze(['health', 'attack', 'attackCD', 'movementSpeed']);
@@ -25,11 +26,17 @@ function validStartingDistance(arena) {
   return arena.startingDistance >= minimum && arena.startingDistance <= maximum;
 }
 
-function readFighter(source, character, side) {
+function readFighter(source, character, side, version) {
   exactKeys(source, ['characterId', 'stats'], `${side} fighter`);
   if (source.characterId !== character.id) fail(`${side} fighter character is unavailable`);
-  exactKeys(source.stats, FIGHTER_KEYS, `${side} fighter stats`);
+  const isMage = character.trait?.id === 'elemental-cycles';
+  const isPriest = character.trait?.id === 'prayer';
+  const traitControls = TRAIT_CONTROLS[character.trait?.id];
+  const isRanged = defaults => defaults.projectileSpeed != null;
+  const isMelee = defaults => defaults.attackRange != null;
   const defaults = defaultFighterSettings(character);
+  const statKeys = [...FIGHTER_KEYS, ...(isRanged(defaults) && version >= 5 ? ['projectileSpeed'] : []), ...(isMelee(defaults) && version >= 6 ? ['attackRange'] : []), ...((isMage && version >= 2) || (isPriest && version >= 7) ? ['abilities'] : []), ...(traitControls && version >= 4 ? ['trait'] : [])];
+  exactKeys(source.stats, statKeys, `${side} fighter stats`);
   const stats = {};
   for (const key of FIGHTER_KEYS) {
     const value = source.stats[key];
@@ -42,14 +49,45 @@ function readFighter(source, character, side) {
       stats[key] = value;
     }
   }
+  if (isRanged(defaults)) {
+    const value = version >= 5 ? source.stats.projectileSpeed : defaults.projectileSpeed;
+    if (!isControlValue(value, FIGHTER_CONTROLS.projectileSpeed)) fail(`${side} fighter projectileSpeed is invalid`);
+    stats.projectileSpeed = value;
+  }
+  if (isMelee(defaults)) {
+    const value = version >= 6 ? source.stats.attackRange : defaults.attackRange;
+    if (!isControlValue(value, FIGHTER_CONTROLS.attackRange)) fail(`${side} fighter attackRange is invalid`);
+    stats.attackRange = value;
+  }
+  if (traitControls) {
+    if (version >= 4) exactKeys(source.stats.trait, Object.keys(traitControls), `${side} fighter trait`);
+    stats.trait = {};
+    for (const [key, control] of Object.entries(traitControls)) {
+      const value = version >= 4 ? source.stats.trait?.[key] : defaults.trait[key];
+      if (!isControlValue(value, control)) fail(`${side} fighter trait ${key} is invalid`);
+      stats.trait[key] = value;
+    }
+  }
+  if (isMage) stats.abilities = version >= 2 ? normalizeMageAbilities(source.stats.abilities) : normalizeMageAbilities();
+  if (isPriest) {
+    if (version >= 7) {
+      const controls = Object.entries(PRIEST_ABILITY_CONTROLS).filter(([key]) => version >= 8 || !['markMoveSlowPerMark', 'markAttackSlowPerMark'].includes(key));
+      exactKeys(source.stats.abilities, controls.map(([key]) => key), `${side} fighter abilities`);
+      for (const [key, control] of controls) {
+        if (!isControlValue(source.stats.abilities[key], control)) fail(`${side} fighter ability ${key} is invalid`);
+      }
+    }
+    stats.abilities = version >= 7 ? normalizePriestAbilities(source.stats.abilities) : normalizePriestAbilities();
+  }
   return { characterId: character.id, stats };
 }
 
-function readArena(source) {
-  const keys = [...Object.keys(ARENA_CONTROLS), 'collisionMode'];
+function readArena(source, version) {
+  const controlEntries = Object.entries(ARENA_CONTROLS).filter(([key]) => version >= 3 || key !== 'contactStopDuration');
+  const keys = [...controlEntries.map(([key]) => key), 'collisionMode'];
   exactKeys(source, keys, 'arena');
-  const arena = {};
-  for (const [key, control] of Object.entries(ARENA_CONTROLS)) {
+  const arena = version >= 3 ? {} : { contactStopDuration: ARENA_CONTROLS.contactStopDuration.default };
+  for (const [key, control] of controlEntries) {
     if (!isControlValue(source[key], control)) fail(`arena ${key} is invalid`);
     arena[key] = source[key];
   }
@@ -81,14 +119,14 @@ export function parseDuelRecipe(text, { characters }) {
   catch { fail('the file is not valid JSON'); }
   exactKeys(source, ['format', 'version', 'fighters', 'arena'], 'recipe');
   if (source.format !== DUEL_SHARE_FORMAT) fail('the file format is unsupported');
-  if (source.version !== DUEL_SHARE_VERSION) fail('the recipe version is unsupported');
+  if (![1, 2, 3, 4, 5, 6, 7, DUEL_SHARE_VERSION].includes(source.version)) fail('the recipe version is unsupported');
   exactKeys(source.fighters, SIDES, 'fighters');
   const characterById = Object.fromEntries(characters.map(character => [character.id, character]));
   const fighters = {};
   for (const side of SIDES) {
     const character = characterById[source.fighters[side]?.characterId];
     if (!character) fail(`${side} fighter character is unavailable`);
-    fighters[side] = readFighter(source.fighters[side], character, side);
+    fighters[side] = readFighter(source.fighters[side], character, side, source.version);
   }
-  return { fighters, arena: readArena(source.arena) };
+  return { fighters, arena: readArena(source.arena, source.version) };
 }

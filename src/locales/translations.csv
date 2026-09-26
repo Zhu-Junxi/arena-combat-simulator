@@ -38,19 +38,45 @@ customization.import_success,Duel recipe imported.,对决配置已导入。
 customization.import_error,Unable to import that duel recipe.,无法导入该对决配置。
 customization.health,Health,生命值
 customization.attack,Attack,攻击力
+customization.attack_range,Attack Range,攻击范围
 customization.attack_mode,Attack Mode {mode},第 {mode} 段攻击
 customization.cooldown,Cooldown,冷却时间
 customization.cooldown_mode,Cooldown Mode {mode},第 {mode} 段冷却
 customization.movement_speed,Movement Speed,移动速度
-customization.units,units,单位
-customization.units_per_second,units/s,单位/秒
+customization.priest_prayer,Prayer,祈祷
+customization.priest_mark_decay,Priest Mark Decay,牧师印记衰减
+customization.priest_scaling,Prayer Scaling,祈祷数值
+customization.priest_mark_cooldown,Mark Shot Cooldown,印记射击冷却
+customization.priest_prayer_cooldown,Prayer Cooldown,祈祷冷却
+customization.priest_prayer_duration,Prayer Channel Duration,祈祷引导时间
+customization.priest_prayer_move_factor,Movement Speed While Praying,祈祷时移动速度
+customization.priest_interrupt_lockout,Prayer Interruption Lockout,祈祷打断锁定
+customization.priest_decay_floor,Mark Decay Floor,印记衰减下限
+customization.priest_decay_interval,Mark Decay Interval,印记衰减间隔
+customization.priest_decay_amount,Marks Decayed per Interval,每次衰减印记
+customization.priest_mark_move_slow,Movement Speed Reduction per Priest Mark,每层牧师印记移动速度降低
+customization.priest_mark_attack_slow,Attack Cooldown Increase per Priest Mark,每层牧师印记攻击冷却增加
+customization.priest_base_heal,Prayer Base Heal,祈祷基础治疗
+customization.priest_heal_per_mark,Prayer Heal per Mark,每层印记祈祷治疗
+customization.priest_base_damage,Prayer Base Damage,祈祷基础伤害
+customization.priest_damage_per_mark,Prayer Damage per Mark,每层印记祈祷伤害
+customization.set_character_default,Set as Character Default,设为角色默认值
+customization.plate_reduction,Damage Reduction per Hit,每次命中伤害减免
+customization.vine_every,Empowered Every Nth Arrow,每第 N 箭强化
+customization.vine_root_duration,Vine Root Duration,藤蔓禁锢时间
+customization.vine_slow_duration,Vine Slow Duration,藤蔓减速时间
+customization.vine_slow_factor,Movement Speed Remaining,藤蔓后剩余移动速度
+customization.units,arena units,场地单位
+customization.units_per_second,arena units/s,场地单位/秒
 customization.arena_size,Arena Size,场地尺寸
 customization.fighter_size,Fighter Size,角色尺寸
 customization.time_scale,Battle Time Scale,战斗时间倍率
 customization.starting_distance,Starting Distance,初始距离
 customization.projectile_speed,Projectile Speed,投射物速度
+customization.projectile_speed_multiplier,Projectile Speed Multiplier,投射物速度倍率
 customization.launch_delay,Launch Delay,出发延迟
-customization.control_duration,Control Duration,控制持续时间
+customization.control_duration,Control Effect Duration Multiplier,控制效果持续时间倍率
+customization.contact_stop_duration,Contact Stop Duration,接触停止时间
 customization.collision,Collision Behavior,碰撞方式
 customization.collision_bounce,Bounce,弹性反弹
 customization.collision_stop,Stop on Contact,接触停止
@@ -82,11 +108,103 @@ trait.plate.name,Plate Armor,板甲
 trait.plate.description,Reduces each instance of incoming damage by 1. Actual damage cannot be lower than 1.,每次受到的伤害减少 1 点，实际伤害最低为 1 点。
 trait.vine.name,Vine Arrow,藤箭
 trait.vine.description,"Every fourth arrow is empowered. On hit, it roots the target for 2 seconds, then slows movement by 50% for 3 seconds. The target can still attack while rooted.",每发射 4 支箭，第 4 支强化为藤箭。命中后禁锢目标 2 秒，随后移动速度降低 50%，持续 3 秒。禁锢期间仍可攻击。
+trait.prayer.name,Prayer of Judgment,审判祈祷
+trait.prayer.description,"Mark enemies with harmless shots, then channel Prayer to consume marks for healing and judgment damage. Direct hits interrupt the channel.",用无伤害射击标记敌人，再引导祈祷消耗印记进行治疗和审判伤害。直接命中会打断引导。
+trait.elemental_cycles.name,Elemental Cycles,元素循环
+trait.elemental_cycles.description,The mage randomly chooses Ice Fire or Leech. The first two spells mark the enemy and the matching final spell consumes those marks.,法师会随机选择冰霜、火焰或汲取循环。前两次法术标记敌人，对应的终结技消耗这些印记。
 stats.attack,Attack,攻击
 stats.cooldown,Attack CD,攻击CD
 stats.speed,Speed,速度
 stats.health,Health,血量
 unit.seconds_short,s,秒
+unit.hp,HP,生命值
+unit.damage_per_hit,damage per hit,伤害/次命中
+unit.damage_per_second,damage/s,伤害/秒
+unit.damage_per_mark,damage per mark,伤害/层印记
+unit.hp_per_mark,HP per mark,生命值/层印记
+unit.seconds_per_mark,s per mark,秒/层印记
+unit.arena_units,arena units,场地单位
+unit.arena_units_per_second,arena units/s,场地单位/秒
+unit.percent,%,%
+unit.percent_per_mark,% per mark,%/层印记
+unit.multiplier,multiplier,倍率
+unit.marks,marks,层印记
+unit.arrows,arrows,箭
+tooltip.help_for,Help: {label},帮助：{label}
+tooltip.retry,Try loading the language data again.,再次尝试加载语言数据。
+tooltip.allowed_range,Allowed range: {minimum} to {maximum}.,可用范围：{minimum} 至 {maximum}。
+tooltip.current_value,Current effect: {value}.,当前效果：{value}。
+tooltip.health,Sets the maximum health the fighter can have.,设置角色的最大生命值。
+tooltip.attack,Sets damage dealt by one direct hit.,设置一次直接命中的伤害。
+tooltip.cooldown,Sets the time before this attack can be used again.,设置该攻击再次可用前的等待时间。
+tooltip.movement_speed,Sets how far the fighter moves each second.,设置角色每秒移动的距离。
+tooltip.projectile_speed,Sets how far this projectile travels each second before arena scaling.,设置该投射物在场地倍率前每秒移动的距离。
+tooltip.attack_range,Sets the maximum distance at which this melee attack can connect.,设置该近战攻击能够命中的最大距离。
+tooltip.damage_reduction,Subtracts this amount from every incoming hit without reducing a hit below 1 damage.,从每次受到的伤害中减去该数值但单次伤害不会低于 1。
+tooltip.empowered_arrow,Sets how often an arrow becomes a Vine Arrow.,设置藤蔓箭出现的频率。
+tooltip.every_arrow,Every {value} is empowered.,每 {value} 会获得强化。
+tooltip.root_duration,Sets how long the target cannot move after the Vine Arrow hits.,设置藤蔓箭命中后目标无法移动的时长。
+tooltip.slow_duration,Sets how long the movement-speed effect lasts.,设置移动速度效果持续的时长。
+tooltip.movement_remaining,Sets the percentage of normal movement speed that remains while the effect is active.,设置效果生效时保留的正常移动速度百分比。
+tooltip.movement_remaining_example,This leaves {remaining}% of normal movement speed.,这会保留 {remaining}% 的正常移动速度。
+tooltip.mark_duration,Sets how long one elemental mark remains on the target.,设置一层元素印记在目标身上保留的时长。
+tooltip.max_marks,Sets the maximum number of elemental marks that can be held.,设置可保留的元素印记上限。
+tooltip.damage_per_mark,Adds this much damage for every consumed elemental mark.,每消耗一层元素印记增加这么多伤害。
+tooltip.per_mark_total,At three marks this contributes {total} in addition to the base effect.,三层印记时这会在基础效果之外额外贡献 {total}。
+tooltip.freeze_duration,Sets the base duration of the Ice final-spell freeze.,设置冰系终结技冻结的基础时长。
+tooltip.freeze_per_mark,Adds this much freeze time for every consumed Ice mark.,每消耗一层冰系印记增加这么多冻结时间。
+tooltip.burst_damage,Sets the bonus direct damage from a fully marked burst.,设置满印记爆发的额外直接伤害。
+tooltip.effect_radius,Sets the radius of this area effect.,设置该范围效果的半径。
+tooltip.damage_over_time,Sets damage applied continuously while the effect lasts.,设置效果持续期间连续造成的伤害。
+tooltip.dot_total,At the paired duration this uses a rate of {value}.,在配套持续时间内当前速率为 {value}。
+tooltip.burn_duration,Sets how long the Burn effect deals damage.,设置燃烧效果造成伤害的时长。
+tooltip.bleed_duration,Sets how long the Bleed effect deals damage.,设置流血效果造成伤害的时长。
+tooltip.base_heal,Sets healing before any mark bonus is added.,设置加入印记加成前的治疗量。
+tooltip.heal_per_mark,Adds this much healing for every consumed mark.,每消耗一层印记增加这么多治疗。
+tooltip.base_damage,Sets direct damage before any mark bonus is added.,设置加入印记加成前的直接伤害。
+tooltip.mark_cooldown,Sets the time between harmless Priest mark shots.,设置牧师无伤害印记射击之间的时间。
+tooltip.prayer_cooldown,Sets the wait after a successful Prayer before another Prayer can begin.,设置祈祷成功后再次开始祈祷前的等待时间。
+tooltip.prayer_duration,Sets how long Prayer must channel before consuming marks.,设置祈祷消耗印记前必须引导的时长。
+tooltip.prayer_movement,Sets the percentage of normal movement speed available while channeling Prayer.,设置引导祈祷时可用的正常移动速度百分比。
+tooltip.interrupt_lockout,Sets how long Prayer cannot restart after a direct hit interrupts it.,设置直接命中打断祈祷后无法重新开始祈祷的时长。
+tooltip.decay_floor,Marks at or below this count never decay.,印记数量不高于该值时不会衰减。
+tooltip.decay_interval,Sets the time between Priest mark decay checks above the floor.,设置高于下限时牧师印记衰减检查之间的时间。
+tooltip.decay_amount,Sets how many Priest marks decay at each interval above the floor.,设置每个衰减间隔中高于下限的牧师印记减少数量。
+tooltip.priest_move_slow,Reduces the marked enemy's movement speed by this percentage for each Priest mark.,每层牧师印记使被标记敌人的移动速度降低该百分比。
+tooltip.priest_attack_slow,Increases the marked enemy's attack cooldown by this percentage for each Priest mark.,每层牧师印记使被标记敌人的攻击冷却增加该百分比。
+tooltip.priest_slow_example,At three marks this changes the target by up to {threeMarks}%.,三层印记时对目标的影响最多为 {threeMarks}%。
+tooltip.arena_size,Sets the playable arena width and height.,设置可战斗场地的宽度和高度。
+tooltip.fighter_size,Sets each fighter's collision and visual size.,设置每名角色的碰撞和显示尺寸。
+tooltip.time_scale,Scales the speed of all battle time including movement and cooldowns.,缩放全部战斗时间的速度包括移动和冷却。
+tooltip.multiplier_example,At {value} all affected values are scaled proportionally.,在 {value} 下所有受影响的数值会按比例缩放。
+tooltip.starting_distance,Sets the distance between fighters at the start of the match.,设置比赛开始时两名角色之间的距离。
+tooltip.distance_range,This arena currently allows {rangeMin} to {rangeMax} arena units.,当前场地允许 {rangeMin} 至 {rangeMax} 场地单位。
+tooltip.projectile_multiplier,Scales every fighter's own projectile speed for this match.,缩放本局中每名角色自身的投射物速度。
+tooltip.launch_delay,Sets the time from starting the battle to launch.,设置开始战斗到角色出发之间的时间。
+tooltip.control_multiplier,Scales roots slows and other control-effect durations for this match.,缩放本局中禁锢、减速及其他控制效果的持续时间。
+tooltip.contact_stop,Sets how long fighters remain stopped after contact when Stop on Contact is selected.,设置选择接触停止时角色接触后保持停止的时长。
+tooltip.collision,Choose whether fighters bounce briefly stop or pass through one another on contact.,选择角色接触时反弹、短暂停止或相互穿过。
+tooltip.start,Begin the configured duel.,开始当前配置的对决。
+tooltip.back,Leave the battlefield and return to character selection.,离开战场并返回角色选择。
+tooltip.settings,Open or close match settings.,打开或关闭对战设置。
+tooltip.export,Download the current fighters and arena settings as a duel recipe.,将当前角色和场地设置下载为对决配置。
+tooltip.import,Load fighters and arena settings from a duel recipe file.,从对决配置文件加载角色和场地设置。
+tooltip.reset_all,Restore every fighter and arena setting to its defaults.,将全部角色和场地设置恢复为默认值。
+tooltip.reset_section,Restore this section to its saved character or arena defaults.,将此部分恢复为已保存的角色或场地默认值。
+tooltip.save_default,Save the current values as this character's reset defaults.,将当前数值保存为该角色的重置默认值。
+tooltip.theme,Choose the interface color theme.,选择界面颜色主题。
+tooltip.language,Choose the interface language.,选择界面语言。
+tooltip.category,Show characters in this category.,显示此类别中的角色。
+tooltip.character,Choose this character for the active side.,为当前选中的一方选择该角色。
+tooltip.side,Make this side the active side for character selection.,将该方设为当前角色选择方。
+tooltip.settings_tab,Show settings for this match section.,显示此对决部分的设置。
+tooltip.scroll_categories,Scroll the character-category list.,滚动角色类别列表。
+tooltip.health_state,Current health: {current} of {maximum} HP.,当前生命值：{current} / {maximum} 生命值。
+tooltip.cooldown_state,Attack cooldown: {elapsed} of {duration} seconds.,攻击冷却：{elapsed} / {duration} 秒。
+tooltip.cooldown_ready,Attack is ready.,攻击已就绪。
+tooltip.status,Current status: {status}.,当前状态：{status}。
+tooltip.element_marks,Elemental marks: {count}. They increase the matching final spell.,元素印记：{count} 层。它们会增强对应的终结技。
+tooltip.priest_marks,Priest marks: {count}. They slow the target and power Prayer.,牧师印记：{count} 层。它们会减速目标并强化祈祷。
 side.left,Left,左方
 side.right,Right,右方
 side.badge_left,L,左
@@ -116,6 +234,50 @@ battle.winner,{name} wins,{name} 获胜
 battle.draw,Draw,平局
 battle.rooted,Rooted {seconds}s,禁锢 {seconds}s
 battle.slowed,Slowed {seconds}s,减速 {seconds}s
+battle.burning,Burning {seconds}s,燃烧 {seconds}s
+battle.bleeding,Bleeding {seconds}s,流血 {seconds}s
+battle.praying,Praying {seconds}s,祈祷 {seconds} 秒
+battle.prayer_interrupted,Prayer interrupted {seconds}s,祈祷被打断 {seconds} 秒
+battle.priest_marks,Priest marks: {count},牧师印记：{count}
+battle.arcane_marks,Arcane Marks: {count},奥术印记：{count}
+battle.element_marks,{theme} marks: {count},{theme}印记：{count}
+battle.theme_ice,Ice,冰霜
+battle.theme_fire,Fire,火焰
+battle.theme_leech,Leech,汲取
+customization.mage_cycles,Mage Spell Cycles,法师法术循环
+customization.mage_ice,Ice Cycle,冰霜循环
+customization.mage_fire,Fire Cycle,火焰循环
+customization.mage_leech,Leech Cycle,汲取循环
+customization.mage_ice_normal,Ice Bolt,冰霜飞弹
+customization.mage_ice_theme,Frost Shard,霜寒碎片
+customization.mage_ice_final,Glacier Nova,冰川新星
+customization.mage_fire_normal,Fire Bolt,火焰飞弹
+customization.mage_fire_theme,Scorch,灼烧
+customization.mage_fire_final,Fireball,火球术
+customization.mage_leech_normal,Leech Bolt,汲取飞弹
+customization.mage_leech_theme,Blood Rend,血裂
+customization.mage_leech_final,Life Drain,生命汲取
+customization.damage,Damage,伤害
+customization.mage_mark_duration,Mark Duration,印记持续时间
+customization.mage_max_marks,Maximum Marks,最大印记层数
+customization.mage_damage_per_mark,Final Damage per Mark,每层印记终结伤害
+customization.mage_ice_slow,Ice Slow Factor,冰霜减速倍率
+customization.mage_ice_slow_duration,Ice Slow Duration,冰霜减速持续时间
+customization.mage_ice_freeze_base,Base Freeze Duration,基础冻结时间
+customization.mage_ice_freeze_per_mark,Freeze per Mark,每层印记冻结时间
+customization.mage_ice_burst_damage,Max Ice Burst Damage,满层冰爆伤害
+customization.mage_ice_burst_radius,Max Ice Burst Radius,满层冰爆范围
+customization.mage_fire_burn_damage,Burn Damage per Second,燃烧每秒伤害
+customization.mage_fire_burn_duration,Burn Duration,燃烧持续时间
+customization.mage_fire_explosion_radius,Fireball Explosion Radius,火球爆炸范围
+customization.mage_fire_max_burn_damage,Max Fire Burn per Second,满层火焰燃烧每秒伤害
+customization.mage_fire_max_burn_duration,Max Fire Burn Duration,满层火焰燃烧持续时间
+customization.mage_leech_bleed_damage,Bleed Damage per Second,流血每秒伤害
+customization.mage_leech_bleed_duration,Bleed Duration,流血持续时间
+customization.mage_leech_heal_base,Base Life Drain Heal,基础生命汲取治疗
+customization.mage_leech_heal_per_mark,Life Drain Heal per Mark,每层印记生命汲取治疗
+customization.mage_leech_max_bleed_damage,Max Leech Bleed per Second,满层汲取流血每秒伤害
+customization.mage_leech_max_bleed_duration,Max Leech Bleed Duration,满层汲取流血持续时间
 battle.cooldown_ready,Attack ready,攻击就绪
 battle.cooldown_progress,{elapsed} / {duration} seconds,{elapsed} / {duration} 秒
 transition.lowering,Lowering the selection panel…,选角横板下移中…

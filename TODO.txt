@@ -1,2 +1,0 @@
-Adding the functionality to export and import stats and properties so that people can share and recreate the duels. The format can be exported as json and imported and interpreted easily. The scripts associate with managing the import and export processes should be modular and ensure that it is decoupled.
-

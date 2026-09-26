@@ -11,6 +11,8 @@ button:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 4p
 
 button:disabled { cursor: default; }
 
+.floating-tooltip { position: fixed; z-index: 100; max-width: min(360px, calc(100vw - 20px)); padding: 8px 10px; border: 1px solid var(--color-tooltip-border); background: var(--color-tooltip-bg); color: var(--color-tooltip-text); box-shadow: 2px 3px 0 var(--color-tooltip-shadow); font-size: 11px; line-height: 1.45; pointer-events: none; }
+
 button:hover:not(:disabled) { outline: 1px solid var(--color-focus); outline-offset: -4px; }
 
 [hidden] { display: none !important; }

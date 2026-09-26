@@ -18,8 +18,24 @@ test('settings defaults activate character speed ratings without mutating charac
   const store = createMatchSettingsStore({ characters: CHARACTERS, storage: createStorage() });
   assert.equal(store.getFighter('left', 'warrior').movementSpeed, 220);
   assert.equal(store.getFighter('left', 'archer').movementSpeed, 132);
-  assert.deepEqual(store.getFighter('left', 'mage').attack, [1, 2, 3]);
+  assert.deepEqual(store.getFighter('left', 'mage').attack, [3, 2, 5]);
   assert.equal(CHARACTERS[0].stats.speed, 5);
+});
+
+test('legacy untouched mage defaults migrate to the Arcane Weave values', () => {
+  const storage = createStorage({
+    [MATCH_SETTINGS_STORAGE_KEY]: JSON.stringify({
+      version: 1,
+      fighters: {
+        left: { mage: { attack: [1, 2, 3], attackCD: [2, 2, 2] } },
+        right: { mage: { attack: [1, 2, 3], attackCD: [2, 2, 2] } }
+      },
+      arena: {}
+    })
+  });
+  const store = createMatchSettingsStore({ characters: CHARACTERS, storage });
+  assert.deepEqual(store.getFighter('left', 'mage').attack, [3, 2, 5]);
+  assert.deepEqual(store.getFighter('right', 'mage').attackCD, [1.6, 1.9, 2.5]);
 });
 
 test('fighter values are clamped and remain independent by side and character', () => {
@@ -27,22 +43,67 @@ test('fighter values are clamped and remain independent by side and character', 
   store.setFighterValue('left', 'warrior', 'health', 999);
   store.setFighterValue('left', 'mage', 'attack', 17, 1);
   store.setFighterValue('right', 'warrior', 'health', 40);
+  store.setFighterValue('left', 'archer', 'projectileSpeed', 9999);
+  store.setFighterValue('left', 'warrior', 'attackRange', 999);
   assert.equal(store.getFighter('left', 'warrior').health, 300);
   assert.equal(store.getFighter('right', 'warrior').health, 40);
-  assert.deepEqual(store.getFighter('left', 'mage').attack, [1, 17, 3]);
-  assert.deepEqual(store.getFighter('right', 'mage').attack, [1, 2, 3]);
+  assert.deepEqual(store.getFighter('left', 'mage').attack, [3, 17, 5]);
+  assert.deepEqual(store.getFighter('right', 'mage').attack, [3, 2, 5]);
+  assert.equal(store.getFighter('left', 'archer').projectileSpeed, 1200);
+  assert.equal(store.getFighter('left', 'warrior').attackRange, 300);
 });
 
-test('arena constraints, collision modes, and launch delay are normalized', () => {
+test('trait settings are configurable and a saved character default is reused on reset', () => {
+  const storage = createStorage();
+  const store = createMatchSettingsStore({ characters: CHARACTERS, storage });
+  store.setTraitValue('left', 'archer', 'every', 3);
+  store.setTraitValue('left', 'archer', 'rootDuration', 1.24);
+  store.setCharacterDefault('left', 'archer');
+  store.setTraitValue('left', 'archer', 'every', 8);
+  store.resetFighter('left', 'archer');
+  assert.equal(store.getFighter('left', 'archer').trait.every, 3);
+  assert.equal(store.getFighter('left', 'archer').trait.rootDuration, 1.2);
+
+  const restored = createMatchSettingsStore({ characters: CHARACTERS, storage });
+  restored.resetFighter('right', 'archer');
+  assert.equal(restored.getFighter('right', 'archer').trait.every, 3);
+});
+
+test('saved character defaults include mage ability settings', () => {
+  const store = createMatchSettingsStore({ characters: CHARACTERS, storage: createStorage() });
+  store.setMageAbilityValue('left', 'mage', 'effects.iceSlowDuration', 3.5);
+  store.setCharacterDefault('left', 'mage');
+  store.setMageAbilityValue('left', 'mage', 'effects.iceSlowDuration', 0.5);
+  store.resetFighter('left', 'mage');
+  assert.equal(store.getFighter('left', 'mage').abilities.effects.iceSlowDuration, 3.5);
+});
+
+test('Priest ability values clamp and are preserved in saved character defaults', () => {
+  const store = createMatchSettingsStore({ characters: CHARACTERS, storage: createStorage() });
+  store.setPriestAbilityValue('left', 'priest', 'prayerCooldown', 99);
+  store.setPriestAbilityValue('left', 'priest', 'decayFloor', 7);
+  store.setPriestAbilityValue('left', 'priest', 'markMoveSlowPerMark', 1);
+  store.setCharacterDefault('left', 'priest');
+  store.setPriestAbilityValue('left', 'priest', 'decayFloor', 0);
+  store.resetFighter('left', 'priest');
+  const abilities = store.getFighter('left', 'priest').abilities;
+  assert.equal(abilities.prayerCooldown, 20);
+  assert.equal(abilities.decayFloor, 7);
+  assert.equal(abilities.markMoveSlowPerMark, 0.25);
+});
+
+test('arena constraints, collision modes, launch delay, and contact stop duration are normalized', () => {
   const store = createMatchSettingsStore({ characters: CHARACTERS, storage: createStorage() });
   store.setArenaValue('size', 600);
   store.setArenaValue('fighterSize', 160);
   store.setArenaValue('startingDistance', 1000);
   store.setArenaValue('launchDelay', 3.5);
+  store.setArenaValue('contactStopDuration', 1.26);
   store.setArenaValue('collisionMode', 'pass');
   const arena = store.getArena();
   assert.equal(arena.startingDistance, 440);
   assert.equal(arena.launchDelay, 3500);
+  assert.equal(arena.contactStopDuration, 1.3);
   assert.equal(arena.collisionMode, 'pass');
   assert.throws(() => store.setArenaValue('collisionMode', 'merge'), /Unknown collision mode/);
 });

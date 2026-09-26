@@ -4,6 +4,7 @@ export const BATTLE_RULES = Object.freeze({
   speed: 220,
   startingDistance: 500,
   projectileSpeedScale: 1,
+  contactStopDuration: 0.5,
   controlDurationScale: 1,
   timeScale: 1,
   collisionMode: 'bounce',

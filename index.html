@@ -28,16 +28,16 @@
 <div class="bootstrap-status" id="bootstrap-status" role="status" data-i18n="bootstrap.loading">Loading language data… / 正在加载语言数据…</div>
 <div class="bootstrap-error" id="bootstrap-error" role="alert" hidden>
   <p data-i18n="bootstrap.error">Unable to load language data. / 无法加载语言数据。</p>
-  <button id="bootstrap-retry" data-i18n="action.retry">Retry / 重试</button>
+  <button id="bootstrap-retry" data-i18n="action.retry" data-i18n-tooltip="tooltip.retry">Retry / 重试</button>
 </div>
 <main class="page">
-  <header><h1 data-i18n="app.heading"></h1><div class="header-controls"><span data-i18n="app.tagline"></span><label class="preference-control"><span data-i18n="accessibility.theme"></span><select id="theme-select"></select></label><label class="preference-control"><span data-i18n="accessibility.language"></span><select id="language-select"></select></label></div></header>
+  <header><h1 data-i18n="app.heading"></h1><div class="header-controls"><span data-i18n="app.tagline"></span><label class="preference-control"><span data-i18n="accessibility.theme"></span><select id="theme-select" data-i18n-tooltip="tooltip.theme"></select></label><label class="preference-control"><span data-i18n="accessibility.language"></span><select id="language-select" data-i18n-tooltip="tooltip.language"></select></label></div></header>
   <section class="stage" id="stage" data-i18n-aria-label="accessibility.stage">
     <div class="arena-view" id="arena" inert aria-hidden="true">
-      <div class="arena-heading"><h2 data-i18n="arena.heading"></h2><button id="back" data-i18n="action.back"></button></div>
+    <div class="arena-heading"><h2 data-i18n="arena.heading"></h2><button id="back" data-i18n="action.back" data-i18n-tooltip="tooltip.back"></button></div>
       <div class="battlefield" id="battlefield" data-battle-phase="idle" data-i18n-aria-label="accessibility.battlefield">
         <span class="field-label" data-i18n="arena.field_label"></span>
-        <svg id="combat-effects" class="combat-effects" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true"><g id="weapon-effects"></g><g id="projectile-effects"></g></svg>
+        <svg id="combat-effects" class="combat-effects" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true"><g id="zone-effects"></g><g id="weapon-effects"></g><g id="projectile-effects"></g></svg>
         <div class="fighter left" id="fighter-left"></div>
         <span class="field-center" id="countdown" hidden></span>
         <div class="fighter right" id="fighter-right"></div>
@@ -46,7 +46,7 @@
     </div>
     <article class="panel left" id="panel-left" data-i18n-aria-label="accessibility.side_left"></article>
     <article class="panel right" id="panel-right" data-i18n-aria-label="accessibility.side_right"></article>
-    <div class="start-control" id="start-control"><button id="start" data-i18n-aria-label="action.start"><svg class="start-art" viewBox="0 0 300 150" aria-hidden="true" focusable="false">
+    <div class="start-control" id="start-control"><button id="start" data-i18n-aria-label="action.start" data-i18n-tooltip="tooltip.start"><svg class="start-art" viewBox="0 0 300 150" aria-hidden="true" focusable="false">
 <g class="start-art-surface" stroke-width="1.2"><path d="M150 7 218 75 150 143 82 75Z"/><path d="M150 14 211 75 150 136 89 75Z"/></g>
 <g fill="none" stroke="currentColor" stroke-width="1"><path d="m111 33-4 4 4 4m78-8 4 4-4 4m-78 68-4 4 4 4m78-8 4 4-4 4"/><path d="M42 34 7 75l35 41M258 34l35 41-35 41"/></g>
 <path class="start-art-surface" d="M44 38H256L291 75 256 112H44L9 75Z" stroke-width="1.5"/>
@@ -55,17 +55,17 @@
 <path class="start-art-highlight" d="m35 71 4 4-4 4-4-4Zm230 0 4 4-4 4-4-4Z"/>
 </svg><span data-i18n="action.start"></span></button></div>
     <section class="dock" id="dock" data-expanded="false" data-i18n-aria-label="accessibility.character_select">
-      <button class="settings-toggle" id="settings-toggle" type="button" aria-expanded="false" aria-controls="settings-panel" data-i18n-aria-label="customization.expand">
+      <button class="settings-toggle" id="settings-toggle" type="button" aria-expanded="false" aria-controls="settings-panel" data-i18n-aria-label="customization.expand" data-i18n-tooltip="tooltip.settings">
         <span aria-hidden="true">▲</span>
       </button>
       <section class="settings-panel" id="settings-panel" aria-hidden="true" inert data-i18n-aria-label="customization.heading">
         <header class="settings-toolbar">
           <div><span data-i18n="customization.eyebrow"></span><h2 data-i18n="customization.heading"></h2></div>
           <div class="settings-actions">
-            <button type="button" id="settings-export" data-i18n="customization.export"></button>
-            <button type="button" id="settings-import" data-i18n="customization.import"></button>
+            <button type="button" id="settings-export" data-i18n="customization.export" data-i18n-tooltip="tooltip.export"></button>
+            <button type="button" id="settings-import" data-i18n="customization.import" data-i18n-tooltip="tooltip.import"></button>
             <input id="settings-import-file" type="file" accept="application/json,.json" hidden>
-            <button type="button" id="settings-reset-all"></button>
+            <button type="button" id="settings-reset-all" data-i18n-tooltip="tooltip.reset_all"></button>
           </div>
         </header>
         <div class="settings-tabs" id="settings-tabs" role="tablist" data-i18n-aria-label="customization.tabs"></div>
@@ -73,9 +73,9 @@
       </section>
       <div class="dock-main">
         <aside class="category-rail" data-i18n-aria-label="accessibility.category_rail">
-          <button class="category-scroll" id="categories-up" data-i18n-aria-label="accessibility.categories_up" data-i18n-title="accessibility.categories_up">▲</button>
+          <button class="category-scroll" id="categories-up" data-i18n-aria-label="accessibility.categories_up" data-i18n-title="accessibility.categories_up" data-i18n-tooltip="tooltip.scroll_categories">▲</button>
           <nav class="categories" id="categories" data-i18n-aria-label="accessibility.character_types"></nav>
-          <button class="category-scroll" id="categories-down" data-i18n-aria-label="accessibility.categories_down" data-i18n-title="accessibility.categories_down">▼</button>
+          <button class="category-scroll" id="categories-down" data-i18n-aria-label="accessibility.categories_down" data-i18n-title="accessibility.categories_down" data-i18n-tooltip="tooltip.scroll_categories">▼</button>
         </aside>
         <div class="roster-area">
           <div class="roster-heading"><strong id="selection-label" data-i18n="selection.initial"></strong><span data-i18n="selection.hint"></span></div>

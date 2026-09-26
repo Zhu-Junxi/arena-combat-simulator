@@ -38,8 +38,20 @@ export const CHARACTERS = Object.freeze([
     stats: { attack: 5, attackCD: 2.5, speed: 3, health: 80 }
   },
   { id: 'guardian', nameKey: 'character.guardian.name', stats: { attack: 8, attackCD: 5, speed: 1.5, health: 100 } },
-  { id: 'mage', nameKey: 'character.mage.name', stats: { attack: [1, 2, 3], attackCD: [2, 2, 2], speed: 3, health: 80 } },
-  { id: 'priest', nameKey: 'character.priest.name', stats: { attack: 5, attackCD: 3, speed: 3, health: 50 } }
+  {
+    id: 'mage',
+    nameKey: 'character.mage.name',
+    trait: {
+      id: 'elemental-cycles', nameKey: 'trait.elemental_cycles.name', descriptionKey: 'trait.elemental_cycles.description'
+    },
+    stats: { attack: [3, 2, 5], attackCD: [1.6, 1.9, 2.5], speed: 3, health: 80 }
+  },
+  {
+    id: 'priest',
+    nameKey: 'character.priest.name',
+    trait: { id: 'prayer', nameKey: 'trait.prayer.name', descriptionKey: 'trait.prayer.description' },
+    stats: { attack: 5, attackCD: 3, speed: 3, health: 50 }
+  }
 ].map(withBaseKind));
 
 export const CHARACTER_BY_ID = Object.freeze(Object.fromEntries(CHARACTERS.map(character => [character.id, character])));

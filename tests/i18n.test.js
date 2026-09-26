@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 import { buildCatalog, parseCsv } from '../src/scripts/i18n/csv.js';
 import { createI18n, matchLocale, resolveLocale, STORAGE_KEY } from '../src/scripts/i18n/i18n.js';
+import { SETTING_PRESENTATIONS } from '../src/scripts/customization/setting-presentation.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const translations = await readFile(path.join(root, 'src/locales/translations.csv'), 'utf8');
@@ -71,6 +72,15 @@ test('production catalog has complete English and Chinese values', () => {
   for (const [key, entry] of catalog) {
     assert.ok(entry.en, `${key} is missing English`);
     assert.ok(entry['zh-CN'], `${key} is missing Simplified Chinese`);
+  }
+});
+
+test('every setting presentation reference is localized', () => {
+  const { catalog } = buildCatalog(translations);
+  for (const presentation of Object.values(SETTING_PRESENTATIONS)) {
+    for (const key of [presentation.unit, presentation.description, presentation.example]) {
+      if (key) assert.ok(catalog.has(key), `Missing setting presentation key ${key}`);
+    }
   }
 });
 

@@ -14,6 +14,7 @@ import { createGameState } from './state/game-state.js';
 import { createThemeController } from './theme/theme-controller.js';
 import { populateThemeSelector } from './theme/theme-view.js';
 import { requireElements } from './ui/dom.js';
+import { createFloatingTooltip } from './ui/floating-tooltip.js';
 import { createTransitions } from './ui/transitions.js';
 
 const bootstrapElements = requireElements(['bootstrap-error', 'bootstrap-retry', 'bootstrap-status']);
@@ -26,11 +27,12 @@ async function initialize() {
     'countdown', 'dock', 'fighter-left', 'fighter-right', 'language-select', 'panel-left', 'panel-right',
     'projectile-effects', 'roster', 'selection-label', 'settings-content', 'settings-export', 'settings-import', 'settings-import-file', 'settings-panel', 'settings-reset-all',
     'settings-tabs', 'settings-toggle', 'stage', 'start', 'start-control', 'status', 'theme-select', 'view-label',
-    'weapon-effects'
+    'weapon-effects', 'zone-effects'
   ]);
 
   const theme = createThemeController();
   localizeDocument(i18n);
+  createFloatingTooltip();
   populateLanguageSelector(elements['language-select'], i18n);
   populateThemeSelector(elements['theme-select'], theme, i18n);
 

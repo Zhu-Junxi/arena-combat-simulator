@@ -44,16 +44,30 @@ export function weaponMarkup(weapon, empowered = false) {
     '<circle class="release-ring" cx="' + weapon.muzzle + '" cy="0" r="3" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0"/>';
 }
 
-export function projectileMarkup(fighter, mode, empowered = false) {
+export function projectileMarkup(fighter, mode, empowered = false, spell = '') {
   if (fighter.weapon.art === 'bow') return (empowered ? vineTrailMarkup() : '') + arrowSpriteMarkup(-46, 56);
   if (fighter.weapon.art === 'staff') {
-    return [
-      '<circle r="9" fill="var(--color-effect-fill)" stroke="currentColor" stroke-width="3"/>',
-      '<path d="M-10 0 0 -10 10 0 0 10Z" fill="var(--color-effect-fill)" stroke="currentColor" stroke-width="3"/>',
-      '<path d="M11 0 -8 -10 -8 10Z" fill="var(--color-effect-fill)" stroke="currentColor" stroke-width="3"/>'
-    ][mode % 3];
+    const theme = spell.split('-')[0] || 'ice';
+    const slot = spell.split('-').at(-1);
+    const shape = slot === 'final' ? '<path d="M11 0 -8 -10 -8 10Z"/>' : slot === 'theme' ? '<path d="M-10 0 0 -10 10 0 0 10Z"/>' : '<circle r="9"/>';
+    return `<g class="mage-projectile mage-${theme} mage-${slot}">${shape}</g>`;
   }
+  if (spell === 'priest-mark') return '<g class="priest-projectile"><circle r="15" opacity=".24"/><circle r="10" fill="none" stroke-width="3"/><path d="M0-8V8M-5 0H5" fill="none" stroke-width="3" stroke-linecap="round"/></g>';
   return '<path d="M-9 -3H-3V-9H3V-3H9V3H3V9H-3V3H-9Z" fill="var(--color-effect-fill)" stroke="currentColor" stroke-width="2"/>';
+}
+
+export function prayerMarkup() {
+  return '<g class="prayer-burst"><circle r="18" fill="none" stroke-width="3"/><path d="M0-12V12M-6 0H6" stroke-width="2"/></g>';
+}
+
+export function frostRuneMarkup(radius) {
+  return `<circle class="frost-rune-ring" r="${radius}" fill="none" stroke="currentColor" stroke-width="3"/>` +
+    `<circle class="frost-rune-core" r="${Math.max(12, radius * 0.18)}" fill="none" stroke="currentColor" stroke-width="2"/>` +
+    '<path class="frost-rune-glyph" d="M-18 0H18M0-18V18M-13-13 13 13M13-13-13 13" fill="none" stroke="currentColor" stroke-width="1.5"/>';
+}
+
+export function explosionMarkup(radius, theme) {
+  return `<g class="mage-explosion mage-${theme}"><circle r="${radius}" fill="none" stroke="currentColor" stroke-width="4"/><circle r="${Math.max(8, radius * 0.35)}" fill="currentColor" opacity=".35"/></g>`;
 }
 
 export function updateWeaponVisual(element, fighter, elapsed) {

@@ -33,16 +33,29 @@ test('duel recipes round trip selected fighters, multi-mode stats, and arena val
   assert.equal(recipe.format, DUEL_SHARE_FORMAT);
   assert.equal(recipe.version, DUEL_SHARE_VERSION);
   assert.equal(recipe.fighters.left.characterId, 'mage');
-  assert.deepEqual(recipe.fighters.left.stats.attack, [1, 17, 3]);
+  assert.deepEqual(recipe.fighters.left.stats.attack, [3, 17, 5]);
+  assert.equal(recipe.fighters.right.stats.trait.every, 4);
   assert.equal(recipe.arena.launchDelay, 3.5);
+  assert.equal(recipe.arena.contactStopDuration, 0.5);
   const parsed = parseDuelRecipe(stringifyDuelRecipe(recipe), { characters: CHARACTERS });
   assert.deepEqual(parsed, { fighters: recipe.fighters, arena: recipe.arena });
+});
+
+test('duel recipes preserve Priest ability settings', () => {
+  const settings = createMatchSettingsStore({ characters: CHARACTERS, storage: createStorage() });
+  settings.setPriestAbilityValue('left', 'priest', 'decayAmount', 4);
+  settings.setPriestAbilityValue('left', 'priest', 'prayerCooldown', 8.5);
+  const selectedCharacters = { left: CHARACTER_BY_ID.priest, right: CHARACTER_BY_ID.archer };
+  const recipe = createDuelRecipe({ selectedCharacters, setup: settings.snapshot(selectedCharacters) });
+  const parsed = parseDuelRecipe(stringifyDuelRecipe(recipe), { characters: CHARACTERS });
+  assert.equal(parsed.fighters.left.stats.abilities.decayAmount, 4);
+  assert.equal(parsed.fighters.left.stats.abilities.prayerCooldown, 8.5);
 });
 
 test('duel recipe parsing rejects bad files without applying a partial import', () => {
   const recipe = createRecipe();
   assert.throws(() => parseDuelRecipe('{bad', { characters: CHARACTERS }), /valid JSON/);
-  assert.throws(() => parseDuelRecipe(JSON.stringify({ ...recipe, version: 2 }), { characters: CHARACTERS }), /version/);
+  assert.throws(() => parseDuelRecipe(JSON.stringify({ ...recipe, version: 99 }), { characters: CHARACTERS }), /version/);
   const unavailable = structuredClone(recipe);
   unavailable.fighters.left.characterId = 'missing';
   assert.throws(() => parseDuelRecipe(JSON.stringify(unavailable), { characters: CHARACTERS }), /unavailable/);
@@ -64,7 +77,7 @@ test('applying a parsed duel is atomic, persists it, and retains unrelated prese
   store.applyDuel(parsed);
   const snapshot = store.snapshot({ left: CHARACTER_BY_ID.mage, right: CHARACTER_BY_ID.archer });
   assert.equal(snapshot.fighters.left.health, 135);
-  assert.deepEqual(snapshot.fighters.left.attack, [1, 17, 3]);
+  assert.deepEqual(snapshot.fighters.left.attack, [3, 17, 5]);
   assert.equal(snapshot.fighters.right.movementSpeed, 180);
   assert.equal(snapshot.arena.launchDelay, 3500);
   assert.equal(store.getFighter('left', 'warrior').health, 225);

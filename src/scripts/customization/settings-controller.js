@@ -1,3 +1,5 @@
+import { fromDisplayValue, presentationFor } from './setting-presentation.js';
+
 export function createSettingsController({ state, settings, view, elements, panels, onSettingsChange = () => {}, onActiveSideChange = () => {} }) {
   let expanded = false;
 
@@ -34,14 +36,24 @@ export function createSettingsController({ state, settings, view, elements, pane
     if (input.value === '') return;
     const { settingScope: scope, settingKey: key } = input.dataset;
     const mode = input.dataset.settingMode == null ? null : Number(input.dataset.settingMode);
-    if (scope === 'arena') {
-      const arena = settings.setArenaValue(key, key === 'collisionMode' ? input.value : Number(input.value));
+    const value = fromDisplayValue(input.value, presentationFor(input.dataset.settingPresentation));
+    if (key === 'priest') {
+      settings.setPriestAbilityValue(scope, state[scope].id, input.dataset.magePath, value);
+      view.renderContent();
+    } else if (key === 'trait') {
+      settings.setTraitValue(scope, state[scope].id, input.dataset.magePath, value);
+      view.renderContent();
+    } else if (input.dataset.magePath) {
+      settings.setMageAbilityValue(scope, state[scope].id, input.dataset.magePath, value);
+      view.renderContent();
+    } else if (scope === 'arena') {
+      const arena = settings.setArenaValue(key, key === 'collisionMode' ? input.value : value);
       const value = key === 'launchDelay' ? arena[key] / 1000 : arena[key];
       view.syncControl(scope, key, mode, value);
       if (key === 'size' || key === 'fighterSize') view.syncArenaConstraints();
     } else {
       const character = state[scope];
-      const fighter = settings.setFighterValue(scope, character.id, key, Number(input.value), mode ?? 0);
+      const fighter = settings.setFighterValue(scope, character.id, key, value, mode ?? 0);
       view.syncControl(scope, key, mode, mode == null ? fighter[key] : fighter[key][mode]);
     }
     onSettingsChange(scope);
@@ -70,6 +82,14 @@ export function createSettingsController({ state, settings, view, elements, pane
       if (event.target.matches('select[data-setting-key]')) updateSetting(event.target);
     });
     elements['settings-content'].addEventListener('click', event => {
+      const saveDefault = event.target.closest('[data-set-character-default]');
+      if (saveDefault) {
+        const side = saveDefault.dataset.setCharacterDefault;
+        settings.setCharacterDefault(side, state[side].id);
+        view.renderContent();
+        onSettingsChange(side);
+        return;
+      }
       const reset = event.target.closest('[data-reset-scope]');
       if (!reset) return;
       const scope = reset.dataset.resetScope;
