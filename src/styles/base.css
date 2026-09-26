@@ -23,7 +23,7 @@ body[data-i18n-ready="false"] .page { visibility: hidden; }
 
 .bootstrap-error button { justify-self: center; padding: 8px 14px; }
 
-.cooldown-bar { height: 4px; }
+.fighter-meter.cooldown-bar { height: 4px; }
 
 /* 依照 01 黑白极简草稿重建比例与线稿。所有装饰均可随石板移动。 */
 *, *::before, *::after { box-sizing: border-box; }
