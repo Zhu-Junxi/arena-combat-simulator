@@ -76,10 +76,16 @@ export function createSettingsController({ state, settings, view, elements, pane
       selectTab(tabs[next].dataset.settingsTab, { focus: true });
     });
     elements['settings-content'].addEventListener('input', event => {
-      if (event.target.matches('input[data-setting-key]')) updateSetting(event.target);
+      if (event.target.matches('input[type="range"][data-setting-key]')) updateSetting(event.target);
     });
     elements['settings-content'].addEventListener('change', event => {
-      if (event.target.matches('select[data-setting-key]')) updateSetting(event.target);
+      if (event.target.matches('input[type="number"][data-setting-key], select[data-setting-key]')) updateSetting(event.target);
+    });
+    elements['settings-content'].addEventListener('keydown', event => {
+      if (event.key === 'Enter' && event.target.matches('input[type="number"][data-setting-key]')) {
+        event.preventDefault();
+        event.target.blur();
+      }
     });
     elements['settings-content'].addEventListener('click', event => {
       const expand = event.target.closest('[data-expand-slider]');
@@ -122,6 +128,7 @@ export function createSettingsController({ state, settings, view, elements, pane
       onSettingsChange('all');
     });
     document.addEventListener('keydown', event => {
+      if (event.target.matches?.('input, textarea, select')) return;
       if (event.key === 'Escape' && expanded) {
         event.preventDefault();
         setExpanded(false, { restoreFocus: true });
