@@ -62,7 +62,7 @@ test('trait settings are configurable and a saved character default is reused on
   store.setTraitValue('left', 'archer', 'every', 8);
   store.resetFighter('left', 'archer');
   assert.equal(store.getFighter('left', 'archer').trait.every, 3);
-  assert.equal(store.getFighter('left', 'archer').trait.rootDuration, 1.2);
+  assert.equal(store.getFighter('left', 'archer').trait.rootDuration, 1.24);
 
   const restored = createMatchSettingsStore({ characters: CHARACTERS, storage });
   restored.resetFighter('right', 'archer');
@@ -103,9 +103,23 @@ test('arena constraints, collision modes, launch delay, and contact stop duratio
   const arena = store.getArena();
   assert.equal(arena.startingDistance, 440);
   assert.equal(arena.launchDelay, 3500);
-  assert.equal(arena.contactStopDuration, 1.3);
+  assert.equal(arena.contactStopDuration, 1.26);
   assert.equal(arena.collisionMode, 'pass');
   assert.throws(() => store.setArenaValue('collisionMode', 'merge'), /Unknown collision mode/);
+});
+
+test('advanced tuning preserves finite out-of-range values and clamps them on exit', () => {
+  const store = createMatchSettingsStore({ characters: CHARACTERS, storage: createStorage() });
+  store.setAdvanced(true);
+  store.setFighterValue('left', 'warrior', 'attack', 123.4);
+  store.setArenaValue('size', 2400);
+  assert.equal(store.getAdvanced(), true);
+  assert.equal(store.getFighter('left', 'warrior').attack[0], 123.4);
+  assert.equal(store.getArena().size, 2400);
+  store.setAdvanced(false);
+  assert.equal(store.getAdvanced(), false);
+  assert.equal(store.getFighter('left', 'warrior').attack[0], 50);
+  assert.equal(store.getArena().size, 1600);
 });
 
 test('settings persist, hydrate, reject malformed values, notify, and reset', () => {

@@ -82,6 +82,19 @@ export function createSettingsController({ state, settings, view, elements, pane
       if (event.target.matches('select[data-setting-key]')) updateSetting(event.target);
     });
     elements['settings-content'].addEventListener('click', event => {
+      const expand = event.target.closest('[data-expand-slider]');
+      if (expand) {
+        view.expandSlider(expand.dataset.expandSlider);
+        return;
+      }
+      const adjust = event.target.closest('[data-adjust]');
+      if (adjust) {
+        const input = adjust.closest('.setting-row')?.querySelector('input[type="number"][data-setting-key]');
+        if (!input) return;
+        input.value = String(Number(input.value) + Number(adjust.dataset.adjust) * Number(input.step));
+        updateSetting(input);
+        return;
+      }
       const saveDefault = event.target.closest('[data-set-character-default]');
       if (saveDefault) {
         const side = saveDefault.dataset.setCharacterDefault;
@@ -101,6 +114,11 @@ export function createSettingsController({ state, settings, view, elements, pane
     elements['settings-reset-all'].addEventListener('click', () => {
       settings.resetAll();
       view.renderContent();
+      onSettingsChange('all');
+    });
+    elements['advanced-tuning'].addEventListener('change', event => {
+      settings.setAdvanced(event.target.checked);
+      view.render();
       onSettingsChange('all');
     });
     document.addEventListener('keydown', event => {

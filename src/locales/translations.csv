@@ -33,6 +33,7 @@ customization.reset_tab,Reset Section,重置此项
 customization.reset_all,Reset All,全部重置
 customization.export,Export Duel,导出对决
 customization.import,Import Duel,导入对决
+customization.advanced_tuning,Advanced Tuning,高级调节
 customization.export_success,Duel recipe exported.,对决配置已导出。
 customization.import_success,Duel recipe imported.,对决配置已导入。
 customization.import_error,Unable to import that duel recipe.,无法导入该对决配置。
@@ -187,6 +188,10 @@ tooltip.collision,Choose whether fighters bounce briefly stop or pass through on
 tooltip.start,Begin the configured duel.,开始当前配置的对决。
 tooltip.back,Leave the battlefield and return to character selection.,离开战场并返回角色选择。
 tooltip.settings,Open or close match settings.,打开或关闭对战设置。
+tooltip.advanced_tuning,Allow any finite value. Turning this off clamps values back to standard limits.,允许任意有限数值。关闭后会将数值限制回标准范围。
+tooltip.adjust_down,Decrease by one fine step.,减少一个精细步长。
+tooltip.adjust_up,Increase by one fine step.,增加一个精细步长。
+tooltip.expand_slider,Double this slider's active range around the current value.,将此滑块围绕当前数值的活动范围扩大一倍。
 tooltip.export,Download the current fighters and arena settings as a duel recipe.,将当前角色和场地设置下载为对决配置。
 tooltip.import,Load fighters and arena settings from a duel recipe file.,从对决配置文件加载角色和场地设置。
 tooltip.reset_all,Restore every fighter and arena setting to its defaults.,将全部角色和场地设置恢复为默认值。

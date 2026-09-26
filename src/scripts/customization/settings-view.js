@@ -5,12 +5,25 @@ const SIDES = Object.freeze(['left', 'right']);
 
 export function createSettingsView({ state, settings, elements, i18n }) {
   let activeTab = 'left';
+  const sliderExpansions = new Map();
   const t = (key, parameters) => i18n.t(key, parameters);
+
+  function sliderBounds(id, control, value, presentation) {
+    const displayed = toDisplayValue(value, presentation);
+    const standard = displayControl(control, presentation);
+    if (!settings.getAdvanced()) return standard;
+    const expansion = sliderExpansions.get(id) ?? 0;
+    if (!expansion && displayed >= standard.min && displayed <= standard.max) return standard;
+    const width = Math.max((standard.max - standard.min) * 2 ** expansion, Math.abs(displayed) * 0.2);
+    return { min: displayed - width / 2, max: displayed + width / 2, step: standard.step };
+  }
 
   function valueControl({ id, label, value, min, max, step, scope, key, mode, magePath = '', presentationKey = magePath || key, distanceRange = null }) {
     const presentation = presentationFor(presentationKey);
     const displayed = toDisplayValue(value, presentation);
-    const displayedControl = displayControl({ min, max, step }, presentation);
+    const control = { min, max, step };
+    const displayedControl = sliderBounds(id, control, value, presentation);
+    const advanced = settings.getAdvanced();
     const tooltip = settingTooltip({ key: presentationKey, label, value, control: { min, max, step }, t, distanceRange });
     const attributes = `data-setting-scope="${scope}" data-setting-key="${key}"` +
       (mode == null ? '' : ` data-setting-mode="${mode}"`) + (magePath ? ` data-mage-path="${magePath}"` : '') +
@@ -18,9 +31,9 @@ export function createSettingsView({ state, settings, elements, i18n }) {
       ` data-setting-min="${min}" data-setting-max="${max}" data-setting-step="${step}"` +
       (distanceRange ? ` data-setting-distance-min="${distanceRange.min}" data-setting-distance-max="${distanceRange.max}"` : '');
     return `<div class="setting-row" data-setting-row="${id}"><div class="setting-label"><label for="${id}-range">${label}</label>` +
-      `<span>${presentation.unit ? t(presentation.unit) : ''}</span><button class="setting-help" type="button" data-tooltip="${tooltip}" aria-label="${t('tooltip.help_for', { label })}">?</button></div>` +
+      `<span>${presentation.unit ? t(presentation.unit) : ''}</span>${advanced ? `<button class="slider-expand" type="button" data-expand-slider="${id}" data-tooltip="${t('tooltip.expand_slider')}" aria-label="${t('tooltip.expand_slider')}">↔</button>` : ''}<button class="setting-help" type="button" data-tooltip="${tooltip}" aria-label="${t('tooltip.help_for', { label })}">?</button></div>` +
       `<div class="setting-inputs"><input id="${id}-range" type="range" min="${displayedControl.min}" max="${displayedControl.max}" step="${displayedControl.step}" value="${displayed}" ${attributes}>` +
-      `<input id="${id}-number" type="number" min="${displayedControl.min}" max="${displayedControl.max}" step="${displayedControl.step}" value="${displayed}" ${attributes} aria-label="${label}" data-tooltip="${tooltip}"></div></div>`;
+      `<button class="setting-adjust" type="button" data-adjust="-1" data-tooltip="${t('tooltip.adjust_down')}" aria-label="${t('tooltip.adjust_down')}">−</button><input id="${id}-number" type="number" ${advanced ? '' : `min="${displayedControl.min}" max="${displayedControl.max}"`} step="${displayedControl.step}" value="${displayed}" ${attributes} aria-label="${label}" data-tooltip="${tooltip}"><button class="setting-adjust" type="button" data-adjust="1" data-tooltip="${t('tooltip.adjust_up')}" aria-label="${t('tooltip.adjust_up')}">+</button></div></div>`;
   }
 
   function renderFighter(side) {
@@ -143,6 +156,7 @@ export function createSettingsView({ state, settings, elements, i18n }) {
     renderTabs();
     renderContent();
     elements['settings-reset-all'].textContent = t('customization.reset_all');
+    elements['advanced-tuning'].checked = settings.getAdvanced();
   }
 
   function setActiveTab(tab, { focus = false } = {}) {
@@ -155,7 +169,20 @@ export function createSettingsView({ state, settings, elements, i18n }) {
   function syncControl(scope, key, mode, value) {
     const selector = `[data-setting-scope="${scope}"][data-setting-key="${key}"]` +
       (mode == null ? ':not([data-setting-mode])' : `[data-setting-mode="${mode}"]`);
-    elements['settings-content'].querySelectorAll(selector).forEach(input => {
+    const inputs = [...elements['settings-content'].querySelectorAll(selector)];
+    if (settings.getAdvanced() && inputs.length) {
+      const input = inputs[0];
+      const row = input.closest('.setting-row');
+      const presentation = presentationFor(input.dataset.settingPresentation);
+      const bounds = sliderBounds(row.dataset.settingRow, {
+        min: Number(input.dataset.settingMin), max: Number(input.dataset.settingMax), step: Number(input.dataset.settingStep)
+      }, value, presentation);
+      const slider = row.querySelector('input[type="range"]');
+      slider.min = bounds.min;
+      slider.max = bounds.max;
+      slider.step = bounds.step;
+    }
+    inputs.forEach(input => {
       const presentation = presentationFor(input.dataset.settingPresentation);
       input.value = toDisplayValue(value, presentation);
       const tooltip = settingTooltip({
@@ -172,6 +199,7 @@ export function createSettingsView({ state, settings, elements, i18n }) {
   }
 
   function syncArenaConstraints() {
+    if (settings.getAdvanced()) return;
     if (activeTab !== 'arena') return;
     const arena = settings.getArena();
     const minimum = Math.max(ARENA_CONTROLS.startingDistance.min, arena.fighterSize);
@@ -201,6 +229,10 @@ export function createSettingsView({ state, settings, elements, i18n }) {
     setActiveTab,
     getActiveTab: () => activeTab,
     syncControl,
-    syncArenaConstraints
+    syncArenaConstraints,
+    expandSlider(id) {
+      sliderExpansions.set(id, (sliderExpansions.get(id) ?? 0) + 1);
+      renderContent();
+    }
   });
 }

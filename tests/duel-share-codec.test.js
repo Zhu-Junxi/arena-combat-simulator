@@ -38,7 +38,7 @@ test('duel recipes round trip selected fighters, multi-mode stats, and arena val
   assert.equal(recipe.arena.launchDelay, 3.5);
   assert.equal(recipe.arena.contactStopDuration, 0.5);
   const parsed = parseDuelRecipe(stringifyDuelRecipe(recipe), { characters: CHARACTERS });
-  assert.deepEqual(parsed, { fighters: recipe.fighters, arena: recipe.arena });
+  assert.deepEqual(parsed, { advanced: false, fighters: recipe.fighters, arena: recipe.arena });
 });
 
 test('duel recipes preserve Priest ability settings', () => {
@@ -50,6 +50,18 @@ test('duel recipes preserve Priest ability settings', () => {
   const parsed = parseDuelRecipe(stringifyDuelRecipe(recipe), { characters: CHARACTERS });
   assert.equal(parsed.fighters.left.stats.abilities.decayAmount, 4);
   assert.equal(parsed.fighters.left.stats.abilities.prayerCooldown, 8.5);
+});
+
+test('advanced duel recipes round trip finite out-of-range values', () => {
+  const store = createMatchSettingsStore({ characters: CHARACTERS, storage: createStorage() });
+  store.setAdvanced(true);
+  store.setFighterValue('left', 'mage', 'attack', 77.7, 0);
+  const selectedCharacters = { left: CHARACTER_BY_ID.mage, right: CHARACTER_BY_ID.archer };
+  const recipe = createDuelRecipe({ selectedCharacters, setup: store.snapshot(selectedCharacters) });
+  const parsed = parseDuelRecipe(stringifyDuelRecipe(recipe), { characters: CHARACTERS });
+  assert.equal(recipe.advanced, true);
+  assert.equal(parsed.advanced, true);
+  assert.equal(parsed.fighters.left.stats.attack[0], 77.7);
 });
 
 test('duel recipe parsing rejects bad files without applying a partial import', () => {

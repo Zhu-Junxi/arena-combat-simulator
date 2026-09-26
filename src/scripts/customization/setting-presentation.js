@@ -76,7 +76,7 @@ export function displayControl(control, presentation = {}) {
 
 export function formatValue(value, presentation, t) {
   const shown = toDisplayValue(value, presentation);
-  const number = Number.isInteger(shown) ? String(shown) : String(Number(shown.toFixed(2)));
+  const number = Number.isInteger(shown) ? String(shown) : String(Number(shown.toFixed(3)));
   const unit = presentation.unit ? t(presentation.unit) : '';
   return presentation.display === DISPLAY_MULTIPLIER ? `${number}×` : `${number}${unit ? ` ${unit}` : ''}`;
 }
@@ -92,10 +92,10 @@ export function settingTooltip({ key, label, value, control, t, distanceRange = 
     value: current,
     minimum,
     maximum,
-    remaining: Math.round(toDisplayValue(value, presentation)),
+    remaining: Number(toDisplayValue(value, presentation).toFixed(2)),
     reduction: Math.round((1 - value) * 100),
-    threeMarks: Math.min(90, Math.round(toDisplayValue(value, presentation) * 3)),
-    total: Number((value * 3).toFixed(2)),
+    threeMarks: Number(Math.min(90, toDisplayValue(value, presentation) * 3).toFixed(2)),
+    total: Number((value * 3).toFixed(3)),
     rangeMin: distanceRange?.min ?? display.min,
     rangeMax: distanceRange?.max ?? display.max
   });
