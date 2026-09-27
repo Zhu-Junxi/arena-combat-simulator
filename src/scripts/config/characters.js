@@ -6,7 +6,7 @@ const deepFreeze = value => {
   return value;
 };
 
-const withBaseKind = character => deepFreeze({ ...character, category: 'base' });
+const withBaseKind = character => deepFreeze({ ...character, category: character.category ?? 'base' });
 
 export const CHARACTER_KINDS = Object.freeze(['melee', 'ranged', 'special', 'defense', 'healing', 'summon', 'control', 'mobility']);
 export const CHARACTER_CATEGORIES = Object.freeze(['base', ...CHARACTER_KINDS]);
@@ -51,6 +51,19 @@ export const CHARACTERS = Object.freeze([
     nameKey: 'character.priest.name',
     trait: { id: 'prayer', nameKey: 'trait.prayer.name', descriptionKey: 'trait.prayer.description' },
     stats: { attack: 5, attackCD: 3, speed: 3, health: 50 }
+  },
+  {
+    id: 'beastmaster', category: 'summon', nameKey: 'character.beastmaster.name',
+    trait: { id: 'beastmaster', nameKey: 'trait.beastmaster.name', descriptionKey: 'trait.beastmaster.description' },
+    stats: { attack: 3, attackCD: 1.6, speed: 3, health: 75 }
+  },
+  {
+    id: 'necromancer', category: 'summon', locked: true, nameKey: 'character.necromancer.name', roleKey: 'character.necromancer.role',
+    stats: { attack: 0, attackCD: 1, speed: 0, health: 0 }
+  },
+  {
+    id: 'artificer', category: 'summon', locked: true, nameKey: 'character.artificer.name', roleKey: 'character.artificer.role',
+    stats: { attack: 0, attackCD: 1, speed: 0, health: 0 }
   }
 ].map(withBaseKind));
 

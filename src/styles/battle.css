@@ -16,6 +16,15 @@
 
 .fighter.right { right: 14%; }
 
+.summon { position: absolute; z-index: 1; transform: translate(-50%, -50%); pointer-events: none; display: grid; place-items: center; }
+.summon-companion { width: 42px; height: 42px; border: 1px solid var(--color-border); border-radius: 50%; background: var(--color-surface); }
+.summon-companion[data-state="lunging"] { filter: brightness(1.25); }
+.summon-pack-wolf { z-index: 3; width: 34px; height: 34px; border: 1px solid var(--color-border); border-radius: 50%; background: var(--color-selected-bg); animation: summon-charge-pulse .22s ease-in-out infinite alternate; }
+.summon-glyph { font-size: 21px; line-height: 1; }
+.summon-meter { position: absolute; left: 3px; right: 3px; bottom: -6px; height: 4px; border: 1px solid var(--color-border); background: var(--color-meter-track); overflow: hidden; }
+.summon-meter span { display: block; width: 100%; height: 100%; transform-origin: left; background: var(--color-selected-bg); }
+@keyframes summon-charge-pulse { from { opacity: .65; } to { opacity: 1; } }
+
 .field-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 16px; }
 
 .arena-note { font-size: 12px; margin: 0; }
@@ -72,6 +81,7 @@
 .control-label { position: absolute; top: calc(100% + 3px); left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 9px; line-height: 1.3; padding: 1px 3px; border: 1px solid var(--color-control-border); background: var(--color-control-bg); color: var(--color-control-text); z-index: 4; pointer-events: none; }
 
 .arcane-marks { position: absolute; top: -13px; right: -5px; min-width: 15px; padding: 1px 3px; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-effect); font-size: 9px; line-height: 1.1; z-index: 4; }
+.summon-command { position: absolute; top: -13px; left: -8px; padding: 1px 3px; border: 1px solid var(--color-border); background: var(--color-surface); font-size: 9px; line-height: 1.1; z-index: 4; white-space: nowrap; }
 .arcane-marks [data-theme="ice"], .mage-ice { color: #55b9ff; fill: #55b9ff; stroke: #d7f2ff; }
 .arcane-marks [data-theme="fire"], .mage-fire { color: #ff654b; fill: #ff654b; stroke: #ffe0ae; }
 .arcane-marks [data-theme="leech"], .mage-leech { color: #5dcf75; fill: #5dcf75; stroke: #dcffe1; }

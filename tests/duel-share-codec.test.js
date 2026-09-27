@@ -52,6 +52,17 @@ test('duel recipes preserve Priest ability settings', () => {
   assert.equal(parsed.fighters.left.stats.abilities.prayerCooldown, 8.5);
 });
 
+test('duel recipes preserve Beastmaster summon settings', () => {
+  const settings = createMatchSettingsStore({ characters: CHARACTERS, storage: createStorage() });
+  settings.setSummonAbilityValue('left', 'beastmaster', 'packSize', 5);
+  settings.setSummonAbilityValue('left', 'beastmaster', 'respawnDelay', 6.5);
+  const selectedCharacters = { left: CHARACTER_BY_ID.beastmaster, right: CHARACTER_BY_ID.archer };
+  const recipe = createDuelRecipe({ selectedCharacters, setup: settings.snapshot(selectedCharacters) });
+  const parsed = parseDuelRecipe(stringifyDuelRecipe(recipe), { characters: CHARACTERS });
+  assert.equal(parsed.fighters.left.stats.abilities.packSize, 5);
+  assert.equal(parsed.fighters.left.stats.abilities.respawnDelay, 6.5);
+});
+
 test('advanced duel recipes round trip finite out-of-range values', () => {
   const store = createMatchSettingsStore({ characters: CHARACTERS, storage: createStorage() });
   store.setAdvanced(true);
@@ -77,6 +88,9 @@ test('duel recipe parsing rejects bad files without applying a partial import', 
   const outOfRange = structuredClone(recipe);
   outOfRange.arena.timeScale = 9;
   assert.throws(() => parseDuelRecipe(JSON.stringify(outOfRange), { characters: CHARACTERS }), /timeScale/);
+  const locked = structuredClone(recipe);
+  locked.fighters.left.characterId = 'necromancer';
+  assert.throws(() => parseDuelRecipe(JSON.stringify(locked), { characters: CHARACTERS }), /unavailable/);
 });
 
 test('applying a parsed duel is atomic, persists it, and retains unrelated presets', () => {

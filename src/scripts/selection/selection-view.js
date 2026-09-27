@@ -83,10 +83,11 @@ export function createSelectionView({ state, characters, categories, elements, i
   function renderRoster() {
     elements.roster.innerHTML = visibleCharacters().map(character => {
       const name = characterName(character);
-      return `<button class="character" data-character="${character.id}" aria-label="${t('selection.character_aria', { name })}" aria-pressed="false" data-tooltip="${t('tooltip.character')}">` +
+      const locked = Boolean(character.locked);
+      return `<button class="character${locked ? ' locked' : ''}"${locked ? ' disabled' : ` data-character="${character.id}"`} aria-label="${locked ? t('selection.coming_soon', { name }) : t('selection.character_aria', { name })}" aria-pressed="false" data-tooltip="${locked ? t('tooltip.coming_soon') : t('tooltip.character')}">` +
         `<span class="mini-avatar${character.art ? ' has-art' : ''}">` +
         (character.art ? `<img class="avatar-image" src="${character.art.avatar}" alt="" draggable="false">` : t('character.placeholder.avatar')) +
-        `</span><span class="name">${name}</span><span class="badge" hidden></span></button>`;
+        `</span><span class="name">${name}</span>${locked ? `<small class="coming-soon">${t(character.roleKey)} · ${t('selection.coming_soon_short')}</small>` : '<span class="badge" hidden></span>'}</button>`;
     }).join('');
     elements.roster.scrollTop = 0;
     syncSelection();

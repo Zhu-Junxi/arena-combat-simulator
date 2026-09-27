@@ -1,5 +1,20 @@
 import { fromDisplayValue, presentationFor } from './setting-presentation.js';
 
+export const ADJUSTMENT_STEPS = Object.freeze([0.001, 0.01, 0.1, 1, 5, 10]);
+
+function decimalPlaces(value) {
+  const text = String(value);
+  if (text.includes('e-')) return Number(text.split('e-')[1]);
+  return text.split('.')[1]?.length ?? 0;
+}
+
+export function adjustmentStepFor(input, selectedStep) {
+  const fieldStep = Number(input.step);
+  const selected = Number(selectedStep);
+  return Math.max(Number.isFinite(fieldStep) && fieldStep > 0 ? fieldStep : 0.001,
+    ADJUSTMENT_STEPS.includes(selected) ? selected : ADJUSTMENT_STEPS[0]);
+}
+
 export function createSettingsController({ state, settings, view, elements, panels, onSettingsChange = () => {}, onActiveSideChange = () => {} }) {
   let expanded = false;
 
@@ -40,6 +55,9 @@ export function createSettingsController({ state, settings, view, elements, pane
     if (key === 'priest') {
       settings.setPriestAbilityValue(scope, state[scope].id, input.dataset.magePath, value);
       view.renderContent();
+    } else if (key === 'summon') {
+      settings.setSummonAbilityValue(scope, state[scope].id, input.dataset.magePath, value);
+      view.renderContent();
     } else if (key === 'trait') {
       settings.setTraitValue(scope, state[scope].id, input.dataset.magePath, value);
       view.renderContent();
@@ -47,9 +65,11 @@ export function createSettingsController({ state, settings, view, elements, pane
       settings.setMageAbilityValue(scope, state[scope].id, input.dataset.magePath, value);
       view.renderContent();
     } else if (scope === 'arena') {
-      const arena = settings.setArenaValue(key, key === 'collisionMode' ? input.value : value);
-      const value = key === 'launchDelay' ? arena[key] / 1000 : arena[key];
-      view.syncControl(scope, key, mode, value);
+      const arena = settings.setArenaValue(key, ['collisionMode', 'targetStrategy'].includes(key) ? input.value : value);
+      // Arena launch delay is stored in milliseconds but the settings UI presents
+      // seconds. Keep this distinct from the parsed input value above.
+      const displayValue = key === 'launchDelay' ? arena[key] / 1000 : arena[key];
+      view.syncControl(scope, key, mode, displayValue);
       if (key === 'size' || key === 'fighterSize') view.syncArenaConstraints();
     } else {
       const character = state[scope];
@@ -97,7 +117,9 @@ export function createSettingsController({ state, settings, view, elements, pane
       if (adjust) {
         const input = adjust.closest('.setting-row')?.querySelector('input[type="number"][data-setting-key]');
         if (!input) return;
-        input.value = String(Number(input.value) + Number(adjust.dataset.adjust) * Number(input.step));
+        const step = adjustmentStepFor(input, elements['adjustment-step'].value);
+        const next = Number(input.value) + Number(adjust.dataset.adjust) * step;
+        input.value = String(Number(next.toFixed(decimalPlaces(step))));
         updateSetting(input);
         return;
       }

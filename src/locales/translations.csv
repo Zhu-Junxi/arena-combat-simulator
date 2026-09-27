@@ -34,6 +34,7 @@ customization.reset_all,Reset All,全部重置
 customization.export,Export Duel,导出对决
 customization.import,Import Duel,导入对决
 customization.advanced_tuning,Advanced Tuning,高级调节
+customization.adjustment_step,Button step,按钮步进
 customization.export_success,Duel recipe exported.,对决配置已导出。
 customization.import_success,Duel recipe imported.,对决配置已导入。
 customization.import_error,Unable to import that duel recipe.,无法导入该对决配置。
@@ -61,6 +62,34 @@ customization.priest_base_heal,Prayer Base Heal,祈祷基础治疗
 customization.priest_heal_per_mark,Prayer Heal per Mark,每层印记祈祷治疗
 customization.priest_base_damage,Prayer Base Damage,祈祷基础伤害
 customization.priest_damage_per_mark,Prayer Damage per Mark,每层印记祈祷伤害
+customization.summon_companion,Companion Wolf,伙伴狼
+customization.summon_pack,Command Pack,指挥狼群
+customization.summon_companion_health,Companion Health,伙伴生命值
+customization.summon_companion_speed,Companion Movement Speed,伙伴移动速度
+customization.summon_bite_damage,Wolf Bite Damage,狼咬伤害
+customization.summon_bite_range,Wolf Bite Range,狼咬距离
+customization.summon_bite_cooldown,Wolf Bite Cooldown,狼咬冷却
+customization.summon_respawn_delay,Companion Respawn Delay,伙伴重生延迟
+customization.summon_meter_threshold,Bites Needed for Pack,狼群所需咬击次数
+customization.summon_meter_per_bite,Command Meter per Bite,每次狼咬指挥值
+customization.summon_pack_cooldown,Pack Cooldown,狼群冷却
+customization.summon_pack_size,Charging Wolves,冲锋狼数量
+customization.summon_charge_damage,Charge Damage,冲锋伤害
+customization.summon_charge_speed,Charge Speed,冲锋速度
+customization.summon_charge_lifetime,Charge Lifetime,冲锋持续时间
+tooltip.companion_health,The permanent wolf is targetable and returns after it is defeated.,永久狼伙伴可被攻击，倒下后会返回。
+tooltip.companion_speed,How quickly the wolf chases its owner's target.,狼伙伴追击主人目标的速度。
+tooltip.bite_damage,Damage dealt by each successful wolf bite.,每次狼咬命中造成的伤害。
+tooltip.bite_range,The wolf must be within this distance to bite.,狼伙伴必须在此距离内才能撕咬。
+tooltip.bite_cooldown,Time the wolf waits between successful bites.,狼伙伴两次成功撕咬之间的等待时间。
+tooltip.respawn_delay,Time before a defeated companion returns beside the Beastmaster.,伙伴狼被击败后在兽王身边重生所需的时间。
+tooltip.meter_threshold,Command needed before the pack can be called. A full meter waits for the pack cooldown.,召唤狼群所需的指挥值。指挥值满后会等待狼群冷却结束。
+tooltip.meter_per_bite,Command gained by each successful wolf bite.,每次成功狼咬获得的指挥值。
+tooltip.pack_cooldown,Time after a pack charge before another full meter can call the pack.,狼群冲锋后，即使指挥值已满也需等待的时间。
+tooltip.pack_size,Number of untargetable wolves released in each pack charge.,每次狼群冲锋释放的不可被攻击的狼数量。
+tooltip.charge_damage,Damage each charging wolf deals to the first enemy it contacts.,每只冲锋狼对首先接触到的敌人造成的伤害。
+tooltip.charge_speed,How quickly each charging wolf travels.,每只冲锋狼的移动速度。
+tooltip.charge_lifetime,How long a charging wolf remains before disappearing if it does not hit.,冲锋狼未命中时保持存在的时间。
 customization.set_character_default,Set as Character Default,设为角色默认值
 customization.plate_reduction,Damage Reduction per Hit,每次命中伤害减免
 customization.vine_every,Empowered Every Nth Arrow,每第 N 箭强化
@@ -101,6 +130,11 @@ character.archer.name,Archer,弓箭手
 character.guardian.name,Guardian,盾卫士
 character.mage.name,Mage,法师
 character.priest.name,Priest,牧师
+character.beastmaster.name,Beastmaster,兽王
+character.necromancer.name,Necromancer,死灵法师
+character.necromancer.role,Skeleton commander,骷髅统帅
+character.artificer.name,Artificer,工匠
+character.artificer.role,Turret engineer,炮塔工程师
 character.placeholder.portrait,Portrait pending,立绘预留
 character.placeholder.avatar,Avatar pending,头像预留
 trait.label,Trait,特性
@@ -111,6 +145,8 @@ trait.vine.name,Vine Arrow,藤箭
 trait.vine.description,"Every fourth arrow is empowered. On hit, it roots the target for 2 seconds, then slows movement by 50% for 3 seconds. The target can still attack while rooted.",每发射 4 支箭，第 4 支强化为藤箭。命中后禁锢目标 2 秒，随后移动速度降低 50%，持续 3 秒。禁锢期间仍可攻击。
 trait.prayer.name,Prayer of Judgment,审判祈祷
 trait.prayer.description,"Mark enemies with harmless shots, then channel Prayer to consume marks for healing and judgment damage. Direct hits interrupt the channel.",用无伤害射击标记敌人，再引导祈祷消耗印记进行治疗和审判伤害。直接命中会打断引导。
+trait.beastmaster.name,Wild Command,野性号令
+trait.beastmaster.description,"A companion wolf bites to build command, then calls a burst of charging pack wolves.",伙伴狼通过撕咬积累指挥值，并召唤冲锋狼群。
 trait.elemental_cycles.name,Elemental Cycles,元素循环
 trait.elemental_cycles.description,The mage randomly chooses Ice Fire or Leech. The first two spells mark the enemy and the matching final spell consumes those marks.,法师会随机选择冰霜、火焰或汲取循环。前两次法术标记敌人，对应的终结技消耗这些印记。
 stats.attack,Attack,攻击
@@ -135,6 +171,7 @@ tooltip.help_for,Help: {label},帮助：{label}
 tooltip.retry,Try loading the language data again.,再次尝试加载语言数据。
 tooltip.allowed_range,Allowed range: {minimum} to {maximum}.,可用范围：{minimum} 至 {maximum}。
 tooltip.current_value,Current effect: {value}.,当前效果：{value}。
+tooltip.adjustment_step,Sets how much each − or + button press changes a value. Choose from 0.001 to 10 in the displayed unit.,设置每次按下 − 或 + 按钮时数值的变化量。按显示单位可选 0.001 至 10。
 tooltip.health,Sets the maximum health the fighter can have.,设置角色的最大生命值。
 tooltip.attack,Sets damage dealt by one direct hit.,设置一次直接命中的伤害。
 tooltip.cooldown,Sets the time before this attack can be used again.,设置该攻击再次可用前的等待时间。
@@ -244,6 +281,12 @@ battle.bleeding,Bleeding {seconds}s,流血 {seconds}s
 battle.praying,Praying {seconds}s,祈祷 {seconds} 秒
 battle.prayer_interrupted,Prayer interrupted {seconds}s,祈祷被打断 {seconds} 秒
 battle.priest_marks,Priest marks: {count},牧师印记：{count}
+battle.companion_health,Companion health: {current} / {maximum},伙伴生命值：{current} / {maximum}
+battle.command_meter,Command meter: {current} / {maximum},指挥值：{current} / {maximum}
+battle.pack_wolf,Charging pack wolf,冲锋狼群成员
+selection.coming_soon,{name} is coming soon.,{name} 即将推出。
+selection.coming_soon_short,Coming soon,即将推出
+tooltip.coming_soon,This summon fighter is planned for a future update.,该召唤角色计划在未来更新中推出。
 battle.arcane_marks,Arcane Marks: {count},奥术印记：{count}
 battle.element_marks,{theme} marks: {count},{theme}印记：{count}
 battle.theme_ice,Ice,冰霜

@@ -48,7 +48,9 @@ export function createSelectionController({ state, characterById, elements, view
         });
       }
       if (character) {
-        state[state.side] = characterById[character.dataset.character];
+        const nextCharacter = characterById[character.dataset.character];
+        if (!nextCharacter || nextCharacter.locked) return;
+        state[state.side] = nextCharacter;
         view.renderPanel(state.side);
         view.syncSelection();
         onSelectionChange(state.side);

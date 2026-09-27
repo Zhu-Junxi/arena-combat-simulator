@@ -1,20 +1,19 @@
 import { createDuelRecipe, parseDuelRecipe, stringifyDuelRecipe } from './duel-share-codec.js';
+import { activeSlots } from '../config/match.js';
 
 const FILE_NAME = 'arena-duel-duel.json';
 
 export function applyImportedDuel({ recipe, settings, state, characterById }) {
-  const left = characterById[recipe.fighters.left.characterId];
-  const right = characterById[recipe.fighters.right.characterId];
-  if (!left || !right) throw new Error('Unknown imported fighter');
+  const slots = activeSlots(recipe.arena.fighterCount);
+  for (const side of slots) if (!characterById[recipe.fighters[side].characterId]) throw new Error('Unknown imported fighter');
   settings.applyDuel(recipe);
-  state.left = left;
-  state.right = right;
+  for (const side of slots) state[side] = characterById[recipe.fighters[side].characterId];
   state.side = 'left';
 }
 
 export function createDuelTransferController({ elements, state, settings, i18n, getSetup, characters, characterById, onImported = () => {} }) {
   function exportDuel() {
-    const recipe = createDuelRecipe({ selectedCharacters: { left: state.left, right: state.right }, setup: getSetup() });
+    const recipe = createDuelRecipe({ selectedCharacters: Object.fromEntries(activeSlots(getSetup().arena.fighterCount).map(side => [side, state[side]])), setup: getSetup() });
     const url = URL.createObjectURL(new Blob([stringifyDuelRecipe(recipe)], { type: 'application/json' }));
     const link = document.createElement('a');
     link.href = url;

@@ -7,14 +7,21 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
   const attackElements = new WeakMap();
   const projectileElements = new WeakMap();
   const zoneElements = new WeakMap();
+  const summonElements = new Map();
   let rules = initialRules;
 
   function buildFighterElement(fighter) {
-    const element = elements[`fighter-${fighter.side}`];
+    let element = elements.battlefield.querySelector(`#fighter-${fighter.side}`);
+    if (!element) {
+      element = document.createElement('div');
+      element.className = `fighter ${fighter.side}`;
+      element.id = `fighter-${fighter.side}`;
+      elements.battlefield.append(element);
+    }
     const { character } = fighter;
     element.classList.toggle('has-art', Boolean(character.art));
     element.innerHTML = (character.art ? `<img class="fighter-art" src="${character.art.battle}" alt="" draggable="false">` : '') +
-      '<span class="fighter-name"></span><span class="control-label" hidden></span><span class="arcane-marks" hidden></span><div class="fighter-status">' +
+      '<span class="fighter-name"></span><span class="control-label" hidden></span><span class="arcane-marks" hidden></span><span class="summon-command" hidden></span><div class="fighter-status">' +
       '<div class="fighter-meter health-bar" role="progressbar" aria-valuemin="0"><span class="fighter-meter-fill"></span></div>' +
       '<div class="fighter-meter cooldown-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><span class="fighter-meter-fill"></span></div></div>';
     const name = i18n.t(character.nameKey);
@@ -23,6 +30,7 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
       element,
       controlLabel: element.querySelector('.control-label'),
       arcaneMarks: element.querySelector('.arcane-marks'),
+      summonCommand: element.querySelector('.summon-command'),
       healthBar: element.querySelector('.health-bar'),
       healthFill: element.querySelector('.health-bar .fighter-meter-fill'),
       cooldownBar: element.querySelector('.cooldown-bar'),
@@ -57,7 +65,11 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
       seconds: Math.max(0, (control === 'praying' ? fighter.prayer.startedAt + fighter.priestAbilities.prayerDuration : control === 'prayer_interrupted' ? fighter.prayerInterruptedUntil : control === 'rooted' ? fighter.rootUntil : control === 'burning' ? fighter.burn.expiresAt : control === 'bleeding' ? fighter.bleed.expiresAt : Math.max(fighter.slowUntil, zoneExpiry)) - elapsed).toFixed(1)
     }) : '';
     view.controlLabel.dataset.tooltip = control ? i18n.t('tooltip.status', { status: view.controlLabel.textContent }) : '';
-    const markEntries = Object.entries(fighter.marks).map(([theme, marks]) => [theme, marks.filter(expiresAt => expiresAt > elapsed + 1e-9)]).filter(([, marks]) => marks.length);
+    const marksByTheme = {};
+    Object.values(fighter.marks).forEach(source => Object.entries(source).forEach(([theme, marks]) => {
+      marksByTheme[theme] = (marksByTheme[theme] ?? []).concat(marks.filter(expiresAt => expiresAt > elapsed + 1e-9));
+    }));
+    const markEntries = Object.entries(marksByTheme).filter(([, marks]) => marks.length);
     const priestMarks = fighter.priestMarks ?? 0;
     view.arcaneMarks.hidden = (markEntries.length === 0 && priestMarks === 0) || fighter.health <= 0;
     view.arcaneMarks.innerHTML = markEntries.map(([theme, marks]) => `<span data-theme="${theme}">✦${marks.length}</span>`).join('') +
@@ -66,6 +78,14 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
       ...(priestMarks ? [i18n.t('battle.priest_marks', { count: priestMarks })] : [])].join(', '));
     view.arcaneMarks.dataset.tooltip = priestMarks ? i18n.t('tooltip.priest_marks', { count: priestMarks }) :
       markEntries.length ? i18n.t('tooltip.element_marks', { count: markEntries.reduce((total, [, marks]) => total + marks.length, 0) }) : '';
+    const command = fighter.summonAbilities;
+    view.summonCommand.hidden = !command || fighter.health <= 0;
+    if (command) {
+      const text = `🐺 ${fighter.summonMeter}/${command.meterThreshold}`;
+      view.summonCommand.textContent = text;
+      view.summonCommand.setAttribute('aria-label', i18n.t('battle.command_meter', { current: fighter.summonMeter, maximum: command.meterThreshold }));
+      view.summonCommand.dataset.tooltip = i18n.t('battle.command_meter', { current: fighter.summonMeter, maximum: command.meterThreshold });
+    }
     view.healthBar.dataset.band = healthBand(ratio);
     view.healthBar.setAttribute('aria-valuenow', String(currentHealth));
     view.healthBar.setAttribute('aria-valuetext', `${currentHealth} / ${fighter.maxHealth}`);
@@ -84,8 +104,35 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
     if (fighter.attack) updateWeaponVisual(attackElements.get(fighter.attack), fighter, elapsed);
   }
 
+  function buildSummonElement(summon) {
+    const element = document.createElement('div');
+    element.className = `summon summon-${summon.kind}`;
+    element.innerHTML = summon.kind === 'companion'
+      ? '<span class="summon-glyph">🐺</span><div class="summon-meter"><span></span></div>'
+      : '<span class="summon-glyph">🐺</span>';
+    elements.battlefield.append(element);
+    summonElements.set(summon, element);
+  }
+
+  function renderSummon(summon) {
+    if (!summonElements.has(summon)) buildSummonElement(summon);
+    const element = summonElements.get(summon);
+    element.style.left = `${summon.x / rules.size * 100}%`;
+    element.style.top = `${summon.y / rules.size * 100}%`;
+    element.dataset.hit = String(summon.hitUntil > 0);
+    element.dataset.state = summon.state ?? '';
+    if (summon.kind === 'companion') {
+      const ratio = healthRatio(summon.health, summon.maxHealth);
+      element.querySelector('.summon-meter span').style.transform = `scaleX(${ratio})`;
+      element.setAttribute('aria-label', i18n.t('battle.companion_health', { current: Math.max(0, summon.health), maximum: summon.maxHealth }));
+    } else if (summon.kind === 'pack-wolf') {
+      element.setAttribute('aria-label', i18n.t('battle.pack_wolf'));
+    }
+  }
+
   function render(battle) {
     battle.fighters.forEach(fighter => renderFighter(fighter, battle));
+    battle.summons.forEach(renderSummon);
     battle.projectiles.forEach(projectile => {
       projectileElements.get(projectile)?.setAttribute('transform', `translate(${projectile.x} ${projectile.y}) rotate(${projectile.angle * 180 / Math.PI})`);
     });
@@ -98,13 +145,17 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
     elements['zone-effects'].replaceChildren();
     elements['combat-effects'].setAttribute('viewBox', `0 0 ${rules.size} ${rules.size}`);
     fighterElements.clear();
+    summonElements.clear();
+    elements.battlefield.querySelectorAll('.fighter').forEach(element => element.remove());
+    elements.battlefield.querySelectorAll('.summon').forEach(element => element.remove());
     battle.fighters.forEach(buildFighterElement);
     const fighterPercent = rules.fighterSize / rules.size * 100;
     battle.fighters.forEach(fighter => {
-      const element = elements[`fighter-${fighter.side}`];
+      const element = fighterElements.get(fighter).element;
       element.style.width = `${fighterPercent}%`;
       element.style.height = `${fighterPercent}%`;
     });
+    battle.summons.forEach(buildSummonElement);
     elements.battlefield.dataset.battlePhase = 'idle';
     elements.countdown.hidden = true;
     elements.countdown.textContent = '';
@@ -137,6 +188,11 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
       projectileElements.set(projectile, element);
     }
     if (type === 'projectile-removed') projectileElements.get(event.projectile)?.remove();
+    if (type === 'summon-spawned') buildSummonElement(event.summon);
+    if (type === 'summon-removed') {
+      summonElements.get(event.summon)?.remove();
+      summonElements.delete(event.summon);
+    }
     if (type === 'zone-created') {
       const element = createSvgEffect('frost-rune', frostRuneMarkup(event.zone.radius), elements['zone-effects']);
       element.setAttribute('transform', `translate(${event.zone.x} ${event.zone.y})`);

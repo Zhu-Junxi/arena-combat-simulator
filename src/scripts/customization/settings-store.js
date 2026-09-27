@@ -6,16 +6,19 @@ import {
   MAGE_CYCLES,
   MAGE_SPELL_SLOTS,
   PRIEST_ABILITY_CONTROLS,
+  SUMMON_ABILITY_CONTROLS,
   TRAIT_CONTROLS,
   MATCH_SETTINGS_STORAGE_KEY,
   MATCH_SETTINGS_VERSION,
   defaultArenaSettings,
   defaultFighterSettings,
   defaultMageAbilities,
-  defaultPriestAbilities
+  defaultPriestAbilities,
+  defaultSummonAbilities
 } from '../config/customization.js';
+import { FIGHTER_SLOTS, TARGET_STRATEGIES, activeSlots } from '../config/match.js';
 
-const SIDES = Object.freeze(['left', 'right']);
+const SIDES = FIGHTER_SLOTS;
 const clone = value => JSON.parse(JSON.stringify(value));
 const deepFreeze = value => {
   if (value && typeof value === 'object' && !Object.isFrozen(value)) {
@@ -58,6 +61,7 @@ function normalizeFighter(value, character, fallback = defaultFighterSettings(ch
   if (TRAIT_CONTROLS[character.trait?.id]) fighter.trait = normalizeTraitSettings(value?.trait, character, defaults.trait, advanced);
   if (character.trait?.id === 'elemental-cycles') fighter.abilities = normalizeMageAbilities(value?.abilities, defaults.abilities, advanced);
   if (character.trait?.id === 'prayer') fighter.abilities = normalizePriestAbilities(value?.abilities, defaults.abilities, advanced);
+  if (character.trait?.id === 'beastmaster') fighter.abilities = normalizeSummonAbilities(value?.abilities, defaults.abilities, advanced);
   return fighter;
 }
 
@@ -89,20 +93,35 @@ export function normalizePriestAbilities(value, fallback = defaultPriestAbilitie
   ]));
 }
 
+export function normalizeSummonAbilities(value, fallback = defaultSummonAbilities(), advanced = false) {
+  return Object.fromEntries(Object.entries(SUMMON_ABILITY_CONTROLS).map(([key, control]) => [key,
+    Number.isFinite(Number(value?.[key])) ? clampSetting(value[key], control, advanced) : fallback[key]
+  ]));
+}
+
 export function constrainStartingDistance(arena, advanced = false) {
   if (advanced) return clampSetting(arena.startingDistance, ARENA_CONTROLS.startingDistance, true);
   const minimum = Math.max(ARENA_CONTROLS.startingDistance.min, arena.fighterSize);
-  const maximum = Math.min(ARENA_CONTROLS.startingDistance.max, arena.size - arena.fighterSize);
+  const count = Math.max(2, Math.min(4, Number(arena.fighterCount) || 2));
+  // For a circle, adjacent spawn distance is the chord: 2r·sin(π/n).
+  // Keep the circle inside the usable arena radius for every active seat.
+  const maximumSpacing = count === 2 ? arena.size - arena.fighterSize :
+    (arena.size - arena.fighterSize) * Math.sin(Math.PI / count);
+  const maximum = Math.min(ARENA_CONTROLS.startingDistance.max, maximumSpacing);
   return Math.max(minimum, Math.min(maximum, clampSetting(arena.startingDistance, ARENA_CONTROLS.startingDistance)));
 }
 
 function normalizeArena(value = {}, advanced = false) {
   const arena = defaultArenaSettings();
   for (const [key, control] of Object.entries(ARENA_CONTROLS)) {
-    arena[key] = Number.isFinite(Number(value[key])) ? clampSetting(value[key], control, advanced) : control.default;
+    // Match size is structural rather than a combat stat: four stable seats is
+    // the supported maximum even while Advanced Tuning is enabled.
+    const allowAdvanced = key === 'fighterCount' ? false : advanced;
+    arena[key] = Number.isFinite(Number(value[key])) ? clampSetting(value[key], control, allowAdvanced) : control.default;
   }
   arena.startingDistance = constrainStartingDistance(arena, advanced);
   arena.collisionMode = COLLISION_MODES.includes(value.collisionMode) ? value.collisionMode : 'bounce';
+  arena.targetStrategy = TARGET_STRATEGIES.includes(value.targetStrategy) ? value.targetStrategy : 'nearest';
   arena.launchDelay *= 1000;
   return arena;
 }
@@ -131,7 +150,9 @@ export function createMatchSettingsStore({ characters, storage = globalThis.loca
   } catch (error) {
     logger.warn?.('Ignoring malformed saved match settings', error);
   }
-  if (source?.version === 1) source = { ...source, version: MATCH_SETTINGS_VERSION, advanced: false };
+  // Versions before free-for-all only had left/right data.  Missing seats are
+  // initialized from character defaults, preserving the old match exactly.
+  if ([1, 2].includes(source?.version)) source = { ...source, version: MATCH_SETTINGS_VERSION, advanced: Boolean(source.advanced), arena: { ...source.arena, fighterCount: 2, targetStrategy: 'nearest' } };
   if (source?.version !== MATCH_SETTINGS_VERSION) source = null;
   if (source) source = migrateMageDefaults(source);
   let advanced = Boolean(source?.advanced);
@@ -228,10 +249,22 @@ export function createMatchSettingsStore({ characters, storage = globalThis.loca
     return getFighter(side, characterId).abilities;
   }
 
+  function setSummonAbilityValue(side, characterId, key, value) {
+    const target = fighters[side]?.[characterId];
+    const control = SUMMON_ABILITY_CONTROLS[key];
+    if (!target?.abilities || characterById[characterId]?.trait?.id !== 'beastmaster' || !control) throw new Error('Unknown summon ability setting');
+    target.abilities[key] = clampSetting(value, control, advanced);
+    notify({ scope: side, characterId, summonAbility: key });
+    return getFighter(side, characterId).abilities;
+  }
+
   function setArenaValue(key, value) {
     if (key === 'collisionMode') {
       if (!COLLISION_MODES.includes(value)) throw new Error('Unknown collision mode');
       arena.collisionMode = value;
+    } else if (key === 'targetStrategy') {
+      if (!TARGET_STRATEGIES.includes(value)) throw new Error('Unknown target strategy');
+      arena.targetStrategy = value;
     } else {
       const control = ARENA_CONTROLS[key];
       if (!control) throw new Error('Unknown arena setting');
@@ -239,7 +272,7 @@ export function createMatchSettingsStore({ characters, storage = globalThis.loca
       const normalizedControl = key === 'launchDelay'
         ? { ...control, min: control.min * 1000, max: control.max * 1000, step: control.step * 1000, default: control.default * 1000 }
         : control;
-      arena[key] = clampSetting(normalizedValue, normalizedControl, advanced);
+      arena[key] = clampSetting(normalizedValue, normalizedControl, key === 'fighterCount' ? false : advanced);
       arena.startingDistance = constrainStartingDistance(arena, advanced);
     }
     notify({ scope: 'arena', key });
@@ -289,16 +322,18 @@ export function createMatchSettingsStore({ characters, storage = globalThis.loca
   }
 
   function snapshot(selectedCharacters) {
+    const slots = activeSlots(arena.fighterCount).filter(side => selectedCharacters[side]);
     return deepFreeze({
       advanced,
-      fighters: Object.fromEntries(SIDES.map(side => [side, clone(fighters[side][selectedCharacters[side].id])])),
+      fighters: Object.fromEntries(slots.map(side => [side, clone(fighters[side][selectedCharacters[side].id])])),
       arena: clone(arena)
     });
   }
 
   function applyDuel(duel) {
     const nextFighters = {};
-    for (const side of SIDES) {
+    const duelSlots = activeSlots(duel?.arena?.fighterCount ?? 2);
+    for (const side of duelSlots) {
       const imported = duel?.fighters?.[side];
       const character = characterById[imported?.characterId];
       if (!character) throw new Error('Unknown imported fighter');
@@ -306,7 +341,7 @@ export function createMatchSettingsStore({ characters, storage = globalThis.loca
     }
     const nextAdvanced = Boolean(duel?.advanced);
     const nextArena = normalizeArena(duel?.arena, nextAdvanced);
-    for (const side of SIDES) fighters[side][nextFighters[side].characterId] = nextFighters[side].values;
+    for (const side of duelSlots) fighters[side][nextFighters[side].characterId] = nextFighters[side].values;
     arena = nextArena;
     advanced = nextAdvanced;
     notify({ scope: 'duel', imported: true });
@@ -317,5 +352,5 @@ export function createMatchSettingsStore({ characters, storage = globalThis.loca
     return () => listeners.delete(listener);
   }
 
-  return Object.freeze({ getFighter, setFighterValue, setTraitValue, getMageAbilities, setMageAbilityValue, setPriestAbilityValue, getArena, setArenaValue, getAdvanced: () => advanced, setAdvanced, resetFighter, setCharacterDefault, resetArena, resetAll, snapshot, applyDuel, subscribe });
+  return Object.freeze({ getFighter, setFighterValue, setTraitValue, getMageAbilities, setMageAbilityValue, setPriestAbilityValue, setSummonAbilityValue, getArena, setArenaValue, getAdvanced: () => advanced, setAdvanced, resetFighter, setCharacterDefault, resetArena, resetAll, snapshot, applyDuel, subscribe });
 }

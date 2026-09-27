@@ -25,7 +25,7 @@ async function initialize() {
   const elements = requireElements([
     'arena', 'back', 'battlefield', 'battle-note', 'categories', 'categories-down', 'categories-up', 'combat-effects',
     'countdown', 'dock', 'fighter-left', 'fighter-right', 'language-select', 'panel-left', 'panel-right',
-    'projectile-effects', 'roster', 'selection-label', 'settings-content', 'settings-export', 'settings-import', 'settings-import-file', 'settings-panel', 'settings-reset-all', 'advanced-tuning',
+    'projectile-effects', 'roster', 'selection-label', 'settings-content', 'settings-export', 'settings-import', 'settings-import-file', 'settings-panel', 'settings-reset-all', 'advanced-tuning', 'adjustment-step',
     'settings-tabs', 'settings-toggle', 'stage', 'start', 'start-control', 'status', 'theme-select', 'view-label',
     'weapon-effects', 'zone-effects'
   ]);
@@ -37,9 +37,15 @@ async function initialize() {
   populateThemeSelector(elements['theme-select'], theme, i18n);
 
   const state = createGameState(CHARACTERS);
-  const panels = [elements['panel-left'], elements['panel-right']];
   const settings = createMatchSettingsStore({ characters: CHARACTERS });
-  const matchSetup = () => buildCombatSetup(settings, { left: state.left, right: state.right });
+  const selected = () => ({ left: state.left, right: state.right });
+  const panels = [elements['panel-left'], elements['panel-right']];
+  // The UI is temporarily duel-only.  The store and engine retain FFA data,
+  // but this presentation path deliberately activates the two visible seats.
+  const matchSetup = () => {
+    const setup = buildCombatSetup(settings, selected());
+    return { ...setup, arena: { ...setup.arena, fighterCount: 2 } };
+  };
   const renderer = createCombatRenderer(elements, i18n);
   const engine = createCombatEngine({ onEvent: renderer.handleEvent });
   const runtime = createBattleRuntime({
@@ -93,10 +99,10 @@ async function initialize() {
     elements,
     panels,
     i18n,
-    beginBattle: selected => runtime.begin(selected, matchSetup()),
+    beginBattle: selectedCharacters => runtime.begin(selectedCharacters, matchSetup()),
     resetBattle: () => {
       runtime.stop();
-      engine.reset({ left: state.left, right: state.right }, matchSetup());
+      engine.reset(selected(), matchSetup());
     },
     collapseCustomization: () => settingsController.setExpanded(false)
   });
@@ -122,7 +128,7 @@ async function initialize() {
   settingsController.bind();
   duelTransfer.bind();
   transitions.bind();
-  engine.reset({ left: state.left, right: state.right }, matchSetup());
+  engine.reset(selected(), matchSetup());
   transitions.refreshLocalization();
 
   i18n.subscribe(() => {
