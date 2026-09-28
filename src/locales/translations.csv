@@ -292,3 +292,64 @@ transition.raising,Raising the selection panel…,选角横板上移中…
 transition.reset,Animation reset. You can start again.,动画已重置，可以重新开始
 bootstrap.loading,Loading language data… / 正在加载语言数据…,Loading language data… / 正在加载语言数据…
 bootstrap.error,Unable to load language data. / 无法加载语言数据。,Unable to load language data. / 无法加载语言数据。
+character.dongfang_changfan.name,Dong Fang Chang Fan,东方长凡
+trait.myriad_star_fireflies.name,Myriad Star Fireflies,万星飞莹
+trait.myriad_star_fireflies.description,"Enemy attacks, enemy damage taken and enemy hits on Dong Fang Chang Fan each grant one stack for 2 seconds. Each stack gives +200% attack speed, up to 3 stacks (+600%). Every attack creates exactly one star. Each source can hold only one stack; repeated events do not refresh it and cannot trigger again until it expires.",敌方发动攻击、敌方受到伤害、敌方命中东方长凡时，各提供一层持续 2 秒的万星飞莹。每层增加 200% 攻速，最多 3 层（攻速 +600%）。每次攻击固定生成 1 颗星星。每种来源最多一层，持续期间不能重复触发或刷新，到期后才能再次触发。
+battle.star_passive,Myriad Star Fireflies: {count} stacks · +{bonus}% attack speed,万星飞莹：{count} 层 · 攻速 +{bonus}%
+battle.star_enemy-attack,Enemy attack: {seconds}s,敌方出手：{seconds}秒
+battle.star_enemy-hurt,Enemy hurt: {seconds}s,敌方受伤：{seconds}秒
+battle.star_enemy-hit,Enemy hit: {seconds}s,敌方命中：{seconds}秒
+trait.shield_flail.name,Shield & Chain Flail,坚盾链锤
+trait.shield_flail.description,"The shield faces the enemy and absorbs 40 damage without regenerating; excess damage reaches health. With the shield: charge straight at high speed every 4s for 10 damage. After it breaks: throw one flail at the enemy position fixed at release. Flight, landing in a small area, and return each deal 10 damage. The head stays for 5s; its chain blocks movement while grounded. Re-entering contact with the grounded head deals 5 damage. Retrieve it before throwing again.",盾牌始终朝向敌人，拥有40耐久，优先承受伤害且不恢复，超出耐久的伤害扣除生命。持盾时每4秒高速直线冲撞，命中造成10点伤害。破盾后投出链锤，锁定出手时的敌人位置；飞出、落地小范围和收回命中各造成10点伤害。锤头落地保留5秒，期间链子阻挡通行；每次重新接触落地锤头造成5点伤害。收回后才能再次投出。
+battle.guardian_shield,Shield durability,盾牌耐久
+battle.shield_durability,Shield {value}/{maximum},盾 {value}/{maximum}
+battle.shield_broken,Shield broken · Flail,破盾 · 链锤
+battle.flail_grounded,Grounded · {seconds}s,落地 · {seconds}秒
+battle.flail_returning,Retrieving flail,收回链锤
+battle.flail_outbound,Throwing flail,投出链锤
+hud.time,Elapsed,战斗计时
+hud.time_scale,Battle speed,战斗速度
+hud.health,Health,生命值
+hud.attack,Damage,攻击
+hud.interval,Attack interval,攻击间隔
+hud.speed,Movement,移速
+hud.armor,Damage reduction,伤害减免
+hud.flail,Flail,链锤
+hud.seconds,{seconds}s,{seconds} 秒
+hud.shield_broken,Broken,已破碎
+hud.charging,Shield charge underway,盾牌冲撞中
+hud.shield_charge,Shield charge,盾牌冲撞
+hud.chain_wall,Chain blocks passage,链墙已展开
+hud.flail_return,Retrieving flail,链锤回收中
+hud.flail_throw,Throwing flail,链锤飞行中
+hud.flail_ready,Flail ready,链锤待命
+hud.vines,Vine charge,藤箭蓄势
+hud.vine_firing,Vine arrow released,藤箭发射中
+hud.vine_next,Next arrow: vines,下一箭 · 缠绕
+hud.bow,Bow shot,弓箭射击
+hud.preparing,Preparing,准备交战
+hud.star_haste,Attack speed +{bonus}%,攻击速度 +{bonus}%
+hud.spell_step,Spell {step} / 3,元素法术 · 第 {step} 式
+hud.target_marks,Marks on opponent,敌方印记
+hud.priest,Prayer marks,祈祷印记
+hud.defeated,Defeated,已退场
+hud.duel_over,Duel complete,对决结束
+hud.attacking,Attacking,正在出手
+hud.next_attack,Ready in {seconds}s,攻击就绪还需 {seconds} 秒
+hud.melee,Close combat,近身交锋
+hud.running,Auto battle in progress,自动战斗中
+hud.undecided,Outcome undecided,胜负未定
+hud.event_ready,Both fighters take their places,双方入场，等待交锋
+hud.event_shield,{target}'s shield absorbs {amount} damage,{target}的盾牌抵挡 {amount} 点伤害
+hud.event_break,{name}'s shield breaks,{name}的盾牌破碎
+hud.event_damage,{name} deals {amount} damage to {target},{name}对{target}造成 {amount} 点伤害
+hud.event_dot,{target} takes {amount} damage over time,{target}受到 {amount} 点持续伤害
+hud.event_heal,{name} recovers {amount} health,{name}恢复 {amount} 点生命
+hud.event_land,{name}'s flail lands; the chain blocks passage,{name}的链锤落地，链墙展开
+hud.event_return,{name} retrieves the flail,{name}开始收回链锤
+hud.event_vines,{name}'s vines root {target},{name}的藤箭禁锢了{target}
+hud.event_prayer,{name} begins to pray,{name}开始祈祷
+hud.event_judgment,{name}'s prayer is answered,{name}的祈祷完成
+hud.event_interrupt,{name}'s prayer is interrupted,{name}的祈祷被打断
+hud.event_start,The duel begins,双方出发，对决开始
+hud.event_charge,{name} charges with a shield,{name}发起盾牌冲撞
