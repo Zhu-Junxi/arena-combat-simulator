@@ -36,7 +36,7 @@ The included server serves the app locally. Open the URL above rather than openi
 | **Character selection** | Choose a fighter for each side from the category roster. Both sides can use the same character with separate settings. |
 | **Automatic combat** | Watch movement, weapon attacks, projectiles, abilities, status effects, health, and the final result play out in the arena. |
 | **Match customization** | Tune fighter stats, character abilities, and arena rules. Changes are saved locally and applied to the next match. |
-| **Duel sharing** | Export a setup to JSON or import one from another player. Import restores the selected fighters and match rules. |
+| **Duel presets** | Browse built-in matchups, save personal duels, and import or export JSON presets. |
 | **Languages** | Switch between English and Simplified Chinese from the header. The choice is remembered in your browser. |
 | **Themes** | Follow your system appearance or choose light or dark mode without resetting the match. |
 
@@ -60,9 +60,11 @@ The roster also contains locked, unavailable character previews. Some playable c
 
 The category rail supports mouse, touch, and keyboard navigation. Help tooltips can be opened with a pointer, keyboard focus, or touch.
 
-### Share a duel
+### Save and share duels
 
-Open the settings panel and choose **Export Duel** to download the current duel as JSON. Choose **Import Duel** to load a shared file. The importer validates the file before applying it and leaves other saved character presets intact.
+Open the settings panel and choose **Duel Presets**. The browser contains built-in matchups and your own saved duels. Use **Save Current Duel** to add a tile, or **Import JSON** to add a shared file without changing the current match. Each personal tile can be loaded, exported, renamed, or deleted. Built-in tiles can be loaded or exported.
+
+Three- and four-fighter files can also be stored and exported. Their tiles show a muted icon because the visible arena currently supports two fighters. Open a tile's **More** menu, or right-click it, to choose **Load First Two Fighters**; the full file remains saved.
 
 ### Change language or theme
 
@@ -88,6 +90,7 @@ arena-combat-simulator/
 ├── src/
 │   ├── locales/            CSV translation catalog
 │   ├── scripts/            Game systems and browser controllers
+│   │   └── share/          Preset library and duel JSON codec
 │   └── styles/             Components, layout, and theme palettes
 ├── tests/                  Node regression tests
 ├── archive/artwork/        Concept art and earlier assets

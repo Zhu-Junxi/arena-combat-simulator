@@ -24,7 +24,7 @@ Open <http://127.0.0.1:4173/> after starting the server. Use the server because 
 | `src/scripts/selection/` | Roster and selected fighter panels (`selection-view.js`), plus their input handling (`selection-controller.js`). |
 | `src/scripts/customization/` | Validated saved settings (`settings-store.js`), settings UI, input handling, display units, and combat setup snapshots. |
 | `src/scripts/battle/` | DOM-independent combat rules (`combat-engine.js`), battle display and frame loop (`combat-renderer.js`), and SVG weapon/effect markup. |
-| `src/scripts/share/` | Versioned JSON duel format and file import/export UI. |
+| `src/scripts/share/` | Versioned JSON duel format, personal preset library, built-in matchups, and preset browser UI. |
 | `src/scripts/i18n/` and `src/locales/translations.csv` | CSV parsing, catalog validation, locale selection, translation, and DOM localization. |
 | `src/scripts/theme/` and `src/styles/themes/` | Early theme setup, theme preference and stylesheet switching, selector labels, and semantic color palettes. |
 | `src/scripts/ui/` | DOM lookup, decorations, tooltips, and selection-to-battle transitions. |
@@ -44,7 +44,7 @@ index.html
        -> settings store -> immutable match snapshot -> combat engine
        -> combat engine events/state -> renderer -> DOM and SVG
        -> transitions -> battle runtime (requestAnimationFrame)
-       -> share codec/controller <-> selected fighters + settings store
+       -> preset browser/library -> share codec <-> selected fighters + settings store
 ```
 
 Keep `app.js` as the wiring layer. Put rules and data transformations in modules that can run without a browser; put DOM manipulation and event listeners in views or controllers. The engine must not read DOM, local storage, or translated strings. Views may read engine state and translate labels, but should not decide combat outcomes.
@@ -82,11 +82,17 @@ The engine uses IDs and configuration; the selection and battle views use transl
 
 `settings-view.js` builds controls and tabs; `settings-controller.js` handles input, reset, and expansion. `setting-presentation.js` converts internal values into displayed values and supplies units/help text. `combat-setup.js` requests a frozen snapshot from the store. Treat snapshots as the boundary between editable settings and a battle in progress: edits should affect the next match, not mutate an active engine run. The launch delay is displayed and shared in seconds but stored in engine settings as milliseconds.
 
+`settings-store.js` keeps changes usable in memory if `localStorage` rejects a write. After a mutation, `getLastPersistenceStatus()` reports whether that write succeeded. Controllers must use this result before claiming a change was saved: a failed write gets a localized "session only" warning. Saving a character default should name the character and explain that future resets use those values.
+
+`ui/feedback.js` owns brief visual toasts and writes the same localized message to the existing main or preset-dialog live status region. Call it for completed discrete actions (selection, save, reset, preset operations, and preference changes); skip repetitive toasts for slider input, tabs, and category browsing. Success lasts about 2.5 seconds, warnings and errors about 4.5 seconds, and a new toast replaces the old one. Toasts are visual only (`aria-hidden`), so screen readers hear the live status once. Pass the action control as `anchor` when possible. Keep actions synchronous and state changes immediate; CSS motion is cosmetic and must obey `prefers-reduced-motion`.
+
 For a new setting, define its bounds/default and label key, add store normalization and mutation, add the UI control and any display conversion, consume it in the engine or runtime, and update JSON share validation if it is part of a portable duel. Decide whether old saved data needs migration, then test invalid values and defaults.
 
 ### Sharing
 
-`duel-share-codec.js` defines the `arena-duel.duel` JSON format and current version `11`. Export includes selected fighter IDs, a snapshot of their stats, advanced mode, and arena rules. Import parses and validates the whole file, including shape, versions, known unlocked characters, allowed numeric values, and supported modes, before `duel-transfer-controller.js` applies it. The transfer controller also owns the download/upload controls and localized status messages. Import updates only the selected fighters' entries and arena settings; it does not replace the entire saved character library. When changing the portable schema, update writer, reader, migration behavior, version, and codec tests together.
+`duel-share-codec.js` defines the `arena-duel.duel` JSON format and current version `11`. Export includes selected fighter IDs, a snapshot of their stats, advanced mode, and arena rules. Import parses and validates the whole file, including shape, versions, known unlocked characters, allowed numeric values, and supported modes, before `duel-transfer-controller.js` applies it. Import updates only the selected fighters' entries and arena settings; it does not replace the entire saved character library. When changing the portable schema, update writer, reader, migration behavior, version, and codec tests together.
+
+`duel-preset-library.js` supplies three built-in matchups from character defaults and keeps personal presets in the separate versioned `arena-duel.presets.v1` local storage record. Each saved entry contains an ID, name, update timestamp, and unchanged duel recipe. The library validates recipes on save and reload, and commits changes only after storage succeeds. `duel-preset-controller.js` owns the modal tile browser, JSON upload/download, naming conflicts, and load actions. Import adds a tile without applying it. A three- or four-fighter recipe remains intact in the library; its special **Load First Two Fighters** action makes a temporary two-fighter copy for the current UI. All new preset copy belongs in `translations.csv`.
 
 ### Localization: adding a language
 
@@ -107,7 +113,7 @@ After adding a column, update the production catalog assertion in `tests/i18n.te
 
 ### Theme and styling
 
-`theme-bootstrap.js` reads `arena-duel.theme` before paint. `theme-controller.js` handles `system`, `light`, and `dark`, responds to system changes, and swaps a single active stylesheet; `theme-view.js` localizes the selector. Only explicit `light` or `dark` preferences are saved. `src/styles/themes/light.css` and `dark.css` must expose the same semantic CSS custom properties. Shared CSS in `base.css`, `layout.css`, `selection.css`, `customization.css`, `battle.css`, and `responsive.css` should consume those properties. Add visual components to the appropriate shared stylesheet and define any new semantic color token in both palettes. Theme changes must preserve selection and battle state.
+`theme-bootstrap.js` reads `arena-duel.theme` before paint. `theme-controller.js` handles `system`, `light`, and `dark`, responds to system changes, and swaps a single active stylesheet; `theme-view.js` localizes the selector. Only explicit `light` or `dark` preferences are saved. `src/styles/themes/light.css` and `dark.css` must expose the same semantic CSS custom properties. Shared CSS in `base.css`, `layout.css`, `selection.css`, `customization.css`, `battle.css`, `duel-presets.css`, and `responsive.css` should consume those properties. Add visual components to the appropriate shared stylesheet and define any new semantic color token in both palettes. Theme changes must preserve selection and battle state.
 
 ## Feature design rules
 

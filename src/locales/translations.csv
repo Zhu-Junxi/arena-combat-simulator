@@ -31,13 +31,8 @@ customization.arena,Arena,场地
 customization.match_rules,Match Rules,对战规则
 customization.reset_tab,Reset Section,重置此项
 customization.reset_all,Reset All,全部重置
-customization.export,Export Duel,导出对决
-customization.import,Import Duel,导入对决
 customization.advanced_tuning,Advanced Tuning,高级调节
 customization.adjustment_step,Button step,按钮步进
-customization.export_success,Duel recipe exported.,对决配置已导出。
-customization.import_success,Duel recipe imported.,对决配置已导入。
-customization.import_error,Unable to import that duel recipe.,无法导入该对决配置。
 customization.health,Health,生命值
 customization.attack,Attack,攻击力
 customization.attack_range,Attack Range,攻击范围
@@ -229,8 +224,6 @@ tooltip.advanced_tuning,Allow any finite value. Turning this off clamps values b
 tooltip.adjust_down,Decrease by one fine step.,减少一个精细步长。
 tooltip.adjust_up,Increase by one fine step.,增加一个精细步长。
 tooltip.expand_slider,Double this slider's active range around the current value.,将此滑块围绕当前数值的活动范围扩大一倍。
-tooltip.export,Download the current fighters and arena settings as a duel recipe.,将当前角色和场地设置下载为对决配置。
-tooltip.import,Load fighters and arena settings from a duel recipe file.,从对决配置文件加载角色和场地设置。
 tooltip.reset_all,Restore every fighter and arena setting to its defaults.,将全部角色和场地设置恢复为默认值。
 tooltip.reset_section,Restore this section to its saved character or arena defaults.,将此部分恢复为已保存的角色或场地默认值。
 tooltip.save_default,Save the current values as this character's reset defaults.,将当前数值保存为该角色的重置默认值。
@@ -335,3 +328,54 @@ transition.raising,Raising the selection panel…,选角横板上移中…
 transition.reset,Animation reset. You can start again.,动画已重置，可以重新开始
 bootstrap.loading,Loading language data… / 正在加载语言数据…,Loading language data… / 正在加载语言数据…
 bootstrap.error,Unable to load language data. / 无法加载语言数据。,Unable to load language data. / 无法加载语言数据。
+preset.open,Duel Presets,对决预设
+preset.eyebrow,Duel Library,对决资料库
+preset.heading,Duel Preset Browser,对决预设浏览器
+preset.close,Close,关闭
+preset.search_label,Search presets,搜索预设
+preset.filter_label,Preset categories,预设类别
+preset.filter_all,All,全部
+preset.filter_builtin,Built-in,内置
+preset.filter_mine,My Presets,我的预设
+preset.save_current,Save Current Duel,保存当前对决
+preset.import,Import JSON,导入 JSON
+preset.save,Save,保存
+preset.cancel,Cancel,取消
+preset.builtin,Built-in,内置
+preset.mine,Saved,已保存
+preset.builtin.warrior_archer,Warrior vs Archer,战士对弓箭手
+preset.builtin.guardian_mage,Guardian vs Mage,盾卫士对法师
+preset.builtin.priest_beastmaster,Priest vs Beastmaster,牧师对兽王
+preset.load,Load,加载
+preset.more,More,更多
+preset.more_for,More actions for {name},{name} 的更多操作
+preset.export,Export JSON,导出 JSON
+preset.rename,Rename,重命名
+preset.delete,Delete,删除
+preset.load_first_two,Load First Two Fighters,加载前两名角色
+preset.extra_fighters,{count} fighters · use More to load the first two,{count} 名角色 · 在更多操作中加载前两名
+preset.empty,No presets match this view.,没有符合条件的预设。
+preset.name_label,Preset name,预设名称
+preset.rename_label,New preset name,新预设名称
+preset.untitled,Imported Duel,导入的对决
+preset.replace_question,Replace the saved preset named {name}?,替换名为 {name} 的已保存预设吗？
+preset.replace,Replace,替换
+preset.keep_both,Keep Both,保留两份
+preset.delete_question,Delete the preset named {name}?,删除名为 {name} 的预设吗？
+preset.saved,Saved {name}.,已保存 {name}。
+preset.renamed,Renamed to {name}.,已重命名为 {name}。
+preset.deleted,Deleted {name}.,已删除 {name}。
+preset.exported,Exported {name}.,已导出 {name}。
+preset.loaded,Loaded {name}.,已加载 {name}。
+preset.error,Unable to complete that preset action. Check the file or browser storage and try again.,无法完成预设操作。请检查文件或浏览器存储后重试。
+feedback.session_only,Applied for this session only. Browser storage is unavailable.,仅在本次使用期间生效。浏览器存储不可用。
+feedback.character_default,Saved {name} values as the default for future resets.,已将 {name} 的数值设为默认值，供以后重置使用。
+feedback.character_default_session,{name} values will be used for resets this session only. Browser storage is unavailable.,浏览器存储不可用。{name} 的数值仅在本次使用期间作为重置默认值。
+feedback.reset_fighter,Reset {name} to its saved defaults.,已将 {name} 重置为保存的默认值。
+feedback.reset_arena,Reset arena settings.,已重置竞技场设置。
+feedback.reset_all,Reset all fighter and arena settings.,已重置所有角色和竞技场设置。
+feedback.advanced_on,Advanced tuning enabled.,已启用高级调整。
+feedback.advanced_off,Advanced tuning disabled.,已关闭高级调整。
+feedback.language,Language changed.,语言已更改。
+feedback.theme,Theme changed.,主题已更改。
+feedback.theme_error,Unable to change the theme.,无法更改主题。

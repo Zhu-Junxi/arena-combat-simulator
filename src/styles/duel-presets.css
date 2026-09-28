@@ -1,0 +1,64 @@
+.preset-dialog { width: min(960px, calc(100vw - 30px)); max-height: min(820px, calc(100dvh - 30px)); padding: 0; overflow: visible; color: var(--color-ink); background: var(--color-surface); border: 2px solid var(--color-border); box-shadow: 8px 8px 0 var(--color-tooltip-shadow); }
+.preset-dialog::backdrop { background: var(--color-dialog-backdrop); }
+.preset-dialog[open] { animation: preset-dialog-in 190ms ease-out both; }
+.preset-dialog[open].preset-closing { animation: preset-dialog-out 170ms ease-in both; pointer-events: none; }
+.preset-dialog[open]::backdrop { animation: preset-backdrop-in 190ms ease-out both; }
+.preset-dialog[open].preset-closing::backdrop { animation: preset-backdrop-out 170ms ease-in both; }
+@keyframes preset-dialog-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes preset-dialog-out { to { opacity: 0; } }
+@keyframes preset-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes preset-backdrop-out { to { opacity: 0; } }
+.preset-shell { display: flex; flex-direction: column; min-height: min(560px, calc(100dvh - 34px)); max-height: min(816px, calc(100dvh - 34px)); }
+.preset-header { display: flex; flex: 0 0 auto; height: auto; justify-content: space-between; align-items: start; gap: 20px; padding: 24px 28px 18px; border-bottom: 1px solid var(--color-border); }
+.preset-header > div { flex: 1; min-width: 0; }
+.preset-eyebrow { color: var(--color-text-muted); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; }
+.preset-header h2 { margin: 4px 0 0; font: 500 clamp(22px, 3vw, 34px) var(--serif); line-height: 1.2; letter-spacing: 1px; overflow-wrap: anywhere; }
+.preset-close { flex: none; padding: 8px 12px; }
+.preset-toolbar { display: flex; flex: 0 0 auto; flex-wrap: wrap; align-items: end; gap: 12px; padding: 18px 28px; border-bottom: 1px solid var(--color-border); }
+.preset-search { display: grid; flex: 1 1 180px; gap: 5px; font-size: 11px; }
+.preset-search input, #preset-name { min-height: 35px; width: 100%; padding: 7px 9px; border: 1px solid var(--color-border); color: var(--color-ink); background: var(--color-surface); font: inherit; }
+.preset-filters, .preset-toolbar-actions { display: flex; flex-wrap: wrap; gap: 5px; }
+.preset-filters button, .preset-toolbar-actions button { min-height: 35px; padding: 6px 10px; font-size: 11px; }
+.preset-filters button[aria-pressed="true"] { color: var(--color-selected-fg); background: var(--color-selected-bg); }
+.preset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(205px, 1fr)); align-content: start; gap: 14px; min-height: 0; padding: 22px 28px; overflow-y: auto; flex: 1; }
+.preset-tile { position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 245px; padding: 16px; border: 1px solid var(--color-border); background: var(--color-surface); }
+.preset-dialog[open] .preset-tile { animation: preset-tile-in 180ms ease-out both; }
+.preset-dialog[open] .preset-tile:nth-child(2) { animation-delay: 35ms; }
+.preset-dialog[open] .preset-tile:nth-child(3) { animation-delay: 70ms; }
+@keyframes preset-tile-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.preset-tile-icon { display: grid; place-items: center; width: 42px; height: 42px; margin-bottom: 12px; border: 1px solid var(--color-border); font-size: 18px; }
+.preset-tile-icon-muted { color: var(--color-text-muted); border-color: var(--color-text-muted); opacity: .55; }
+.preset-tile-kind { color: var(--color-text-muted); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; }
+.preset-tile h3 { margin: 5px 0 0; overflow-wrap: anywhere; font: 500 18px var(--serif); }
+.preset-matchup { margin: 14px 0 5px; font-size: 12px; }
+.preset-limited, .preset-date { margin: 0 0 12px; color: var(--color-text-muted); font-size: 10px; line-height: 1.4; }
+.preset-tile-actions { display: flex; align-items: stretch; gap: 6px; margin-top: auto; }
+.preset-load { flex: 1; padding: 8px; font-size: 11px; }
+.preset-load:disabled { opacity: .45; }
+.preset-menu { position: relative; }
+.preset-menu summary { display: grid; place-items: center; min-width: 46px; height: 100%; padding: 6px; border: 1px solid var(--color-border); cursor: pointer; font-size: 11px; list-style: none; }
+.preset-menu summary::-webkit-details-marker { display: none; }
+.preset-menu-list { position: absolute; z-index: 2; right: 0; bottom: calc(100% + 4px); display: grid; min-width: 165px; padding: 5px; border: 1px solid var(--color-border); background: var(--color-surface); box-shadow: 3px 3px 0 var(--color-tooltip-shadow); }
+.preset-menu-list button { padding: 8px; border: 0; text-align: left; font-size: 11px; }
+.preset-menu-list button:hover, .preset-menu-list button:focus-visible { color: var(--color-selected-fg); background: var(--color-selected-bg); }
+.preset-empty { grid-column: 1 / -1; margin: 28px auto; color: var(--color-text-muted); text-align: center; }
+.preset-inline-panel { margin: 0 28px 12px; padding: 12px; border: 1px solid var(--color-border); }
+.preset-inline-panel:not([hidden]) { animation: preset-panel-in 150ms ease-out both; }
+@keyframes preset-panel-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.preset-inline-panel label, .preset-inline-panel p { display: block; margin: 0 0 8px; font-size: 12px; }
+.preset-inline-panel > div { display: flex; flex-wrap: wrap; gap: 7px; }
+.preset-inline-panel input { flex: 1 1 180px; }
+.preset-inline-panel button { padding: 7px 11px; font-size: 11px; }
+.preset-status { min-height: 34px; margin: 0; padding: 8px 28px 12px; color: var(--color-text-muted); font-size: 11px; }
+
+@media (max-width: 600px) {
+  .preset-dialog { width: calc(100vw - 16px); max-height: calc(100dvh - 16px); }
+  .preset-shell { max-height: calc(100dvh - 20px); }
+  .preset-header { padding: 16px; }
+  .preset-toolbar { padding: 12px 16px; }
+  .preset-grid { grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); padding: 15px 16px; gap: 9px; }
+  .preset-tile { min-height: 225px; padding: 11px; }
+  .preset-tile h3 { font-size: 16px; }
+  .preset-inline-panel { margin-inline: 16px; }
+  .preset-status { padding-inline: 16px; }
+}

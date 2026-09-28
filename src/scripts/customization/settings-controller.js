@@ -15,8 +15,14 @@ export function adjustmentStepFor(input, selectedStep) {
     ADJUSTMENT_STEPS.includes(selected) ? selected : ADJUSTMENT_STEPS[0]);
 }
 
-export function createSettingsController({ state, settings, view, elements, panels, onSettingsChange = () => {}, onActiveSideChange = () => {} }) {
+export function createSettingsController({ state, settings, view, elements, panels, feedback, i18n, onSettingsChange = () => {}, onActiveSideChange = () => {} }) {
   let expanded = false;
+
+  function confirm(key, parameters = {}, anchor = null) {
+    const persisted = settings.getLastPersistenceStatus();
+    feedback.show({ key: persisted ? key : key === 'feedback.character_default' ? 'feedback.character_default_session' : 'feedback.session_only', parameters, anchor,
+      tone: persisted ? 'success' : 'warning' });
+  }
 
   function setExpanded(nextExpanded, { restoreFocus = false } = {}) {
     if (state.phase !== 'select' && nextExpanded) return;
@@ -45,6 +51,10 @@ export function createSettingsController({ state, settings, view, elements, pane
       onActiveSideChange(tab);
     }
     view.setActiveTab(tab, options);
+    if (expanded) {
+      const sheet = elements['settings-content'].querySelector('.settings-sheet');
+      sheet?.classList.add('settings-sheet-reveal');
+    }
   }
 
   function updateSetting(input) {
@@ -79,6 +89,12 @@ export function createSettingsController({ state, settings, view, elements, pane
     onSettingsChange(scope);
   }
 
+  function warnIfSessionOnly(anchor) {
+    if (!settings.getLastPersistenceStatus()) {
+      feedback.show({ key: 'feedback.session_only', tone: 'warning', anchor });
+    }
+  }
+
   function bind() {
     elements['settings-toggle'].addEventListener('click', toggle);
     elements['settings-tabs'].addEventListener('click', event => {
@@ -99,7 +115,12 @@ export function createSettingsController({ state, settings, view, elements, pane
       if (event.target.matches('input[type="range"][data-setting-key]')) updateSetting(event.target);
     });
     elements['settings-content'].addEventListener('change', event => {
-      if (event.target.matches('input[type="number"][data-setting-key], select[data-setting-key]')) updateSetting(event.target);
+      if (event.target.matches('input[type="number"][data-setting-key], select[data-setting-key]')) {
+        updateSetting(event.target);
+        warnIfSessionOnly(event.target);
+      } else if (event.target.matches('input[type="range"][data-setting-key]')) {
+        warnIfSessionOnly(event.target);
+      }
     });
     elements['settings-content'].addEventListener('keydown', event => {
       if (event.key === 'Enter' && event.target.matches('input[type="number"][data-setting-key]')) {
@@ -121,6 +142,7 @@ export function createSettingsController({ state, settings, view, elements, pane
         const next = Number(input.value) + Number(adjust.dataset.adjust) * step;
         input.value = String(Number(next.toFixed(decimalPlaces(step))));
         updateSetting(input);
+        warnIfSessionOnly(adjust);
         return;
       }
       const saveDefault = event.target.closest('[data-set-character-default]');
@@ -129,6 +151,8 @@ export function createSettingsController({ state, settings, view, elements, pane
         settings.setCharacterDefault(side, state[side].id);
         view.renderContent();
         onSettingsChange(side);
+        confirm('feedback.character_default', { name: i18n.t(state[side].nameKey) },
+          elements['settings-content'].querySelector(`[data-set-character-default="${side}"]`));
         return;
       }
       const reset = event.target.closest('[data-reset-scope]');
@@ -138,18 +162,24 @@ export function createSettingsController({ state, settings, view, elements, pane
       else settings.resetFighter(scope, state[scope].id);
       view.renderContent();
       onSettingsChange(scope);
+      confirm(scope === 'arena' ? 'feedback.reset_arena' : 'feedback.reset_fighter',
+        scope === 'arena' ? {} : { name: i18n.t(state[scope].nameKey) },
+        elements['settings-content'].querySelector(`[data-reset-scope="${scope}"]`));
     });
     elements['settings-reset-all'].addEventListener('click', () => {
       settings.resetAll();
       view.renderContent();
       onSettingsChange('all');
+      confirm('feedback.reset_all', {}, elements['settings-reset-all']);
     });
     elements['advanced-tuning'].addEventListener('change', event => {
       settings.setAdvanced(event.target.checked);
       view.render();
       onSettingsChange('all');
+      confirm(event.target.checked ? 'feedback.advanced_on' : 'feedback.advanced_off', {}, elements['advanced-tuning']);
     });
     document.addEventListener('keydown', event => {
+      if (event.target.closest?.('dialog[open]')) return;
       if (event.target.matches?.('input, textarea, select')) return;
       if (event.key === 'Escape' && expanded) {
         event.preventDefault();

@@ -165,6 +165,7 @@ export function createMatchSettingsStore({ characters, storage = globalThis.loca
   ]))]));
   let arena = normalizeArena(source?.arena, advanced);
   const listeners = new Set();
+  let lastPersistenceSucceeded = false;
 
   function persist() {
     const value = {
@@ -174,8 +175,15 @@ export function createMatchSettingsStore({ characters, storage = globalThis.loca
       fighters: clone(fighters),
       arena: serializeArena(arena)
     };
-    try { storage?.setItem(MATCH_SETTINGS_STORAGE_KEY, JSON.stringify(value)); }
-    catch { /* Customization remains usable when persistence is unavailable. */ }
+    try {
+      if (!storage?.setItem) throw new Error('Storage is unavailable');
+      storage.setItem(MATCH_SETTINGS_STORAGE_KEY, JSON.stringify(value));
+      lastPersistenceSucceeded = true;
+    } catch {
+      // Customization remains usable when persistence is unavailable.
+      lastPersistenceSucceeded = false;
+    }
+    return lastPersistenceSucceeded;
   }
 
   function notify(detail) {
@@ -352,5 +360,5 @@ export function createMatchSettingsStore({ characters, storage = globalThis.loca
     return () => listeners.delete(listener);
   }
 
-  return Object.freeze({ getFighter, setFighterValue, setTraitValue, getMageAbilities, setMageAbilityValue, setPriestAbilityValue, setSummonAbilityValue, getArena, setArenaValue, getAdvanced: () => advanced, setAdvanced, resetFighter, setCharacterDefault, resetArena, resetAll, snapshot, applyDuel, subscribe });
+  return Object.freeze({ getFighter, setFighterValue, setTraitValue, getMageAbilities, setMageAbilityValue, setPriestAbilityValue, setSummonAbilityValue, getArena, setArenaValue, getAdvanced: () => advanced, getLastPersistenceStatus: () => lastPersistenceSucceeded, setAdvanced, resetFighter, setCharacterDefault, resetArena, resetAll, snapshot, applyDuel, subscribe });
 }

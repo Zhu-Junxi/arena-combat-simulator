@@ -15,6 +15,32 @@ function createStorage(initial = {}) {
   };
 }
 
+test('settings report persistence for defaults and resets while retaining session changes on failure', () => {
+  const storage = createStorage();
+  const store = createMatchSettingsStore({ characters: CHARACTERS, storage });
+  store.setFighterValue('left', 'warrior', 'health', 180);
+  assert.equal(store.getLastPersistenceStatus(), true);
+  store.setCharacterDefault('left', 'warrior');
+  assert.equal(store.getLastPersistenceStatus(), true);
+  store.resetFighter('left', 'warrior');
+  assert.equal(store.getLastPersistenceStatus(), true);
+
+  const blocked = createMatchSettingsStore({ characters: CHARACTERS, storage: {
+    getItem: () => null, setItem: () => { throw new Error('blocked'); }
+  } });
+  blocked.setFighterValue('left', 'warrior', 'health', 170);
+  assert.equal(blocked.getLastPersistenceStatus(), false);
+  blocked.setCharacterDefault('left', 'warrior');
+  assert.equal(blocked.getLastPersistenceStatus(), false);
+  blocked.setFighterValue('left', 'warrior', 'health', 120);
+  blocked.resetFighter('left', 'warrior');
+  assert.equal(blocked.getFighter('left', 'warrior').health, 170);
+  assert.equal(blocked.getLastPersistenceStatus(), false);
+  blocked.resetAll();
+  assert.equal(blocked.getLastPersistenceStatus(), false);
+  assert.equal(blocked.getFighter('left', 'warrior').health, 170);
+});
+
 test('settings defaults activate character speed ratings without mutating characters', () => {
   const store = createMatchSettingsStore({ characters: CHARACTERS, storage: createStorage() });
   assert.equal(store.getFighter('left', 'warrior').movementSpeed, 220);
