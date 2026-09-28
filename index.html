@@ -21,6 +21,7 @@
 <link rel="stylesheet" href="src/styles/layout.css">
 <link rel="stylesheet" href="src/styles/selection.css">
 <link rel="stylesheet" href="src/styles/customization.css">
+<link rel="stylesheet" href="src/styles/duel-presets.css">
 <link rel="stylesheet" href="src/styles/battle.css">
 <link rel="stylesheet" href="src/styles/responsive.css">
 <link rel="stylesheet" href="src/styles/battle-layout.css">
@@ -82,9 +83,8 @@
           <div><span data-i18n="customization.eyebrow"></span><h2 data-i18n="customization.heading"></h2></div>
           <div class="settings-actions">
             <label class="advanced-toggle" for="advanced-tuning" data-i18n-tooltip="tooltip.advanced_tuning"><input id="advanced-tuning" type="checkbox"><span data-i18n="customization.advanced_tuning"></span></label>
-            <button type="button" id="settings-export" data-i18n="customization.export" data-i18n-tooltip="tooltip.export"></button>
-            <button type="button" id="settings-import" data-i18n="customization.import" data-i18n-tooltip="tooltip.import"></button>
-            <input id="settings-import-file" type="file" accept="application/json,.json" hidden>
+            <label class="adjustment-step" for="adjustment-step" data-i18n-tooltip="tooltip.adjustment_step"><span data-i18n="customization.adjustment_step"></span><select id="adjustment-step" data-i18n-aria-label="customization.adjustment_step"><option value="0.001">0.001</option><option value="0.01">0.01</option><option value="0.1">0.1</option><option value="1">1</option><option value="5">5</option><option value="10">10</option></select></label>
+            <button type="button" id="settings-presets" data-i18n="preset.open" data-i18n-tooltip="preset.open"></button>
             <button type="button" id="settings-reset-all" data-i18n-tooltip="tooltip.reset_all"></button>
           </div>
         </header>
@@ -106,6 +106,32 @@
   </section>
   <footer><span id="status" role="status" aria-live="polite"></span><span id="view-label"></span></footer>
 </main>
+<div id="feedback-toast" class="feedback-toast" aria-hidden="true" hidden></div>
+<dialog id="preset-dialog" class="preset-dialog" aria-labelledby="preset-heading">
+  <div class="preset-shell">
+    <header class="preset-header">
+      <div><span class="preset-eyebrow" data-i18n="preset.eyebrow"></span><h2 id="preset-heading" data-i18n="preset.heading"></h2></div>
+      <button type="button" id="preset-close" class="preset-close" data-i18n="preset.close" data-i18n-aria-label="preset.close"></button>
+    </header>
+    <div class="preset-toolbar">
+      <label class="preset-search"><span data-i18n="preset.search_label"></span><input id="preset-search" type="search" data-i18n-aria-label="preset.search_label"></label>
+      <div id="preset-filters" class="preset-filters" role="group" data-i18n-aria-label="preset.filter_label"></div>
+      <div class="preset-toolbar-actions"><button type="button" id="preset-save-current" data-i18n="preset.save_current"></button><button type="button" id="preset-import" data-i18n="preset.import"></button></div>
+      <input id="preset-import-file" type="file" accept="application/json,.json" hidden>
+    </div>
+    <div id="preset-grid" class="preset-grid"></div>
+    <section id="preset-editor" class="preset-inline-panel" hidden>
+      <label for="preset-name" id="preset-editor-label"></label>
+      <div><input id="preset-name" type="text" maxlength="80"><button type="button" id="preset-editor-submit" data-i18n="preset.save"></button><button type="button" id="preset-editor-cancel" data-i18n="preset.cancel"></button></div>
+    </section>
+    <section id="preset-confirm" class="preset-inline-panel" hidden>
+      <p id="preset-confirm-message"></p>
+      <div><button type="button" id="preset-confirm-primary"></button><button type="button" id="preset-confirm-secondary"></button></div>
+    </section>
+    <p id="preset-status" class="preset-status" role="status" aria-live="polite"></p>
+  </div>
+  <div id="preset-feedback-toast" class="feedback-toast" aria-hidden="true" hidden></div>
+</dialog>
 <script type="module" src="src/scripts/app.js"></script>
 </body>
 </html>

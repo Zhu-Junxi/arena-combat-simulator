@@ -11,9 +11,9 @@
 
 @media (max-width: 600px) {
   :root { --dock-height: 194px; }
-  header { height: 64px; }
-  header h1 { font-size: 18px; }
-  header span { font-size: 10px; letter-spacing: 0; }
+  .page > header { height: 64px; }
+  .page > header h1 { font-size: 18px; }
+  .page > header span { font-size: 10px; letter-spacing: 0; }
   .stage { min-height: 680px; height: calc(100svh - 116px); }
   .panel-head { padding: 0 10px; height: 126px; align-items: flex-end; padding-bottom: 12px; }
   .side-button { min-width: 0; width: 100%; font-size: 12px; }
@@ -65,9 +65,9 @@
 
 @media (max-width: 600px) {
   :root { --dock-height: 32%; }
-  header { height: 62px; }
-  header h1 { font-size: 18px; letter-spacing: 2px; }
-  header span { font-size: 8px; letter-spacing: 0; }
+  .page > header { height: 62px; }
+  .page > header h1 { font-size: 18px; letter-spacing: 2px; }
+  .page > header span { font-size: 8px; letter-spacing: 0; }
   .header-controls { gap: 8px; }
   .settings-panel { padding: 40px 15px 12px; }
   .settings-toolbar { align-items: center; }
@@ -107,6 +107,10 @@
 
 @media (prefers-reduced-motion: reduce) {
   .avatar, .start-control button, .category, .character, .dock, .settings-panel, .settings-toggle, .settings-toggle span { transition: none; }
+  button, summary { transition: none !important; }
+  button:active:not(:disabled), summary:active { translate: none; }
+  .feedback-toast, .settings-sheet-reveal, .preset-dialog[open], .preset-dialog[open]::backdrop,
+  .preset-dialog[open] .preset-tile, .preset-inline-panel:not([hidden]) { animation: none !important; }
 }
 
 @media (max-width: 600px) {

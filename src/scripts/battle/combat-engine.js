@@ -3,7 +3,7 @@ import { BATTLE_RULES } from '../config/combat.js';
 import { createStarLaunch, createStarFlight, advanceStarFlight } from './star-flight.js';
 import { grantStarPassive, starCooldownAdvance } from './star-passive.js';
 import { WEAPON_DEFINITIONS } from '../config/weapons.js';
-import { defaultMageAbilities, defaultPriestAbilities } from '../config/customization.js';
+import { defaultMageAbilities, defaultPriestAbilities, defaultSummonAbilities } from '../config/customization.js';
 
 export const MAGE_CYCLES = Object.freeze(['ice', 'fire', 'leech']);
 export const MAGE_SPELLS = Object.freeze(['normal', 'theme', 'final']);
@@ -114,48 +114,93 @@ export function applyVines(target, trait, elapsed = 0, durationScale = 1) {
   target.slowFactor = trait.slowFactor;
 }
 
-export function activeMarks(fighter, theme, now) {
-  fighter.marks[theme] = fighter.marks[theme].filter(expiresAt => expiresAt > now + 1e-9);
-  return fighter.marks[theme].length;
+function sourceMarks(target, source) {
+  target.marks[source] ??= Object.fromEntries(MAGE_CYCLES.map(theme => [theme, []]));
+  return target.marks[source];
 }
 
-export function applyMark(target, theme, abilities, elapsed = 0) {
-  activeMarks(target, theme, elapsed);
-  if (target.marks[theme].length < abilities.effects.maxMarks) target.marks[theme].push(elapsed + abilities.effects.markDuration);
-  return target.marks[theme].length;
+export function activeMarks(target, source, theme, now) {
+  // Retain the former public call shape for older integrations.
+  if (now == null) { now = theme; theme = source; source = 'legacy'; }
+  const marks = sourceMarks(target, source);
+  marks[theme] = marks[theme].filter(expiresAt => expiresAt > now + 1e-9);
+  return marks[theme].length;
 }
 
-export function consumeMarks(target, theme, elapsed = 0) {
-  const count = activeMarks(target, theme, elapsed);
-  target.marks[theme] = [];
+export function applyMark(target, source, theme, abilities, elapsed = 0) {
+  if (typeof theme !== 'string') { elapsed = abilities ?? 0; abilities = theme; theme = source; source = 'legacy'; }
+  const marks = sourceMarks(target, source);
+  activeMarks(target, source, theme, elapsed);
+  if (marks[theme].length < abilities.effects.maxMarks) marks[theme].push(elapsed + abilities.effects.markDuration);
+  return marks[theme].length;
+}
+
+export function consumeMarks(target, source, theme, elapsed = 0) {
+  if (typeof theme !== 'string') { elapsed = theme ?? 0; theme = source; source = 'legacy'; }
+  const count = activeMarks(target, source, theme, elapsed);
+  sourceMarks(target, source)[theme] = [];
   return count;
 }
 
-export function applyPriestMark(target, abilities, elapsed = 0) {
-  target.priestMarks += 1;
-  target.priestMarkEffects = abilities;
-  if (target.priestMarks > abilities.decayFloor && target.priestMarkDecayAt == null) {
-    target.priestMarkDecayAt = elapsed + abilities.decayInterval;
-  }
-  return target.priestMarks;
+function priestRecord(target, source) {
+  target.priestMarksBySource ??= {};
+  target.priestMarksBySource[source] ??= { count: 0, decayAt: null, effects: null };
+  return target.priestMarksBySource[source];
 }
 
-export function consumePriestMarks(target) {
-  const count = target.priestMarks;
-  target.priestMarks = 0;
-  target.priestMarkDecayAt = null;
-  target.priestMarkEffects = null;
+function syncLegacyPriestMarks(target) {
+  const records = Object.values(target.priestMarksBySource ?? {});
+  target.priestMarks = records.reduce((total, record) => total + record.count, 0);
+}
+
+// Saved/replayed two-fighter battles used these fields before marks became
+// source-owned.  Treat a direct legacy value as the sole source record only
+// while there is one (or no) owner; never merge it into a multi-Priest target.
+function ownedPriestRecord(target, source, effects = null) {
+  const record = priestRecord(target, source);
+  const records = Object.keys(target.priestMarksBySource);
+  if (records.length <= 1 && Number.isFinite(target.priestMarks) && target.priestMarks !== record.count) {
+    record.count = Math.max(0, target.priestMarks);
+    record.decayAt ??= target.priestMarkDecayAt ?? null;
+  }
+  record.effects ??= effects ?? target.priestMarkEffects ?? null;
+  return record;
+}
+
+export function applyPriestMark(target, source, abilities, elapsed = 0) {
+  if (typeof source !== 'string') { elapsed = abilities ?? 0; abilities = source; source = 'legacy'; }
+  const record = priestRecord(target, source);
+  record.count += 1;
+  record.effects = abilities;
+  if (record.count > abilities.decayFloor && record.decayAt == null) {
+    record.decayAt = elapsed + abilities.decayInterval;
+  }
+  syncLegacyPriestMarks(target);
+  return record.count;
+}
+
+export function consumePriestMarks(target, source = 'legacy') {
+  const record = priestRecord(target, source);
+  const count = record.count;
+  record.count = 0;
+  record.decayAt = null;
+  record.effects = null;
+  syncLegacyPriestMarks(target);
   return count;
 }
 
 export function priestMarkMovementFactor(fighter) {
-  const effects = fighter.priestMarkEffects;
-  return effects ? Math.max(0.1, 1 - fighter.priestMarks * effects.markMoveSlowPerMark) : 1;
+  const records = Object.values(fighter.priestMarksBySource ?? {});
+  if (!records.length && fighter.priestMarkEffects) return Math.max(0.1, 1 - fighter.priestMarks * fighter.priestMarkEffects.markMoveSlowPerMark);
+  return records.reduce((factor, record) =>
+    record.effects ? factor * Math.max(0.1, 1 - record.count * record.effects.markMoveSlowPerMark) : factor, 1);
 }
 
 export function priestMarkAttackCooldownFactor(fighter) {
-  const effects = fighter.priestMarkEffects;
-  return effects ? 1 + fighter.priestMarks * effects.markAttackSlowPerMark : 1;
+  const records = Object.values(fighter.priestMarksBySource ?? {});
+  if (!records.length && fighter.priestMarkEffects) return 1 + fighter.priestMarks * fighter.priestMarkEffects.markAttackSlowPerMark;
+  return records.reduce((factor, record) =>
+    record.effects ? factor * (1 + record.count * record.effects.markAttackSlowPerMark) : factor, 1);
 }
 
 export function healFighter(fighter, amount) {
@@ -202,6 +247,7 @@ export function createFighter(side, character, weapon, index, settings = null, r
   const movementSpeed = settings?.movementSpeed ?? rules.speed;
   const mageAbilities = character.trait?.id === 'elemental-cycles' ? settings?.abilities ?? defaultMageAbilities() : null;
   const priestAbilities = character.trait?.id === 'prayer' ? settings?.abilities ?? defaultPriestAbilities() : null;
+  const summonAbilities = character.trait?.id === 'beastmaster' ? settings?.abilities ?? defaultSummonAbilities() : null;
   const x = rules.size / 2 + (index === 0 ? -1 : 1) * rules.startingDistance / 2;
   return {
     side,
@@ -224,17 +270,20 @@ export function createFighter(side, character, weapon, index, settings = null, r
     attacksFired: 0,
     starPassive: {},
     guardian: character.id === 'guardian' ? createGuardianState() : null,
-    marks: Object.fromEntries(MAGE_CYCLES.map(theme => [theme, []])),
+    marks: {},
     mageCycle: null,
     mageSpellIndex: 0,
     mageAbilities,
     priestAbilities,
+    summonAbilities,
+    summonMeter: 0,
+    packCooldownUntil: 0,
+    companionRespawnAt: 0,
     prayer: null,
     prayerCooldownUntil: 0,
     prayerInterruptedUntil: 0,
     priestMarks: 0,
-    priestMarkDecayAt: null,
-    priestMarkEffects: null,
+    priestMarksBySource: {},
     burn: null,
     bleed: null,
     rootUntil: 0,
@@ -262,6 +311,8 @@ export function advanceMovement(fighters, seconds, now, rules = BATTLE_RULES, zo
     return speed * factor(fighter);
   };
   let remaining = seconds;
+  let zeroTimeEvents = 0;
+  const maxZeroTimeEvents = Math.max(16, fighters.length * fighters.length * 8);
 
   while (remaining > epsilon) {
     let nextTime = remaining;
@@ -288,30 +339,32 @@ export function advanceMovement(fighters, seconds, now, rules = BATTLE_RULES, zo
       }
     });
 
-    const [first, second] = fighters;
     if (rules.collisionMode !== 'pass' || fighters.some(fighter => fighter.guardian?.dash)) {
-      if (fighters.some(fighter => fighter.guardian?.dash) &&
-          Math.abs(first.x - second.x) <= rules.fighterSize + epsilon &&
-          Math.abs(first.y - second.y) <= rules.fighterSize + epsilon) {
-        consider(0, { type: 'fighters' });
-      }
-      let entry = -Infinity;
-      let exit = Infinity;
-      let possible = true;
-      for (const axis of ['x', 'y']) {
-        const distance = second[axis] - first[axis];
-        const relative = velocity(second, axis) - velocity(first, axis);
-        if (Math.abs(relative) < epsilon) {
-          if (Math.abs(distance) >= rules.fighterSize - epsilon) possible = false;
-        } else {
-          const firstTime = (-rules.fighterSize - distance) / relative;
-          const secondTime = (rules.fighterSize - distance) / relative;
-          entry = Math.max(entry, Math.min(firstTime, secondTime));
-          exit = Math.min(exit, Math.max(firstTime, secondTime));
+      for (let a = 0; a < fighters.length; a += 1) for (let b = a + 1; b < fighters.length; b += 1) {
+        const first = fighters[a];
+        const second = fighters[b];
+        const charging = first.guardian?.dash || second.guardian?.dash;
+        if (rules.collisionMode === 'pass' && !charging) continue;
+        if (charging && Math.abs(first.x - second.x) <= rules.fighterSize + epsilon &&
+            Math.abs(first.y - second.y) <= rules.fighterSize + epsilon) {
+          consider(0, { type: 'fighters', first, second });
         }
-      }
-      if (possible && entry >= -epsilon && entry <= exit + epsilon && exit > epsilon) {
-        consider(entry, { type: 'fighters' });
+        let entry = -Infinity;
+        let exit = Infinity;
+        let possible = true;
+        for (const axis of ['x', 'y']) {
+          const distance = second[axis] - first[axis];
+          const relative = velocity(second, axis) - velocity(first, axis);
+          if (Math.abs(relative) < epsilon) {
+            if (Math.abs(distance) >= rules.fighterSize - epsilon) possible = false;
+          } else {
+            const firstTime = (-rules.fighterSize - distance) / relative;
+            const secondTime = (rules.fighterSize - distance) / relative;
+            entry = Math.max(entry, Math.min(firstTime, secondTime));
+            exit = Math.min(exit, Math.max(firstTime, secondTime));
+          }
+        }
+        if (possible && entry >= -epsilon && entry <= exit + epsilon && exit > epsilon) consider(entry, { type: 'fighters', first, second });
       }
     }
 
@@ -324,10 +377,35 @@ export function advanceMovement(fighters, seconds, now, rules = BATTLE_RULES, zo
     if (!contacts.length) break;
 
     for (const contact of contacts) onContact(contact);
-    if (contacts.some(contact => contact.type === 'fighters')) {
+    // Multiple collisions can legitimately share a timestamp. A degenerate
+    // geometry must still never monopolize the animation frame with an endless
+    // sequence of zero-time events.
+    zeroTimeEvents = nextTime <= epsilon ? zeroTimeEvents + 1 : 0;
+    if (zeroTimeEvents > maxZeroTimeEvents) {
+      fighters.forEach(fighter => {
+        for (const axis of ['x', 'y']) {
+          fighter[axis] = Math.max(min, Math.min(max, fighter[axis]));
+          if ((fighter[axis] <= min + epsilon && fighter[`v${axis}`] < 0) ||
+              (fighter[axis] >= max - epsilon && fighter[`v${axis}`] > 0)) fighter[`v${axis}`] *= -1;
+        }
+      });
+      break;
+    }
+
+    // Resolve walls first. Pair responses below then use velocities that are
+    // already directed back into the arena rather than outward through a wall.
+    for (const { fighter, axis } of contacts.filter(contact => contact.type === 'wall')) {
+      if (factor(fighter) > 0 && (
+        (fighter[axis] <= min + epsilon && fighter[`v${axis}`] < 0) ||
+        (fighter[axis] >= max - epsilon && fighter[`v${axis}`] > 0)
+      )) fighter[`v${axis}`] *= -1;
+    }
+
+    for (const contact of contacts.filter(contact => contact.type === 'fighters')) {
+      const { first, second } = contact;
       if (rules.collisionMode === 'stop') {
         const stopUntil = now + elapsed + (rules.contactStopDuration ?? BATTLE_RULES.contactStopDuration);
-        fighters.forEach(fighter => {
+        [first, second].forEach(fighter => {
           fighter.rootUntil = Math.max(fighter.rootUntil, stopUntil);
           // Resume away from the contact once the pause ends, avoiding another immediate stop.
           fighter.vx *= -1;
@@ -343,10 +421,10 @@ export function advanceMovement(fighters, seconds, now, rules = BATTLE_RULES, zo
           second.vx = firstVelocity.x / firstSpeed * secondSpeed;
           second.vy = firstVelocity.y / firstSpeed * secondSpeed;
         } else {
-          fighters.forEach(fighter => { fighter.vx *= -1; fighter.vy *= -1; });
+          [first, second].forEach(fighter => { fighter.vx *= -1; fighter.vy *= -1; });
         }
       } else {
-        fighters.forEach(fighter => {
+        [first, second].forEach(fighter => {
           if (factor(fighter) > 0) {
             fighter.vx *= -1;
             fighter.vy *= -1;
@@ -359,7 +437,7 @@ export function advanceMovement(fighters, seconds, now, rules = BATTLE_RULES, zo
         const separation = second[axis] - first[axis];
         if (Math.abs(separation) >= rules.fighterSize - epsilon &&
             separation * (velocity(second, axis) - velocity(first, axis)) < -epsilon) {
-          fighters.forEach((fighter, index) => {
+          [first, second].forEach((fighter, index) => {
             const speed = Math.hypot(fighter.vx, fighter.vy);
             fighter[`v${axis}`] = Math.abs(fighter[`v${axis}`]) * Math.sign(separation) * (index === 0 ? -1 : 1);
             if ((fighter[axis] <= min + epsilon && fighter[`v${axis}`] < 0) ||
@@ -396,7 +474,7 @@ export function createCombatEngine({
   onEvent = () => {}
 } = {}) {
   const baseRules = Object.freeze({ ...BATTLE_RULES, ...rules });
-  const battle = { phase: 'idle', elapsed: 0, fighters: [], projectiles: [], zones: [], winner: null, rules: baseRules };
+  const battle = { phase: 'idle', elapsed: 0, fighters: [], summons: [], projectiles: [], zones: [], winner: null, rules: baseRules };
   const emit = (type, detail = {}) => onEvent({ type, battle, ...detail });
 
   function reset(selectedCharacters, matchSetup = null) {
@@ -404,12 +482,31 @@ export function createCombatEngine({
     battle.elapsed = 0;
     battle.projectiles = [];
     battle.zones = [];
+    battle.summons = [];
     battle.winner = null;
     battle.rules = Object.freeze({ ...baseRules, ...matchSetup?.arena });
-    battle.fighters = ['left', 'right'].map((side, index) => {
+    const slots = Object.keys(selectedCharacters).filter(side => selectedCharacters[side]);
+    battle.fighters = slots.map((side, index) => {
       const character = selectedCharacters[side];
       return createFighter(side, character, weapons[character.id], index, matchSetup?.fighters?.[side], battle.rules);
     });
+    const count = battle.fighters.length;
+    if (count === 2) {
+      // Preserve the familiar legacy duel layout exactly.
+      battle.fighters.forEach((fighter, index) => {
+        fighter.x = fighter.prevX = battle.rules.size / 2 + (index === 0 ? -1 : 1) * battle.rules.startingDistance / 2;
+        fighter.y = fighter.prevY = battle.rules.size / 2;
+      });
+    } else {
+      // The chord between adjacent seats is the configured starting distance.
+      const radius = battle.rules.startingDistance / (2 * Math.sin(Math.PI / count));
+      battle.fighters.forEach((fighter, index) => {
+        const angle = -Math.PI / 2 + index * Math.PI * 2 / count;
+        fighter.x = fighter.prevX = battle.rules.size / 2 + Math.cos(angle) * radius;
+        fighter.y = fighter.prevY = battle.rules.size / 2 + Math.sin(angle) * radius;
+      });
+    }
+    battle.fighters.filter(isBeastmaster).forEach(spawnCompanion);
     emit('reset');
     return battle;
   }
@@ -420,6 +517,41 @@ export function createCombatEngine({
 
   function isPriest(fighter) {
     return fighter.trait?.id === 'prayer';
+  }
+
+  function isBeastmaster(fighter) {
+    return fighter.trait?.id === 'beastmaster';
+  }
+
+  function summonState(owner, overrides = {}) {
+    return {
+      owner, target: null, bodySize: battle.rules.fighterSize, x: owner.x, y: owner.y, prevX: owner.x, prevY: owner.y,
+      health: 1, maxHealth: 1, hitUntil: 0, marks: {}, priestMarks: 0, priestMarksBySource: {},
+      rootUntil: 0, slowUntil: 0, slowFactor: 1, burn: null, bleed: null,
+      targetable: false, ...overrides
+    };
+  }
+
+  function spawnCompanion(owner) {
+    if (!owner.summonAbilities || owner.health <= 0 || battle.summons.some(summon => summon.owner === owner && summon.kind === 'companion' && summon.health > 0)) return;
+    const abilities = owner.summonAbilities;
+    const angle = (owner.side.length * 1.7) % (Math.PI * 2);
+    const summon = summonState(owner, {
+      kind: 'companion', targetable: true, health: abilities.companionHealth, maxHealth: abilities.companionHealth,
+      x: owner.x + Math.cos(angle) * 32, y: owner.y + Math.sin(angle) * 32,
+      speed: abilities.companionSpeed, biteElapsed: abilities.biteCooldown,
+      homeAngle: angle, state: 'ready'
+    });
+    summon.prevX = summon.x;
+    summon.prevY = summon.y;
+    battle.summons.push(summon);
+    emit('summon-spawned', { summon, owner });
+  }
+
+  function removeSummon(summon, reason = 'expired') {
+    const index = battle.summons.indexOf(summon);
+    if (index >= 0) battle.summons.splice(index, 1);
+    emit('summon-removed', { summon, reason });
   }
 
   function prepareMageCycle(fighter) {
@@ -522,10 +654,25 @@ export function createCombatEngine({
     return projectile;
   }
 
+  function selectTarget(fighter) {
+    const candidates = [
+      ...battle.fighters.filter(other => other !== fighter && other.health > 0),
+      ...battle.summons.filter(summon => summon.targetable && summon.owner !== fighter && summon.health > 0)
+    ];
+    if (!candidates.length) return null;
+    const strategy = battle.rules.targetStrategy ?? 'nearest';
+    if (strategy !== 'nearest' && fighter.target && fighter.target.health > 0) return fighter.target;
+    if (strategy === 'random') fighter.target = candidates[Math.floor(random() * candidates.length)];
+    else fighter.target = candidates.reduce((closest, candidate) =>
+      Math.hypot(candidate.x - fighter.x, candidate.y - fighter.y) < Math.hypot(closest.x - fighter.x, closest.y - fighter.y) ? candidate : closest);
+    return fighter.target;
+  }
+
   function updateAttacks() {
     const alive = battle.phase === 'running';
-    battle.fighters.forEach((fighter, index) => {
-      const target = battle.fighters[1 - index];
+    battle.fighters.forEach(fighter => {
+      const target = selectTarget(fighter);
+      if (!target) return;
       updatePrayer(fighter, target);
       if (!fighter.attack) prepareMageCycle(fighter);
       if (alive && !fighter.attack && fighter.cooldownElapsed >= fighter.attackCooldown * priestMarkAttackCooldownFactor(fighter) - 1e-9 && canAttack(fighter, target, battle.rules)) {
@@ -639,18 +786,22 @@ export function createCombatEngine({
       };
       const nextX = segment?.nextX ?? projectile.x;
       const nextY = segment?.nextY ?? projectile.y;
-      const hit = target.health > 0 && segment ? segmentBoxTime(
-        segment.x - (target.prevX + (target.x - target.prevX) * segment.startFraction),
-        segment.y - (target.prevY + (target.y - target.prevY) * segment.startFraction),
-        nextX - target.x,
-        nextY - target.y,
-        battle.rules.fighterSize / 2 + projectile.radius
-      ) : null;
+      let hit = null;
+      let hitTarget = null;
+      if (segment) for (const candidate of [...battle.fighters, ...battle.summons.filter(summon => summon.targetable)]) {
+        if (candidate === projectile.owner || candidate.owner === projectile.owner || candidate.health <= 0) continue;
+        const startX = candidate.prevX + (candidate.x - candidate.prevX) * segment.startFraction;
+        const startY = candidate.prevY + (candidate.y - candidate.prevY) * segment.startFraction;
+        const candidateHit = segmentBoxTime(segment.x - startX, segment.y - startY,
+          nextX - candidate.x, nextY - candidate.y, battle.rules.fighterSize / 2 + projectile.radius);
+        if (candidateHit !== null && (hit === null || candidateHit < hit)) { hit = candidateHit; hitTarget = candidate; }
+      }
       projectile.age += seconds;
       if (hit !== null) {
+        const target = hitTarget;
         if (projectile.priestMark) {
           grantStarPassive(target, 'enemy-hit', battle.elapsed);
-          const marks = applyPriestMark(target, projectile.owner.priestAbilities, battle.elapsed);
+          const marks = applyPriestMark(target, projectile.owner.side, projectile.owner.priestAbilities, battle.elapsed);
           emit('priest-marked', { fighter: projectile.owner, target, marks });
           emit('projectile-removed', { projectile, reason: 'hit' });
           return false;
@@ -661,7 +812,7 @@ export function createCombatEngine({
         if (trait?.id === 'elemental-cycles' && abilities) {
           const { theme, slot } = projectile;
           if (slot < 2) {
-            applyMark(target, theme, abilities, battle.elapsed);
+            applyMark(target, projectile.owner.side, theme, abilities, battle.elapsed);
             if (slot === 1) {
               const effects = abilities.effects;
               if (theme === 'ice') {
@@ -672,7 +823,7 @@ export function createCombatEngine({
               if (theme === 'leech') target.bleed = { dps: effects.leechBleedDamage, expiresAt: battle.elapsed + effects.leechBleedDuration };
             }
           } else {
-            const marks = consumeMarks(target, theme, battle.elapsed);
+            const marks = consumeMarks(target, projectile.owner.side, theme, battle.elapsed);
             const effects = abilities.effects;
             damage += marks * effects.damagePerMark;
             if (theme === 'ice') {
@@ -709,6 +860,168 @@ export function createCombatEngine({
     });
   }
 
+  function boundedSummonPosition(summon) {
+    const half = battle.rules.fighterSize / 2;
+    summon.x = Math.max(half, Math.min(battle.rules.size - half, summon.x));
+    summon.y = Math.max(half, Math.min(battle.rules.size - half, summon.y));
+  }
+
+  function moveSummonTowards(summon, destination, speed, seconds, stopDistance = 0) {
+    const dx = destination.x - summon.x;
+    const dy = destination.y - summon.y;
+    const distance = Math.hypot(dx, dy);
+    const remaining = Math.max(0, distance - stopDistance);
+    const travel = Math.min(remaining, speed * seconds);
+    if (distance > 1e-9 && travel > 0) {
+      summon.x += dx / distance * travel;
+      summon.y += dy / distance * travel;
+      boundedSummonPosition(summon);
+    }
+    return remaining <= speed * seconds + 1e-9;
+  }
+
+  function companionHome(summon) {
+    return {
+      x: summon.owner.x + Math.cos(summon.homeAngle) * 32,
+      y: summon.owner.y + Math.sin(summon.homeAngle) * 32
+    };
+  }
+
+  function firstPackWolfTarget(summon, nextX, nextY) {
+    let best = null;
+    let time = null;
+    for (const target of [...battle.fighters, ...battle.summons.filter(candidate => candidate.targetable)]) {
+      // A pack may be intercepted by any enemy fighter or permanent enemy
+      // summon, but never by its Beastmaster or that Beastmaster's companion.
+      if (target === summon.owner || target.owner === summon.owner || target.health <= 0) continue;
+      const hit = segmentBoxTime(summon.x - target.prevX, summon.y - target.prevY, nextX - target.x, nextY - target.y, battle.rules.fighterSize / 2 + 10);
+      if (hit !== null && (time === null || hit < time)) { time = hit; best = target; }
+    }
+    return best;
+  }
+
+  function spawnPack(owner, target) {
+    const abilities = owner.summonAbilities;
+    for (let index = 0; index < abilities.packSize; index += 1) {
+      const burstAngle = facingAngle(owner, target) + index * Math.PI * 2 / abilities.packSize;
+      const formationOffset = (index - (abilities.packSize - 1) / 2) * 18;
+      const summon = summonState(owner, {
+        // Pack members are short-lived summon actors, not projectiles. Each
+        // wolf charges once, then leaves after its hit or lifetime expires.
+        kind: 'pack-wolf', target, state: 'charging',
+        x: owner.x + Math.cos(burstAngle) * 14,
+        y: owner.y + Math.sin(burstAngle) * 14,
+        angle: burstAngle, burstAngle, burstDistance: 72, burstTravelled: 0, formationOffset,
+        vx: Math.cos(burstAngle) * abilities.chargeSpeed, vy: Math.sin(burstAngle) * abilities.chargeSpeed,
+        damage: abilities.chargeDamage, expiresAt: battle.elapsed + abilities.chargeLifetime
+      });
+      battle.summons.push(summon);
+      emit('summon-spawned', { summon, owner });
+    }
+    owner.summonMeter = 0;
+    owner.packCooldownUntil = battle.elapsed + abilities.packCooldown;
+    emit('pack-summoned', { fighter: owner, count: abilities.packSize });
+  }
+
+  function updateSummons(seconds) {
+    for (const summon of [...battle.summons]) {
+      summon.prevX = summon.x;
+      summon.prevY = summon.y;
+      const owner = summon.owner;
+      if (owner.health <= 0) { removeSummon(summon, 'owner-defeated'); continue; }
+      if (summon.kind === 'companion') {
+        if (summon.health <= 0) {
+          owner.companionRespawnAt ||= battle.elapsed + owner.summonAbilities.respawnDelay;
+          removeSummon(summon, 'defeated');
+          continue;
+        }
+        summon.biteElapsed += seconds;
+        if (summon.state === 'returning') {
+          if (moveSummonTowards(summon, companionHome(summon), summon.speed, seconds)) {
+            summon.state = 'ready';
+            summon.target = null;
+          }
+        } else if (summon.state === 'ready' && summon.biteElapsed >= owner.summonAbilities.biteCooldown - 1e-9) {
+          const target = selectTarget(owner);
+          if (target) {
+            summon.target = target;
+            summon.state = 'lunging';
+          }
+        } else if (summon.state === 'lunging') {
+          const target = summon.target;
+          if (!target || target.health <= 0) {
+            summon.target = null;
+            summon.state = 'returning';
+            continue;
+          }
+          // A lunge stops at bite distance rather than occupying the target's
+          // centre, leaving the companion exposed to normal enemy attacks.
+          if (moveSummonTowards(summon, target, summon.speed * 2.2, seconds, owner.summonAbilities.biteRange)) {
+            summon.biteElapsed = 0;
+            const damage = applyDirectDamage(owner, target, owner.summonAbilities.biteDamage);
+            if (damage > 0) {
+              owner.summonMeter = Math.min(owner.summonAbilities.meterThreshold, owner.summonMeter + owner.summonAbilities.meterPerBite);
+              emit('summon-bit', { summon, owner, target, damage, meter: owner.summonMeter });
+            }
+            summon.state = 'returning';
+          }
+        }
+      } else if (summon.kind === 'pack-wolf') {
+        if (battle.elapsed >= summon.expiresAt) { removeSummon(summon); continue; }
+        let travelSeconds = seconds;
+        if (summon.state === 'charging') {
+          const speed = owner.summonAbilities.chargeSpeed;
+          travelSeconds = Math.min(seconds, Math.max(0, summon.burstDistance - summon.burstTravelled) / speed);
+          summon.angle = summon.burstAngle;
+          summon.vx = Math.cos(summon.angle) * speed;
+          summon.vy = Math.sin(summon.angle) * speed;
+        } else if (summon.target?.health > 0) {
+          // After the radial launch, wolves keep steering toward their assigned
+          // target. Swept collision still awards the hit to the first enemy.
+          const targetAngle = facingAngle(summon, summon.target);
+          const distance = Math.hypot(summon.target.x - summon.x, summon.target.y - summon.y);
+          // Spread while travelling so pack size is readable, then converge at
+          // close range so every wolf remains a genuine target-seeking charge.
+          const lateral = summon.formationOffset * Math.min(1, distance / 220);
+          const destination = {
+            x: summon.target.x - Math.sin(targetAngle) * lateral,
+            y: summon.target.y + Math.cos(targetAngle) * lateral
+          };
+          summon.angle = facingAngle(summon, destination);
+          summon.vx = Math.cos(summon.angle) * owner.summonAbilities.chargeSpeed;
+          summon.vy = Math.sin(summon.angle) * owner.summonAbilities.chargeSpeed;
+        }
+        const nextX = summon.x + summon.vx * travelSeconds;
+        const nextY = summon.y + summon.vy * travelSeconds;
+        const target = firstPackWolfTarget(summon, nextX, nextY);
+        if (target) {
+          applyDirectDamage(owner, target, summon.damage);
+          emit('pack-wolf-hit', { summon, owner, target });
+          removeSummon(summon, 'hit');
+        } else {
+          summon.x = nextX;
+          summon.y = nextY;
+          if (summon.state === 'charging') {
+            summon.burstTravelled += owner.summonAbilities.chargeSpeed * travelSeconds;
+            if (summon.burstTravelled >= summon.burstDistance - 1e-9) summon.state = 'tracking';
+          }
+          if (nextX < -30 || nextX > battle.rules.size + 30 || nextY < -30 || nextY > battle.rules.size + 30) removeSummon(summon, 'expired');
+        }
+      }
+    }
+    for (const owner of battle.fighters.filter(isBeastmaster)) {
+      const companion = battle.summons.find(summon => summon.owner === owner && summon.kind === 'companion');
+      if (!companion && owner.companionRespawnAt && battle.elapsed >= owner.companionRespawnAt - 1e-9) {
+        owner.companionRespawnAt = 0;
+        spawnCompanion(owner);
+      }
+      if (companion && owner.summonMeter >= owner.summonAbilities.meterThreshold && battle.elapsed >= owner.packCooldownUntil - 1e-9) {
+        const target = selectTarget(owner);
+        if (target) spawnPack(owner, target);
+      }
+    }
+  }
+
   function startPrayer(fighter, target) {
     fighter.prayer = { startedAt: battle.elapsed, target };
     grantStarPassive(target, 'enemy-attack', battle.elapsed);
@@ -736,10 +1049,12 @@ export function createCombatEngine({
   }
 
   function updatePrayer(fighter, target) {
-    if (!isPriest(fighter) || fighter.health <= 0 || target.health <= 0) return;
+    if (!isPriest(fighter) || fighter.health <= 0) return;
+    if (fighter.prayer) target = fighter.prayer.target;
+    if (!target || target.health <= 0) { fighter.prayer = null; return; }
     const effects = fighter.priestAbilities;
     if (fighter.prayer && battle.elapsed >= fighter.prayer.startedAt + effects.prayerDuration - 1e-9) {
-      const marks = consumePriestMarks(target);
+      const marks = consumePriestMarks(target, fighter.side);
       const healed = healFighter(fighter, effects.baseHeal + marks * effects.healPerMark);
       const damage = applyDirectDamage(fighter, target, effects.baseDamage + marks * effects.damagePerMark);
       fighter.prayer = null;
@@ -747,28 +1062,31 @@ export function createCombatEngine({
       if (healed) emit('healed', { fighter, amount: healed });
       emit('prayer-completed', { fighter, target, marks, healed, damage });
     }
-    if (!fighter.prayer && target.priestMarks > 0 && battle.elapsed >= fighter.prayerCooldownUntil - 1e-9 &&
+    const marks = ownedPriestRecord(target, fighter.side, effects).count;
+    if (!fighter.prayer && marks > 0 && battle.elapsed >= fighter.prayerCooldownUntil - 1e-9 &&
         battle.elapsed >= fighter.prayerInterruptedUntil - 1e-9) {
       startPrayer(fighter, target);
     }
   }
 
   function updatePriestMarkDecay() {
-    battle.fighters.forEach((fighter, index) => {
+    battle.fighters.forEach(fighter => {
       if (!isPriest(fighter)) return;
-      const target = battle.fighters[1 - index];
       const effects = fighter.priestAbilities;
-      let decayed = 0;
-      while (target.priestMarks > effects.decayFloor && target.priestMarkDecayAt != null &&
-             battle.elapsed >= target.priestMarkDecayAt - 1e-9) {
-        const next = Math.max(effects.decayFloor, target.priestMarks - effects.decayAmount);
-        decayed += target.priestMarks - next;
-        target.priestMarks = next;
-        target.priestMarkDecayAt += effects.decayInterval;
-      }
-      if (target.priestMarks <= effects.decayFloor) target.priestMarkDecayAt = null;
-      if (target.priestMarks === 0) target.priestMarkEffects = null;
-      if (decayed) emit('priest-marks-decayed', { fighter, target, amount: decayed, marks: target.priestMarks });
+      battle.fighters.filter(target => target !== fighter).forEach(target => {
+        const record = ownedPriestRecord(target, fighter.side, effects);
+        let decayed = 0;
+        while (record.count > effects.decayFloor && record.decayAt != null && battle.elapsed >= record.decayAt - 1e-9) {
+          const next = Math.max(effects.decayFloor, record.count - effects.decayAmount);
+          decayed += record.count - next;
+          record.count = next;
+          record.decayAt += effects.decayInterval;
+        }
+        if (record.count <= effects.decayFloor) record.decayAt = null;
+        if (record.count === 0) record.effects = null;
+        syncLegacyPriestMarks(target);
+        if (decayed) emit('priest-marks-decayed', { fighter, target, amount: decayed, marks: record.count });
+      });
     });
   }
 
@@ -795,9 +1113,10 @@ export function createCombatEngine({
       advanceMovement(battle.fighters, until - now, now, battle.rules, battle.zones, contact => {
         if (contact.type === 'wall') endCharge(contact.fighter);
         if (contact.type === 'fighters') {
-          const charging = battle.fighters.filter(fighter => fighter.guardian?.dash);
+          const pair = [contact.first, contact.second];
+          const charging = pair.filter(fighter => fighter.guardian?.dash);
           // Resolve both impacts when two guardians charge into each other.
-          const hits = charging.map(fighter => [fighter, battle.fighters.find(other => other !== fighter), fighter.guardian.dash.attack]);
+          const hits = charging.map(fighter => [fighter, pair.find(other => other !== fighter), fighter.guardian.dash.attack]);
           charging.forEach(fighter => endCharge(fighter));
           hits.forEach(([fighter, target, attack]) => {
             if (!attack.hit && fighter.health > 0 && target.health > 0) {
@@ -819,7 +1138,9 @@ export function createCombatEngine({
   }
 
   function applyDamageOverTime(seconds) {
-    battle.fighters.forEach(target => {
+    // Targetable permanent summons share the same ongoing-effect state as fighters.
+    // Short-lived charge summons are deliberately excluded because they cannot be hit.
+    [...battle.fighters, ...battle.summons.filter(summon => summon.targetable)].forEach(target => {
       for (const type of ['burn', 'bleed']) {
         const effect = target[type];
         if (!effect) continue;
@@ -853,6 +1174,7 @@ export function createCombatEngine({
     battle.projectiles = [];
     battle.zones.forEach(zone => emit('zone-removed', { zone }));
     battle.zones = [];
+    battle.summons.slice().forEach(summon => removeSummon(summon, 'finished'));
     battle.fighters.forEach(fighter => {
       if (fighter.guardian) {
         endCharge(fighter);
@@ -890,13 +1212,16 @@ export function createCombatEngine({
     applyDamageOverTime(seconds);
     updateProjectiles(seconds);
     updateGuardianFlails(seconds);
+    updateSummons(seconds);
     updateAttacks();
-    if (battle.fighters.some(fighter => fighter.health <= 0)) finish();
+    if (battle.fighters.filter(fighter => fighter.health > 0).length <= 1) finish();
   }
 
   function launch() {
     const firstAngle = random() * Math.PI * 2;
-    const angles = [firstAngle, firstAngle + Math.PI / 3 + random() * Math.PI * 4 / 3];
+    const angles = battle.fighters.length === 2
+      ? [firstAngle, firstAngle + Math.PI / 3 + random() * Math.PI * 4 / 3]
+      : battle.fighters.map((fighter, index) => firstAngle + index * Math.PI * 2 / battle.fighters.length);
     battle.fighters.forEach((fighter, index) => {
       fighter.vx = Math.cos(angles[index]) * fighter.movementSpeed;
       fighter.vy = Math.sin(angles[index]) * fighter.movementSpeed;

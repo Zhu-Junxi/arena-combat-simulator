@@ -82,6 +82,68 @@ test('match setup applies fighter values, arena geometry, and differentiated lau
   near(Math.hypot(engine.state.projectiles[0].vx, engine.state.projectiles[0].vy), 800 * 1.5);
 });
 
+test('free-for-all creates every active seat on a valid circle and finishes only at one survivor', () => {
+  const engine = createCombatEngine({ random: () => 0 });
+  const roster = { left: CHARACTERS[0], right: CHARACTERS[1], third: CHARACTERS[2], fourth: CHARACTERS[0] };
+  engine.reset(roster, { arena: { size: 1000, fighterSize: 100, startingDistance: 500, targetStrategy: 'nearest' } });
+  assert.deepEqual(engine.state.fighters.map(fighter => fighter.side), ['left', 'right', 'third', 'fourth']);
+  const centre = { x: 500, y: 500 };
+  for (const fighter of engine.state.fighters) near(Math.hypot(fighter.x - centre.x, fighter.y - centre.y), 500 / Math.SQRT2);
+  engine.state.phase = 'running';
+  engine.state.fighters.slice(0, 3).forEach(fighter => { fighter.health = 0; });
+  engine.step(0.01);
+  assert.equal(engine.state.phase, 'finished');
+  assert.equal(engine.state.winner.side, 'fourth');
+});
+
+test('Beastmaster companion bites, calls a pack, and respawns after defeat', () => {
+  const beastmaster = CHARACTERS.find(character => character.id === 'beastmaster');
+  const engine = createCombatEngine({ random: () => 0 });
+  engine.reset({ left: beastmaster, right: CHARACTERS[1] });
+  engine.state.phase = 'running';
+  const [master, target] = engine.state.fighters;
+  master.summonAbilities.packSize = 5;
+  master.summonAbilities.chargeSpeed = 360;
+  const wolf = engine.state.summons.find(summon => summon.kind === 'companion');
+  assert.ok(wolf);
+  Object.assign(master, { x: 400, y: 500, prevX: 400, prevY: 500 });
+  Object.assign(target, { x: 500, y: 500, prevX: 500, prevY: 500 });
+  Object.assign(wolf, { x: 450, y: 500, prevX: 450, prevY: 500 });
+  for (let bite = 0; bite < 4; bite += 1) {
+    Object.assign(wolf, {
+      state: 'lunging', target, biteElapsed: wolf.owner.summonAbilities.biteCooldown,
+      x: 450, y: 500, prevX: 450, prevY: 500
+    });
+    engine.step(0.01);
+    assert.equal(wolf.state, 'returning');
+    if (bite < 3) {
+      engine.step(0.2);
+      assert.equal(wolf.state, 'ready');
+    }
+  }
+  assert.equal(master.summonMeter, 0);
+  assert.equal(engine.state.summons.filter(summon => summon.kind === 'pack-wolf').length, 5);
+  const packWolf = engine.state.summons.find(summon => summon.kind === 'pack-wolf');
+  target.y = target.prevY = 700;
+  engine.step(0.25);
+  assert.equal(packWolf.state, 'tracking');
+  engine.step(0.01);
+  assert.ok(packWolf.vy > 0);
+  const packPositions = engine.state.summons.filter(summon => summon.kind === 'pack-wolf')
+    .map(summon => `${summon.x.toFixed(3)},${summon.y.toFixed(3)}`);
+  assert.equal(new Set(packPositions).size, 5);
+  Object.assign(wolf, { x: 450, y: 500, prevX: 450, prevY: 500 });
+  target.cooldownElapsed = target.attackCooldown;
+  engine.updateAttacks();
+  assert.equal(target.attack.target, wolf);
+  wolf.health = 0;
+  engine.step(0.01);
+  assert.equal(engine.state.summons.some(summon => summon === wolf), false);
+  engine.state.elapsed = master.companionRespawnAt;
+  engine.step(0.01);
+  assert.ok(engine.state.summons.some(summon => summon.kind === 'companion' && summon.health > 0));
+});
+
 test('control duration scale and all collision modes behave independently', () => {
   const engine = createCombatEngine();
   engine.reset(selected);
@@ -119,6 +181,26 @@ test('control duration scale and all collision modes behave independently', () =
   advanceMovement(unequal, 1, 0, { size: 1000, fighterSize: 100, collisionMode: 'bounce' });
   near(Math.hypot(unequal[0].vx, unequal[0].vy), 100);
   near(Math.hypot(unequal[1].vx, unequal[1].vy), 50);
+});
+
+test('simultaneous wall and fighter collisions separate instead of looping at zero time', () => {
+  const rules = { size: 1000, fighterSize: 100, collisionMode: 'bounce', contactStopDuration: 0.5 };
+  const bounce = [
+    { x: 50, y: 500, vx: -100, vy: 0, rootUntil: 0, slowUntil: 0, slowFactor: 1 },
+    { x: 150, y: 500, vx: -200, vy: 0, rootUntil: 0, slowUntil: 0, slowFactor: 1 }
+  ];
+  advanceMovement(bounce, 0.2, 0, rules);
+  assert.ok(bounce.every(fighter => Number.isFinite(fighter.x) && fighter.x >= 50 && fighter.x <= 950));
+  assert.ok(bounce[0].x < bounce[1].x);
+  assert.ok(bounce[0].vx > 0 && bounce[1].vx > 0);
+
+  const stop = [
+    { x: 50, y: 500, vx: -100, vy: 0, rootUntil: 0, slowUntil: 0, slowFactor: 1 },
+    { x: 150, y: 500, vx: -200, vy: 0, rootUntil: 0, slowUntil: 0, slowFactor: 1 }
+  ];
+  advanceMovement(stop, 0.2, 0, { ...rules, collisionMode: 'stop' });
+  assert.ok(stop.every(fighter => Number.isFinite(fighter.x) && fighter.x >= 50 && fighter.x <= 950));
+  assert.ok(stop.every(fighter => fighter.rootUntil >= 0.5));
 });
 
 test('every fourth fired arrow is empowered and a miss consumes its count', () => {

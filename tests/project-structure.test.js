@@ -13,7 +13,7 @@ test('index is a clean application shell with external CSS and module JavaScript
   assert.doesNotMatch(html, /<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?[^\s][\s\S]*?<\/script>/i);
   assert.match(html, /<script type="module" src="src\/scripts\/app\.js"><\/script>/);
   assert.match(html, /<script src="src\/scripts\/theme\/theme-bootstrap\.js"><\/script>/);
-  for (const stylesheet of ['base', 'layout', 'selection', 'customization', 'battle', 'responsive']) {
+  for (const stylesheet of ['base', 'layout', 'selection', 'customization', 'duel-presets', 'battle', 'responsive']) {
     assert.match(html, new RegExp(`src/styles/${stylesheet}\\.css`));
   }
 });
@@ -45,6 +45,8 @@ test('shared presentation files contain no hard-coded black or white palette val
     'index.html',
     'src/scripts/ui/decorations.js',
     'src/scripts/battle/weapon-effects.js',
+    'src/scripts/share/duel-preset-library.js',
+    'src/scripts/share/duel-preset-controller.js',
     ...styleNames.map(name => `src/styles/${name}`)
   ];
   for (const file of files) {
@@ -104,6 +106,7 @@ test('all JavaScript module imports resolve', async () => {
     'src/scripts/theme/theme-view.js',
     'src/scripts/selection/selection-controller.js',
     'src/scripts/selection/selection-view.js',
+    'src/scripts/ui/feedback.js',
     'src/scripts/ui/transitions.js'
   ];
   for (const modulePath of modules) {

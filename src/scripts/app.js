@@ -10,38 +10,53 @@ import { buildCombatSetup } from './customization/combat-setup.js';
 import { createSettingsController } from './customization/settings-controller.js';
 import { createMatchSettingsStore } from './customization/settings-store.js';
 import { createSettingsView } from './customization/settings-view.js';
-import { createDuelTransferController } from './share/duel-transfer-controller.js';
+import { createDuelPresetController } from './share/duel-preset-controller.js';
 import { createGameState } from './state/game-state.js';
 import { createThemeController } from './theme/theme-controller.js';
 import { populateThemeSelector } from './theme/theme-view.js';
 import { requireElements } from './ui/dom.js';
 import { createFloatingTooltip } from './ui/floating-tooltip.js';
+import { createFeedback } from './ui/feedback.js';
 import { createTransitions } from './ui/transitions.js';
 
 const bootstrapElements = requireElements(['bootstrap-error', 'bootstrap-retry', 'bootstrap-status']);
 bootstrapElements['bootstrap-retry'].addEventListener('click', () => location.reload());
 
 async function initialize() {
-  const i18n = await loadI18n(new URL('../locales/translations.csv', import.meta.url));
+  let storage = null;
+  try { storage = globalThis.localStorage; } catch { /* The app remains usable without browser storage. */ }
+  const i18n = await loadI18n(new URL('../locales/translations.csv', import.meta.url), { storage });
   const elements = requireElements([
     'arena', 'back', 'battlefield', 'battle-note', 'categories', 'categories-down', 'categories-up', 'combat-effects',
     'countdown', 'dock', 'fighter-left', 'fighter-right', 'language-select', 'panel-left', 'panel-right',
-    'projectile-effects', 'roster', 'selection-label', 'settings-content', 'settings-export', 'settings-import', 'settings-import-file', 'settings-panel', 'settings-reset-all', 'advanced-tuning',
+    'projectile-effects', 'roster', 'selection-label', 'settings-content', 'settings-presets', 'settings-panel', 'settings-reset-all', 'advanced-tuning', 'adjustment-step',
     'settings-tabs', 'settings-toggle', 'stage', 'start', 'start-control', 'status', 'theme-select', 'view-label',
     'weapon-effects', 'zone-effects', 'duel-corners', 'duel-left', 'duel-right', 'duel-name-left', 'duel-name-right',
-    'duel-clock', 'duel-speed', 'duel-phase', 'duel-result', 'duel-event-time', 'duel-event'
+    'duel-clock', 'duel-speed', 'duel-phase', 'duel-result', 'duel-event-time', 'duel-event',
+    'preset-dialog', 'preset-heading', 'preset-close', 'preset-search', 'preset-filters',
+    'preset-save-current', 'preset-import', 'preset-import-file', 'preset-grid', 'preset-editor', 'preset-editor-label',
+    'preset-name', 'preset-editor-submit', 'preset-editor-cancel', 'preset-confirm', 'preset-confirm-message',
+    'preset-confirm-primary', 'preset-confirm-secondary', 'preset-status', 'feedback-toast', 'preset-feedback-toast'
   ]);
 
-  const theme = createThemeController();
+  const theme = createThemeController({ storage });
   localizeDocument(i18n);
   createFloatingTooltip();
   populateLanguageSelector(elements['language-select'], i18n);
   populateThemeSelector(elements['theme-select'], theme, i18n);
 
   const state = createGameState(CHARACTERS);
+  const settings = createMatchSettingsStore({ characters: CHARACTERS, storage });
+  const feedback = createFeedback({ i18n, mainStatus: elements.status, dialogStatus: elements['preset-status'],
+    mainToast: elements['feedback-toast'], dialogToast: elements['preset-feedback-toast'], dialog: elements['preset-dialog'] });
+  const selected = () => ({ left: state.left, right: state.right });
   const panels = [elements['panel-left'], elements['panel-right']];
-  const settings = createMatchSettingsStore({ characters: CHARACTERS });
-  const matchSetup = () => buildCombatSetup(settings, { left: state.left, right: state.right });
+  // The UI is temporarily duel-only.  The store and engine retain FFA data,
+  // but this presentation path deliberately activates the two visible seats.
+  const matchSetup = () => {
+    const setup = buildCombatSetup(settings, selected());
+    return { ...setup, arena: { ...setup.arena, fighterCount: 2 } };
+  };
   const renderer = createCombatRenderer(elements, i18n);
   const audio = createCombatAudio();
   elements.start.addEventListener('click', () => { void audio.unlock(); });
@@ -71,6 +86,8 @@ async function initialize() {
     view: settingsView,
     elements,
     panels,
+    feedback,
+    i18n,
     onActiveSideChange: () => {
       selectionView.renderPanel('left');
       selectionView.renderPanel('right');
@@ -90,6 +107,7 @@ async function initialize() {
     elements,
     view: selectionView,
     i18n,
+    feedback,
     onSelectionChange: side => {
       if (side) settingsController.selectTab(side);
       else settingsView.render();
@@ -100,22 +118,25 @@ async function initialize() {
     elements,
     panels,
     i18n,
-    beginBattle: selected => runtime.begin(selected, matchSetup()),
+    beginBattle: selectedCharacters => runtime.begin(selectedCharacters, matchSetup()),
     resetBattle: () => {
       runtime.stop();
-      engine.reset({ left: state.left, right: state.right }, matchSetup());
+      engine.reset(selected(), matchSetup());
     },
     collapseCustomization: () => settingsController.setExpanded(false)
   });
-  const duelTransfer = createDuelTransferController({
+  const duelPresets = createDuelPresetController({
     elements,
     state,
     settings,
     i18n,
+    feedback,
+    storage,
     characters: CHARACTERS,
     characterById: CHARACTER_BY_ID,
     getSetup: matchSetup,
-    onImported: recipe => {
+    onLoaded: () => {
+      settingsController.selectTab('left');
       selectionView.renderPanel('left');
       selectionView.renderPanel('right');
       selectionView.syncSelection();
@@ -127,9 +148,9 @@ async function initialize() {
   selectionController.bind();
   settingsView.render();
   settingsController.bind();
-  duelTransfer.bind();
+  duelPresets.bind();
   transitions.bind();
-  engine.reset({ left: state.left, right: state.right }, matchSetup());
+  engine.reset(selected(), matchSetup());
   transitions.refreshLocalization();
 
   i18n.subscribe(() => {
@@ -140,11 +161,23 @@ async function initialize() {
     selectionView.refresh();
     transitions.refreshLocalization();
     renderer.refreshLocalization(engine.state);
+    duelPresets.render();
+    feedback.refreshLocalization();
   });
-  elements['language-select'].addEventListener('change', event => i18n.setLocale(event.target.value));
+  elements['language-select'].addEventListener('change', event => {
+    i18n.setLocale(event.target.value);
+    feedback.show({ key: 'feedback.language', anchor: elements['language-select'] });
+  });
   elements['theme-select'].addEventListener('change', event => {
-    void theme.setPreference(event.target.value).catch(() => {
-      elements['theme-select'].value = theme.getPreference();
+    const requested = event.target.value;
+    const previous = theme.getPreference();
+    void theme.setPreference(requested).then(() => {
+      if (theme.getPreference() === requested) feedback.show({ key: 'feedback.theme', anchor: elements['theme-select'] });
+    }).catch(() => {
+      if (theme.getPreference() !== requested) return;
+      void theme.setPreference(previous).catch(() => {});
+      elements['theme-select'].value = previous;
+      feedback.show({ key: 'feedback.theme_error', tone: 'error', anchor: elements['theme-select'] });
     });
   });
 

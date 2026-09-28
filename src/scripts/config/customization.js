@@ -1,7 +1,7 @@
 import { WEAPON_DEFINITIONS } from './weapons.js';
 
 export const MATCH_SETTINGS_STORAGE_KEY = 'arena-duel.match-settings.v1';
-export const MATCH_SETTINGS_VERSION = 2;
+export const MATCH_SETTINGS_VERSION = 3;
 export const MOVEMENT_UNITS_PER_STAT = 44;
 export const COLLISION_MODES = Object.freeze(['bounce', 'stop', 'pass']);
 
@@ -68,7 +68,24 @@ export const PRIEST_ABILITY_CONTROLS = Object.freeze({
   damagePerMark: Object.freeze({ min: 0, max: 20, step: 0.001, default: 2, labelKey: 'customization.priest_damage_per_mark' })
 });
 
+export const SUMMON_ABILITY_CONTROLS = Object.freeze({
+  companionHealth: Object.freeze({ min: 1, max: 200, step: 0.001, default: 45, labelKey: 'customization.summon_companion_health' }),
+  companionSpeed: Object.freeze({ min: 25, max: 600, step: 0.001, default: 285, labelKey: 'customization.summon_companion_speed' }),
+  biteDamage: Object.freeze({ min: 0, max: 50, step: 0.001, default: 4, labelKey: 'customization.summon_bite_damage' }),
+  biteRange: Object.freeze({ min: 10, max: 300, step: 0.001, default: 54, labelKey: 'customization.summon_bite_range' }),
+  biteCooldown: Object.freeze({ min: 0.1, max: 10, step: 0.001, default: 1.1, labelKey: 'customization.summon_bite_cooldown' }),
+  respawnDelay: Object.freeze({ min: 0, max: 20, step: 0.001, default: 4, labelKey: 'customization.summon_respawn_delay' }),
+  meterThreshold: Object.freeze({ min: 1, max: 20, step: 1, default: 4, labelKey: 'customization.summon_meter_threshold' }),
+  meterPerBite: Object.freeze({ min: 1, max: 10, step: 1, default: 1, labelKey: 'customization.summon_meter_per_bite' }),
+  packCooldown: Object.freeze({ min: 0, max: 30, step: 0.001, default: 8, labelKey: 'customization.summon_pack_cooldown' }),
+  packSize: Object.freeze({ min: 1, max: 10, step: 1, default: 3, labelKey: 'customization.summon_pack_size' }),
+  chargeDamage: Object.freeze({ min: 0, max: 50, step: 0.001, default: 5, labelKey: 'customization.summon_charge_damage' }),
+  chargeSpeed: Object.freeze({ min: 100, max: 1500, step: 0.001, default: 720, labelKey: 'customization.summon_charge_speed' }),
+  chargeLifetime: Object.freeze({ min: 0.1, max: 10, step: 0.001, default: 0.9, labelKey: 'customization.summon_charge_lifetime' })
+});
+
 export const ARENA_CONTROLS = Object.freeze({
+  fighterCount: Object.freeze({ min: 2, max: 4, step: 1, default: 2, labelKey: 'customization.fighter_count' }),
   size: Object.freeze({ min: 600, max: 1600, step: 0.001, default: 1000, labelKey: 'customization.arena_size' }),
   fighterSize: Object.freeze({ min: 60, max: 160, step: 0.001, default: 100, labelKey: 'customization.fighter_size' }),
   timeScale: Object.freeze({ min: 0.5, max: 2, step: 0.001, default: 1, labelKey: 'customization.time_scale' }),
@@ -96,6 +113,7 @@ export function defaultFighterSettings(character) {
   if (TRAIT_CONTROLS[character.trait?.id]) settings.trait = defaultTraitSettings(character);
   if (character.trait?.id === 'elemental-cycles') settings.abilities = defaultMageAbilities();
   if (character.trait?.id === 'prayer') settings.abilities = defaultPriestAbilities();
+  if (character.trait?.id === 'beastmaster') settings.abilities = defaultSummonAbilities();
   return settings;
 }
 
@@ -116,6 +134,10 @@ export function defaultMageAbilities() {
 
 export function defaultPriestAbilities() {
   return Object.fromEntries(Object.entries(PRIEST_ABILITY_CONTROLS).map(([key, control]) => [key, control.default]));
+}
+
+export function defaultSummonAbilities() {
+  return Object.fromEntries(Object.entries(SUMMON_ABILITY_CONTROLS).map(([key, control]) => [key, control.default]));
 }
 
 export function defaultArenaSettings() {

@@ -22,5 +22,6 @@ export const WEAPON_DEFINITIONS = deepFreeze({
   guardian: { type: 'melee', art: 'shield', mount: 50, length: 72, width: 111.32631578947368, windup: 0.22, active: 0.18, duration: 0.68 },
   archer: { type: 'ranged', art: 'bow', muzzle: WEAPON_SPRITES.bow.x + WEAPON_SPRITES.bow.width + 8, windup: 0.26, duration: 0.68, projectileSpeed: 1240, radius: 5 },
   mage: { type: 'ranged', art: 'staff', muzzle: 144, windup: 0.28, duration: 0.76, projectileSpeed: 560, radius: 9 },
-  priest: { type: 'ranged', art: 'scepter', muzzle: 144, windup: 0.32, duration: 0.82, projectileSpeed: 540, radius: 8 }
+  priest: { type: 'ranged', art: 'scepter', muzzle: 144, windup: 0.32, duration: 0.82, projectileSpeed: 540, radius: 8 },
+  beastmaster: { type: 'ranged', art: 'bow', muzzle: WEAPON_SPRITES.bow.x + WEAPON_SPRITES.bow.width + 8, windup: 0.24, duration: 0.64, projectileSpeed: 580, radius: 5 }
 });

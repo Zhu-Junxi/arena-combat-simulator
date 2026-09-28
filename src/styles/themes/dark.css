@@ -1,6 +1,7 @@
 :root {
   color-scheme: dark;
   --color-page: #181715;
+  --color-dialog-backdrop: rgb(0 0 0 / 76%);
   --color-surface: #23211e;
   --color-ink: #f2ede3;
   --color-text-muted: #c0b8aa;

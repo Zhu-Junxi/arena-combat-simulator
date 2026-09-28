@@ -1,10 +1,10 @@
-import { ARENA_CONTROLS, COLLISION_MODES, FIGHTER_CONTROLS, PRIEST_ABILITY_CONTROLS, TRAIT_CONTROLS, defaultFighterSettings } from '../config/customization.js';
-import { normalizeMageAbilities, normalizePriestAbilities } from '../customization/settings-store.js';
+import { ARENA_CONTROLS, COLLISION_MODES, FIGHTER_CONTROLS, PRIEST_ABILITY_CONTROLS, SUMMON_ABILITY_CONTROLS, TRAIT_CONTROLS, defaultFighterSettings } from '../config/customization.js';
+import { normalizeMageAbilities, normalizePriestAbilities, normalizeSummonAbilities } from '../customization/settings-store.js';
+import { TARGET_STRATEGIES, activeSlots } from '../config/match.js';
 
 export const DUEL_SHARE_FORMAT = 'arena-duel.duel';
-export const DUEL_SHARE_VERSION = 9;
+export const DUEL_SHARE_VERSION = 11;
 
-const SIDES = Object.freeze(['left', 'right']);
 const FIGHTER_KEYS = Object.freeze(['health', 'attack', 'attackCD', 'movementSpeed']);
 const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
 const isObject = value => value != null && typeof value === 'object' && !Array.isArray(value);
@@ -33,11 +33,12 @@ function readFighter(source, character, side, version, advanced = false) {
   if (source.characterId !== character.id) fail(`${side} fighter character is unavailable`);
   const isMage = character.trait?.id === 'elemental-cycles';
   const isPriest = character.trait?.id === 'prayer';
+  const isBeastmaster = character.trait?.id === 'beastmaster';
   const traitControls = TRAIT_CONTROLS[character.trait?.id];
   const isRanged = defaults => defaults.projectileSpeed != null;
   const isMelee = defaults => defaults.attackRange != null;
   const defaults = defaultFighterSettings(character);
-  const statKeys = [...FIGHTER_KEYS, ...(isRanged(defaults) && version >= 5 ? ['projectileSpeed'] : []), ...(isMelee(defaults) && version >= 6 ? ['attackRange'] : []), ...((isMage && version >= 2) || (isPriest && version >= 7) ? ['abilities'] : []), ...(traitControls && version >= 4 ? ['trait'] : [])];
+  const statKeys = [...FIGHTER_KEYS, ...(isRanged(defaults) && version >= 5 ? ['projectileSpeed'] : []), ...(isMelee(defaults) && version >= 6 ? ['attackRange'] : []), ...((isMage && version >= 2) || (isPriest && version >= 7) || (isBeastmaster && version >= 11) ? ['abilities'] : []), ...(traitControls && version >= 4 ? ['trait'] : [])];
   exactKeys(source.stats, statKeys, `${side} fighter stats`);
   const stats = {};
   for (const key of FIGHTER_KEYS) {
@@ -81,30 +82,44 @@ function readFighter(source, character, side, version, advanced = false) {
     }
     stats.abilities = version >= 7 ? normalizePriestAbilities(source.stats.abilities, undefined, advanced) : normalizePriestAbilities();
   }
+  if (isBeastmaster) {
+    if (version >= 11) {
+      exactKeys(source.stats.abilities, Object.keys(SUMMON_ABILITY_CONTROLS), `${side} fighter abilities`);
+      for (const [key, control] of Object.entries(SUMMON_ABILITY_CONTROLS)) {
+        if (!isControlValue(source.stats.abilities[key], control, advanced)) fail(`${side} fighter ability ${key} is invalid`);
+      }
+    }
+    stats.abilities = version >= 11 ? normalizeSummonAbilities(source.stats.abilities, undefined, advanced) : normalizeSummonAbilities();
+  }
   return { characterId: character.id, stats };
 }
 
 function readArena(source, version, advanced = false) {
-  const controlEntries = Object.entries(ARENA_CONTROLS).filter(([key]) => version >= 3 || key !== 'contactStopDuration');
-  const keys = [...controlEntries.map(([key]) => key), 'collisionMode'];
+  const controlEntries = Object.entries(ARENA_CONTROLS).filter(([key]) =>
+    (version >= 3 || key !== 'contactStopDuration') && (version >= 10 || key !== 'fighterCount'));
+  const keys = [...controlEntries.map(([key]) => key), 'collisionMode', ...(version >= 10 ? ['targetStrategy'] : [])];
   exactKeys(source, keys, 'arena');
   const arena = version >= 3 ? {} : { contactStopDuration: ARENA_CONTROLS.contactStopDuration.default };
   for (const [key, control] of controlEntries) {
-    if (!isControlValue(source[key], control, advanced)) fail(`arena ${key} is invalid`);
+    if (!isControlValue(source[key], control, key === 'fighterCount' ? false : advanced)) fail(`arena ${key} is invalid`);
     arena[key] = source[key];
   }
   if (!COLLISION_MODES.includes(source.collisionMode)) fail('arena collisionMode is invalid');
   if (!validStartingDistance(arena, advanced)) fail('arena startingDistance is invalid');
-  return { ...arena, collisionMode: source.collisionMode };
+  if (version < 10) arena.fighterCount = 2;
+  const targetStrategy = version >= 10 ? source.targetStrategy : 'nearest';
+  if (!TARGET_STRATEGIES.includes(targetStrategy)) fail('arena targetStrategy is invalid');
+  return { ...arena, collisionMode: source.collisionMode, targetStrategy };
 }
 
 export function createDuelRecipe({ selectedCharacters, setup }) {
   if (!selectedCharacters?.left?.id || !selectedCharacters?.right?.id || !setup?.fighters || !setup?.arena) throw new Error('Cannot export an incomplete duel setup');
+  const slots = activeSlots(setup.arena.fighterCount);
   return {
     format: DUEL_SHARE_FORMAT,
     version: DUEL_SHARE_VERSION,
     advanced: Boolean(setup.advanced),
-    fighters: Object.fromEntries(SIDES.map(side => [side, {
+    fighters: Object.fromEntries(slots.map(side => [side, {
       characterId: selectedCharacters[side].id,
       stats: JSON.parse(JSON.stringify(setup.fighters[side]))
     }])),
@@ -123,16 +138,18 @@ export function parseDuelRecipe(text, { characters }) {
   const version = source?.version;
   exactKeys(source, version >= 9 ? ['format', 'version', 'advanced', 'fighters', 'arena'] : ['format', 'version', 'fighters', 'arena'], 'recipe');
   if (source.format !== DUEL_SHARE_FORMAT) fail('the file format is unsupported');
-  if (![1, 2, 3, 4, 5, 6, 7, 8, DUEL_SHARE_VERSION].includes(source.version)) fail('the recipe version is unsupported');
+  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, DUEL_SHARE_VERSION].includes(source.version)) fail('the recipe version is unsupported');
   if (version >= 9 && typeof source.advanced !== 'boolean') fail('advanced mode is invalid');
   const advanced = version >= 9 && source.advanced;
-  exactKeys(source.fighters, SIDES, 'fighters');
+  const arena = readArena(source.arena, source.version, advanced);
+  const slots = activeSlots(arena.fighterCount);
+  exactKeys(source.fighters, slots, 'fighters');
   const characterById = Object.fromEntries(characters.map(character => [character.id, character]));
   const fighters = {};
-  for (const side of SIDES) {
+  for (const side of slots) {
     const character = characterById[source.fighters[side]?.characterId];
-    if (!character) fail(`${side} fighter character is unavailable`);
+    if (!character || character.locked) fail(`${side} fighter character is unavailable`);
     fighters[side] = readFighter(source.fighters[side], character, side, source.version, advanced);
   }
-  return { advanced, fighters, arena: readArena(source.arena, source.version, advanced) };
+  return { advanced, fighters, arena };
 }

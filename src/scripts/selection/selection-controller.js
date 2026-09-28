@@ -1,4 +1,4 @@
-export function createSelectionController({ state, characterById, elements, view, i18n, onSelectionChange = () => {} }) {
+export function createSelectionController({ state, characterById, elements, view, i18n, feedback, onSelectionChange = () => {} }) {
   function scrollCategories(direction) {
     if (state.phase !== 'select') return;
     elements.categories.scrollBy({
@@ -48,14 +48,15 @@ export function createSelectionController({ state, characterById, elements, view
         });
       }
       if (character) {
-        state[state.side] = characterById[character.dataset.character];
+        const nextCharacter = characterById[character.dataset.character];
+        if (!nextCharacter || nextCharacter.locked) return;
+        state[state.side] = nextCharacter;
         view.renderPanel(state.side);
         view.syncSelection();
         onSelectionChange(state.side);
-        elements.status.textContent = i18n.t('status.selected', {
-          side: view.sideName(state.side),
-          name: view.characterName(state[state.side])
-        });
+        feedback.show({ key: 'status.selected', parameters: {
+          side: view.sideName(state.side), name: view.characterName(state[state.side])
+        }, anchor: elements.roster.querySelector(`[data-character="${nextCharacter.id}"]`) });
       }
     });
   }

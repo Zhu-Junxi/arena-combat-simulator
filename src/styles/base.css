@@ -14,6 +14,15 @@ button:disabled { cursor: default; }
 .floating-tooltip { position: fixed; z-index: 100; max-width: min(360px, calc(100vw - 20px)); padding: 8px 10px; border: 1px solid var(--color-tooltip-border); background: var(--color-tooltip-bg); color: var(--color-tooltip-text); box-shadow: 2px 3px 0 var(--color-tooltip-shadow); font-size: 11px; line-height: 1.45; pointer-events: none; }
 
 button:hover:not(:disabled) { outline: 1px solid var(--color-focus); outline-offset: -4px; }
+button:not(:disabled), summary { transition: filter 140ms ease, translate 140ms ease; }
+button:active:not(:disabled), summary:active { translate: 0 2px; filter: brightness(.88); }
+.feedback-toast { position: fixed; z-index: 200; top: auto; right: 12px; bottom: 16px; width: max-content; max-width: min(340px, calc(100vw - 24px)); padding: 10px 12px; border: 1px solid var(--color-tooltip-border); border-left: 3px solid var(--color-health-healthy); background: var(--color-tooltip-bg); color: var(--color-tooltip-text); box-shadow: 0 6px 18px var(--color-tooltip-shadow); font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; pointer-events: none; animation: feedback-in 170ms ease-out both; }
+.feedback-toast::before { content: "✓"; display: inline-block; margin-right: 8px; font-weight: bold; }
+.feedback-toast[data-tone="warning"] { border-left-color: var(--color-health-wounded); }
+.feedback-toast[data-tone="warning"]::before { content: "!"; }
+.feedback-toast[data-tone="error"] { border-left-color: var(--color-health-critical); }
+.feedback-toast[data-tone="error"]::before { content: "×"; }
+@keyframes feedback-in { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
 
 [hidden] { display: none !important; }
 

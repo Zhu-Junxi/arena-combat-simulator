@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { CHARACTERS } from '../src/scripts/config/characters.js';
 import { MATCH_SETTINGS_STORAGE_KEY } from '../src/scripts/config/customization.js';
 import { createMatchSettingsStore } from '../src/scripts/customization/settings-store.js';
+import { adjustmentStepFor } from '../src/scripts/customization/settings-controller.js';
 
 function createStorage(initial = {}) {
   const values = new Map(Object.entries(initial));
@@ -24,6 +25,32 @@ test('legacy star attack defaults become one without discarding other custom set
   assert.deepEqual(store.getFighter('left', 'dongfang-changfan').attack, [1]);
   assert.equal(store.getFighter('left', 'dongfang-changfan').health, 120);
   assert.deepEqual(store.getFighter('right', 'dongfang-changfan').attack, [7]);
+});
+
+test('settings report persistence for defaults and resets while retaining session changes on failure', () => {
+  const storage = createStorage();
+  const store = createMatchSettingsStore({ characters: CHARACTERS, storage });
+  store.setFighterValue('left', 'warrior', 'health', 180);
+  assert.equal(store.getLastPersistenceStatus(), true);
+  store.setCharacterDefault('left', 'warrior');
+  assert.equal(store.getLastPersistenceStatus(), true);
+  store.resetFighter('left', 'warrior');
+  assert.equal(store.getLastPersistenceStatus(), true);
+
+  const blocked = createMatchSettingsStore({ characters: CHARACTERS, storage: {
+    getItem: () => null, setItem: () => { throw new Error('blocked'); }
+  } });
+  blocked.setFighterValue('left', 'warrior', 'health', 170);
+  assert.equal(blocked.getLastPersistenceStatus(), false);
+  blocked.setCharacterDefault('left', 'warrior');
+  assert.equal(blocked.getLastPersistenceStatus(), false);
+  blocked.setFighterValue('left', 'warrior', 'health', 120);
+  blocked.resetFighter('left', 'warrior');
+  assert.equal(blocked.getFighter('left', 'warrior').health, 170);
+  assert.equal(blocked.getLastPersistenceStatus(), false);
+  blocked.resetAll();
+  assert.equal(blocked.getLastPersistenceStatus(), false);
+  assert.equal(blocked.getFighter('left', 'warrior').health, 170);
 });
 
 test('settings defaults activate character speed ratings without mutating characters', () => {
@@ -47,6 +74,14 @@ test('doubled archer arrow speed survives saved defaults and reload without chan
   assert.equal(reloaded.getFighter('left', 'archer').projectileSpeed, 1240);
   const fresh = createMatchSettingsStore({ characters: CHARACTERS, storage: createStorage() });
   assert.equal(fresh.getFighter('right', 'archer').projectileSpeed, 1240);
+});
+
+test('property adjustment buttons support 0.001 through 10 while respecting a field minimum step', () => {
+  assert.equal(adjustmentStepFor({ step: '0.001' }, 0.001), 0.001);
+  assert.equal(adjustmentStepFor({ step: '0.001' }, 5), 5);
+  assert.equal(adjustmentStepFor({ step: '0.001' }, 10), 10);
+  assert.equal(adjustmentStepFor({ step: '1' }, 0.001), 1);
+  assert.equal(adjustmentStepFor({ step: '0.01' }, 0.001), 0.01);
 });
 
 test('legacy untouched mage defaults migrate to the Arcane Weave values', () => {
@@ -119,6 +154,19 @@ test('Priest ability values clamp and are preserved in saved character defaults'
   assert.equal(abilities.markMoveSlowPerMark, 0.25);
 });
 
+test('Beastmaster summon settings clamp and persist as character defaults', () => {
+  const storage = createStorage();
+  const store = createMatchSettingsStore({ characters: CHARACTERS, storage });
+  store.setSummonAbilityValue('left', 'beastmaster', 'companionHealth', 500);
+  store.setSummonAbilityValue('left', 'beastmaster', 'packSize', 5);
+  store.setCharacterDefault('left', 'beastmaster');
+  store.setSummonAbilityValue('left', 'beastmaster', 'packSize', 1);
+  store.resetFighter('left', 'beastmaster');
+  const abilities = store.getFighter('left', 'beastmaster').abilities;
+  assert.equal(abilities.companionHealth, 200);
+  assert.equal(abilities.packSize, 5);
+});
+
 test('arena constraints, collision modes, launch delay, and contact stop duration are normalized', () => {
   const store = createMatchSettingsStore({ characters: CHARACTERS, storage: createStorage() });
   store.setArenaValue('size', 600);
@@ -133,6 +181,21 @@ test('arena constraints, collision modes, launch delay, and contact stop duratio
   assert.equal(arena.contactStopDuration, 1.26);
   assert.equal(arena.collisionMode, 'pass');
   assert.throws(() => store.setArenaValue('collisionMode', 'merge'), /Unknown collision mode/);
+});
+
+test('free-for-all match size and target strategy persist with circle-safe spacing', () => {
+  const storage = createStorage();
+  const store = createMatchSettingsStore({ characters: CHARACTERS, storage });
+  store.setArenaValue('fighterCount', 4);
+  store.setArenaValue('targetStrategy', 'lock');
+  store.setArenaValue('startingDistance', 1500);
+  const arena = store.getArena();
+  assert.equal(arena.fighterCount, 4);
+  assert.equal(arena.targetStrategy, 'lock');
+  assert.equal(arena.startingDistance, Number((900 * Math.sin(Math.PI / 4)).toFixed(3)));
+  const restored = createMatchSettingsStore({ characters: CHARACTERS, storage });
+  assert.equal(restored.getArena().fighterCount, 4);
+  assert.equal(restored.getArena().targetStrategy, 'lock');
 });
 
 test('advanced tuning preserves finite out-of-range values and clamps them on exit', () => {

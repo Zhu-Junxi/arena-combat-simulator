@@ -6,7 +6,7 @@ const deepFreeze = value => {
   return value;
 };
 
-const withBaseKind = character => deepFreeze({ category: 'base', ...character });
+const withBaseKind = character => deepFreeze({ ...character, category: character.category ?? 'base' });
 
 export const CHARACTER_KINDS = Object.freeze(['melee', 'ranged', 'special', 'defense', 'healing', 'summon', 'control', 'mobility']);
 export const CHARACTER_CATEGORIES = Object.freeze(['base', ...CHARACTER_KINDS]);
@@ -82,6 +82,19 @@ export const CHARACTERS = Object.freeze([
       battle: 'assets/characters/dongfang-changfan/battle.png'
     },
     stats: { attack: 1, attackCD: 2, speed: 3, health: 80 }
+  },
+  {
+    id: 'beastmaster', category: 'summon', nameKey: 'character.beastmaster.name',
+    trait: { id: 'beastmaster', nameKey: 'trait.beastmaster.name', descriptionKey: 'trait.beastmaster.description' },
+    stats: { attack: 3, attackCD: 1.6, speed: 3, health: 75 }
+  },
+  {
+    id: 'necromancer', category: 'summon', locked: true, nameKey: 'character.necromancer.name', roleKey: 'character.necromancer.role',
+    stats: { attack: 0, attackCD: 1, speed: 0, health: 0 }
+  },
+  {
+    id: 'artificer', category: 'summon', locked: true, nameKey: 'character.artificer.name', roleKey: 'character.artificer.role',
+    stats: { attack: 0, attackCD: 1, speed: 0, health: 0 }
   }
 ].map(withBaseKind));
 
