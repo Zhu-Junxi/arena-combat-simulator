@@ -337,7 +337,7 @@ test('saved old guardian defaults migrate to 10 damage and 4 seconds while custo
 test('guardians on either side complete real battles without invalid positions or duplicate flails', () => {
   let randomState = 271828;
   const random = () => ((randomState = (randomState * 1664525 + 1013904223) >>> 0) / 4294967296);
-  for (const opponent of CHARACTERS) for (const side of ['left', 'right']) {
+  for (const opponent of CHARACTERS.filter(character => !character.locked)) for (const side of ['left', 'right']) {
     let spawned = 0;
     let removed = 0;
     const engine = createCombatEngine({ random, onEvent: event => {

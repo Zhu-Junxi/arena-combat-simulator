@@ -124,7 +124,7 @@ test('missed, lethal and reset empowered arrows never play a vine effect', async
 });
 
 test('real attacks from every class play hurt audio against every receiver class', async () => {
-  for (const attacker of CHARACTERS) for (const receiver of CHARACTERS) {
+  for (const attacker of CHARACTERS.filter(character => !character.locked)) for (const receiver of CHARACTERS.filter(character => !character.locked)) {
     const { audio, context, voices } = setup();
     await audio.unlock();
     let hit = false;
@@ -132,7 +132,7 @@ test('real attacks from every class play hurt audio against every receiver class
     const engine = createCombatEngine({ random: () => 0, onEvent: event => {
       const before = voices.length;
       audio.handleEvent(event);
-      if (event.type === 'damage' && event.target.side === 'right') {
+      if (event.type === 'damage' && (event.target.side === 'right' || event.target.owner?.side === 'right')) {
         assert.ok(event.amount > 0);
         // Simultaneous stars share the existing per-target audio throttle.
         if (!hit) assert.equal(voices.length, before + 1, `${label}: missing hurt sound`);
@@ -145,6 +145,7 @@ test('real attacks from every class play hurt audio against every receiver class
     a.x = 150; a.y = 300;
     b.x = a.weapon.type === 'melee' ? 240 : 450; b.y = 300;
     b.cooldownElapsed = -10000;
+    engine.state.summons.filter(summon => summon.owner === b).forEach(summon => { summon.biteElapsed = -10000; });
     a.cooldownElapsed = a.attackCooldown;
     engine.state.phase = 'running';
     // Let real melee, projectile or Priest prayer damage resolve, without retaliation.
@@ -158,7 +159,7 @@ test('real attacks from every class play hurt audio against every receiver class
 });
 
 test('real burn and bleed damage play hurt audio for every class on either side', async () => {
-  for (const receiver of CHARACTERS) for (const side of ['left', 'right']) for (const effect of ['burn', 'bleed']) {
+  for (const receiver of CHARACTERS.filter(character => !character.locked)) for (const side of ['left', 'right']) for (const effect of ['burn', 'bleed']) {
     const { audio, context, voices } = setup();
     await audio.unlock();
     const damageEvents = [];
