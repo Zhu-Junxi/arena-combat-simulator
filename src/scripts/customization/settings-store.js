@@ -117,6 +117,15 @@ function isLegacyMageDefaults(fighter) {
 }
 
 function migrateMageDefaults(source) {
+  const savedCharacters = [source?.characterDefaults, ...SIDES.map(side => source?.fighters?.[side])];
+  for (const characters of savedCharacters) {
+    if (characters?.archer?.projectileSpeed === 620) characters.archer.projectileSpeed = 1240;
+    const guardian = characters?.guardian;
+    if (guardian?.attack?.length === 1 && guardian.attack[0] === 8) guardian.attack = [10];
+    if (guardian?.attackCD?.length === 1 && guardian.attackCD[0] === 5) guardian.attackCD = [4];
+    const fighter = characters?.['dongfang-changfan'];
+    if (Array.isArray(fighter?.attack) && fighter.attack.length === 1 && fighter.attack[0] === 5) fighter.attack = [1];
+  }
   for (const side of SIDES) {
     if (isLegacyMageDefaults(source?.fighters?.[side]?.mage)) delete source.fighters[side].mage;
   }
