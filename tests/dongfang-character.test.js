@@ -1,0 +1,37 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { CHARACTERS, CHARACTER_BY_ID, CHARACTER_CATEGORIES } from '../src/scripts/config/characters.js';
+import { createCombatEngine } from '../src/scripts/battle/combat-engine.js';
+import { weaponMarkup, projectileMarkup } from '../src/scripts/battle/weapon-effects.js';
+
+test('Dong Fang Chang Fan belongs to the last category and can land his star attack', () => {
+  const character = CHARACTER_BY_ID['dongfang-changfan'];
+  assert.equal(character.category, CHARACTER_CATEGORIES.at(-1));
+  assert.equal(CHARACTERS.filter(item => item.category === 'base').length, 5);
+  const engine = createCombatEngine({ random: () => 0.5 });
+  engine.reset({ left: character, right: CHARACTER_BY_ID.archer });
+  engine.state.phase = 'running';
+  const [fighter, target] = engine.state.fighters;
+  const attack = engine.startAttack(fighter, target);
+  engine.state.elapsed = attack.startedAt + fighter.weapon.windup;
+  engine.updateAttacks();
+  const projectile = engine.state.projectiles[0];
+  assert.ok(projectile);
+  assert.equal(character.stats.attack, 1);
+  assert.equal(engine.state.projectiles.length, 1);
+  assert.match(weaponMarkup(fighter.weapon), /star-thought-charge/);
+  assert.match(projectileMarkup(fighter, 0), /star-thought-projectile/);
+  const health = target.health;
+  const initialSpeed = projectile.starFlight.speed;
+  assert.ok(projectile.x < fighter.x);
+  assert.ok(Math.abs(projectile.y - fighter.y) < 1e-8);
+  assert.ok(Math.hypot(projectile.x - fighter.x, projectile.y - fighter.y) >= 115);
+  engine.updateProjectiles(0.1);
+  const [a] = engine.state.projectiles;
+  assert.ok(a.x < fighter.x);
+  assert.ok(a.y > fighter.y);
+  assert.ok(a.starFlight.speed > initialSpeed);
+  assert.equal(target.health, health);
+  for (let i = 0; i < 300 && engine.state.projectiles.length; i++) engine.updateProjectiles(1 / 60);
+  assert.equal(target.health, health - 1);
+});
