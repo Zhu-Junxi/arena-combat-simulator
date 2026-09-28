@@ -44,12 +44,15 @@ The included server serves the app locally. Open the URL above rather than openi
 
 - **Warrior** — plate armor reduces incoming damage, with a minimum of 1 damage per hit.
 - **Archer** — every fourth arrow applies a root followed by a slow.
-- **Guardian** — a shield-bearing melee fighter.
+- **Guardian** — a 40-durability shield and a straight charge every 4 seconds; after the shield breaks, a chain flail lands for 5 seconds and blocks movement. Body and weapon visuals use 1.5× scale.
 - **Mage** — cycles through ice, fire, and leech magic with marks and finishing effects.
 - **Priest** — applies marks and uses prayer to heal or damage.
+- **Dong Fang Chang Fan** — blue-white twinkling stars launch from behind, curve around the sides and accelerate toward enemies. Myriad Star Fireflies grants up to three independent 2-second stacks, each adding 200% attack speed; every attack creates one star.
 - **Beastmaster** — fights alongside a summon and can unleash a pack attack.
 
-The roster also contains locked, unavailable character previews. Some playable characters still use placeholder artwork.
+Warrior, Archer, Guardian, Mage, Priest and Dong Fang Chang Fan have portraits, avatars and battle artwork. The roster also contains locked, unavailable character previews; Beastmaster currently uses placeholder artwork.
+
+The battle HUD includes side portraits, live health, traits, attack intervals, movement speed, elapsed time and combat events. Warrior, Archer and Guardian have combat audio; audio credits are listed in [assets/audio/SOURCES.md](assets/audio/SOURCES.md).
 
 ## How to play
 

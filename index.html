@@ -11,7 +11,7 @@
 <link rel="preload" as="image" href="assets/characters/archer/portrait.png">
 <link rel="preload" as="image" href="assets/characters/archer/avatar.png">
 <link rel="preload" as="image" href="assets/characters/archer/battle.png">
-<link rel="preload" as="image" href="assets/weapons/guardian-shield.png">
+<link rel="preload" as="image" href="assets/weapons/guardian-shield-side.png">
 <link rel="preload" as="image" href="assets/weapons/mage-staff.png">
 <link rel="preload" as="image" href="assets/weapons/priest-scepter.png">
 <link rel="preload" as="image" href="assets/characters/warrior/portrait-color.png">
@@ -24,6 +24,7 @@
 <link rel="stylesheet" href="src/styles/duel-presets.css">
 <link rel="stylesheet" href="src/styles/battle.css">
 <link rel="stylesheet" href="src/styles/responsive.css">
+<link rel="stylesheet" href="src/styles/battle-layout.css">
 </head>
 <body data-i18n-ready="false">
 <div class="bootstrap-status" id="bootstrap-status" role="status" data-i18n="bootstrap.loading">Loading language data… / 正在加载语言数据…</div>
@@ -35,15 +36,33 @@
   <header><h1 data-i18n="app.heading"></h1><div class="header-controls"><span data-i18n="app.tagline"></span><label class="preference-control"><span data-i18n="accessibility.theme"></span><select id="theme-select" data-i18n-tooltip="tooltip.theme"></select></label><label class="preference-control"><span data-i18n="accessibility.language"></span><select id="language-select" data-i18n-tooltip="tooltip.language"></select></label></div></header>
   <section class="stage" id="stage" data-i18n-aria-label="accessibility.stage">
     <div class="arena-view" id="arena" inert aria-hidden="true">
-    <div class="arena-heading"><h2 data-i18n="arena.heading"></h2><button id="back" data-i18n="action.back" data-i18n-tooltip="tooltip.back"></button></div>
+      <div id="duel-corners" aria-hidden="true"></div>
+      <div class="duel-heading">
+        <button class="duel-back" id="back" data-i18n-tooltip="tooltip.back"><span aria-hidden="true">←</span><span data-i18n="action.back"></span></button>
+        <div class="duel-title"><svg viewBox="0 0 350 84" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width=".8"><path d="M175 4 214 42 175 80 136 42Z M175 10 208 42 175 74 142 42Z"/><path class="duel-title-surface" d="M37 23H313L334 42 313 61H37L16 42Z"/><path d="M43 28H307L323 42 307 56H43L27 42Z"/></g><path fill="currentColor" d="m8 39 3 3-3 3-3-3Zm334 0 3 3-3 3-3-3Z"/></svg><h2 data-i18n="arena.heading"></h2></div>
+        <div class="duel-clock"><span data-i18n="hud.time"></span><strong id="duel-clock">00:00</strong></div>
+      </div>
+      <div class="duel-layout">
+        <aside class="duel-side" id="duel-left"></aside>
+        <div class="duel-arena-column">
+          <div class="duel-caption"><span id="duel-name-left"></span><b>VS</b><span id="duel-name-right"></span></div>
+          <div class="duel-arena-frame">
+            <i class="duel-field-corner tl"></i><i class="duel-field-corner tr"></i><i class="duel-field-corner bl"></i><i class="duel-field-corner br"></i>
       <div class="battlefield" id="battlefield" data-battle-phase="idle" data-i18n-aria-label="accessibility.battlefield">
+        <svg class="duel-field-ornament" viewBox="0 0 600 600" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width=".7"><path d="M300 272 328 300 300 328 272 300Z M280 300h40M300 280v40M300 0v12M300 588v12M0 300h12M588 300h12"/><circle cx="300" cy="300" r="2"/></g></svg>
         <span class="field-label" data-i18n="arena.field_label"></span>
         <svg id="combat-effects" class="combat-effects" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true"><g id="zone-effects"></g><g id="weapon-effects"></g><g id="projectile-effects"></g></svg>
         <div class="fighter left" id="fighter-left"></div>
         <span class="field-center" id="countdown" hidden></span>
         <div class="fighter right" id="fighter-right"></div>
       </div>
-      <p class="arena-note" id="battle-note"></p>
+          </div>
+          <div class="duel-arena-bottom"><span aria-hidden="true">──── ◇ ──</span><strong id="duel-result"></strong><span aria-hidden="true">── ◇ ────</span></div>
+        </div>
+        <aside class="duel-side" id="duel-right"></aside>
+      </div>
+      <div class="duel-footer"><span class="duel-phase"><i aria-hidden="true"></i><span id="duel-phase"></span></span><div class="duel-event"><time id="duel-event-time"></time><span id="duel-event"></span></div><span class="duel-speed"><span data-i18n="hud.time_scale"></span><b id="duel-speed"></b></span></div>
+      <p class="arena-note duel-accessible-note" id="battle-note"></p>
     </div>
     <article class="panel left" id="panel-left" data-i18n-aria-label="accessibility.side_left"></article>
     <article class="panel right" id="panel-right" data-i18n-aria-label="accessibility.side_right"></article>

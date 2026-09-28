@@ -50,6 +50,7 @@ export function createSelectionView({ state, characters, categories, elements, i
       `<div data-tooltip="${t('tooltip.movement_speed')}"><dt>${t('stats.speed')}</dt><dd>${formatStat(stats.speed, { unit: 'unit.arena_units_per_second' })}</dd></div>` +
       `<div data-tooltip="${t('tooltip.health')}"><dt>${t('stats.health')}</dt><dd>${formatStat(stats.health, { unit: 'unit.hp' })}</dd></div></dl>${renderTrait(character, side)}</div>`;
     const panel = elements[`panel-${side}`];
+    panel.dataset.portraitCharacter = character.id;
     const active = state.side === side;
     panel.dataset.active = String(active);
     const activeLabel = active ? `<span class="selection-active-label"> · ${t('selection.active')}</span>` : '';

@@ -148,9 +148,9 @@
 
 .portrait:focus-visible { outline: 1px dashed var(--color-focus) !important; outline-offset: -8px; }
 
-.info { position: absolute; left: 68%; right: 6%; top: 34%; display: flex; flex-direction: column; align-items: center; gap: clamp(5px, .7vw, 9px); }
+.info { position: absolute; left: 74%; right: 0; top: 34%; display: flex; flex-direction: column; align-items: center; gap: clamp(5px, .7vw, 9px); }
 
-.panel.right .info { left: 6%; right: 68%; }
+.panel.right .info { left: 0; right: 74%; }
 
 .info h2 { margin: 0; font-family: var(--serif); font-size: clamp(15px, 1.9vw, 24px); line-height: 1.2; font-weight: bold; letter-spacing: 1px; white-space: nowrap; background: var(--color-surface); padding: 0 3px; }
 
@@ -270,6 +270,15 @@
 
 .panel.right .portrait.has-art { inset: 4% 0 -76% 24%; }
 
+/* Leave room for the guardian's broad shoulders and tower shield beside the stats. */
+.panel[data-portrait-character="guardian"] .portrait.has-art { inset: 4% 24% -40% 0; }
+.panel.right[data-portrait-character="guardian"] .portrait.has-art { inset: 4% 0 -40% 24%; }
+
+/* Keep the mage's wide staff and sleeves clear of the character statistics. */
+.panel[data-portrait-character="mage"] .portrait.has-art { inset: 4% 32% -40% 0; }
+
+.panel.right[data-portrait-character="mage"] .portrait.has-art { inset: 4% 0 -40% 32%; }
+
 .info { z-index: 1; }
 
 .portrait-image { display: block; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: auto; height: 100%; max-width: none; min-height: 0; object-fit: contain; object-position: center top; pointer-events: none;  }
@@ -301,3 +310,9 @@
 .trait-tooltip strong { display: block; font-size: 13px; margin-bottom: 4px; }
 
 .trait:hover .trait-tooltip, .trait:focus-within .trait-tooltip { visibility: visible; opacity: 1; }
+@media (min-width: 601px) {
+  .panel[data-portrait-character="dongfang-changfan"] .portrait.has-art { inset: 4% 32% -40% 0; }
+  .panel.right[data-portrait-character="dongfang-changfan"] .portrait.has-art { inset: 4% 0 -40% 32%; }
+  .panel[data-portrait-character="dongfang-changfan"] .info h2 { font-size: clamp(12px, 1.5vw, 20px); letter-spacing: 0; }
+}
+.character[data-character="dongfang-changfan"] .name { font-size: clamp(12px, 1.5vw, 20px); letter-spacing: 0; }

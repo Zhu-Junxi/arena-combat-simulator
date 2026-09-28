@@ -1,4 +1,7 @@
+import { createGuardianState, absorbShieldDamage, beginCharge, createFlail, advanceFlail, resolveChainWalls } from './guardian.js';
 import { BATTLE_RULES } from '../config/combat.js';
+import { createStarLaunch, createStarFlight, advanceStarFlight } from './star-flight.js';
+import { grantStarPassive, starCooldownAdvance } from './star-passive.js';
 import { WEAPON_DEFINITIONS } from '../config/weapons.js';
 import { defaultMageAbilities, defaultPriestAbilities, defaultSummonAbilities } from '../config/customization.js';
 
@@ -32,7 +35,7 @@ export function smoothStep(value) {
 
 export function weaponPose(fighter, elapsed) {
   const { attack, weapon } = fighter;
-  const age = Math.max(0, elapsed - attack.startedAt);
+  const age = Math.max(0, elapsed - attack.startedAt + (attack.hasteAgeBonus ?? 0));
   const prepare = smoothStep(age / weapon.windup);
   const recovery = Math.max(0, Math.min(1, (age - weapon.windup - 0.04) / (weapon.duration - weapon.windup - 0.04)));
   let angle = attack.angle;
@@ -80,6 +83,7 @@ export function weaponIntersectsTarget(fighter, target, pose, rules = BATTLE_RUL
 
 export function canAttack(fighter, target, rules = BATTLE_RULES) {
   if (!target || fighter.health <= 0 || target.health <= 0) return false;
+  if (fighter.guardian) return !fighter.guardian.flail && !fighter.guardian.dash;
   return fighter.weapon.type === 'ranged' || weaponIntersectsTarget(
     fighter,
     target,
@@ -250,6 +254,7 @@ export function createFighter(side, character, weapon, index, settings = null, r
     character,
     trait: { ...character.trait, ...settings?.trait },
     weapon,
+    bodySize: rules.fighterSize,
     health,
     maxHealth: health,
     attackValues,
@@ -263,6 +268,8 @@ export function createFighter(side, character, weapon, index, settings = null, r
     attack: null,
     hitUntil: 0,
     attacksFired: 0,
+    starPassive: {},
+    guardian: character.id === 'guardian' ? createGuardianState() : null,
     marks: {},
     mageCycle: null,
     mageSpellIndex: 0,
@@ -291,14 +298,18 @@ export function createFighter(side, character, weapon, index, settings = null, r
   };
 }
 
-export function advanceMovement(fighters, seconds, now, rules = BATTLE_RULES, zones = []) {
+export function advanceMovement(fighters, seconds, now, rules = BATTLE_RULES, zones = [], onContact = () => {}) {
   const half = rules.fighterSize / 2;
   const min = half;
   const max = rules.size - half;
   const epsilon = 1e-8;
   let elapsed = 0;
   const factor = fighter => movementFactor(fighter, now + elapsed, zones);
-  const velocity = (fighter, axis) => fighter[`v${axis}`] * factor(fighter);
+  const velocity = (fighter, axis) => {
+    const dash = fighter.guardian?.dash;
+    const speed = dash ? (axis === 'x' ? Math.cos(dash.angle) : Math.sin(dash.angle)) * dash.speed : fighter[`v${axis}`];
+    return speed * factor(fighter);
+  };
   let remaining = seconds;
   let zeroTimeEvents = 0;
   const maxZeroTimeEvents = Math.max(16, fighters.length * fighters.length * 8);
@@ -328,10 +339,16 @@ export function advanceMovement(fighters, seconds, now, rules = BATTLE_RULES, zo
       }
     });
 
-    if (rules.collisionMode !== 'pass') {
+    if (rules.collisionMode !== 'pass' || fighters.some(fighter => fighter.guardian?.dash)) {
       for (let a = 0; a < fighters.length; a += 1) for (let b = a + 1; b < fighters.length; b += 1) {
         const first = fighters[a];
         const second = fighters[b];
+        const charging = first.guardian?.dash || second.guardian?.dash;
+        if (rules.collisionMode === 'pass' && !charging) continue;
+        if (charging && Math.abs(first.x - second.x) <= rules.fighterSize + epsilon &&
+            Math.abs(first.y - second.y) <= rules.fighterSize + epsilon) {
+          consider(0, { type: 'fighters', first, second });
+        }
         let entry = -Infinity;
         let exit = Infinity;
         let possible = true;
@@ -359,6 +376,7 @@ export function advanceMovement(fighters, seconds, now, rules = BATTLE_RULES, zo
     elapsed += nextTime;
     if (!contacts.length) break;
 
+    for (const contact of contacts) onContact(contact);
     // Multiple collisions can legitimately share a timestamp. A degenerate
     // geometry must still never monopolize the animation frame with an endless
     // sequence of zero-time events.
@@ -412,6 +430,26 @@ export function advanceMovement(fighters, seconds, now, rules = BATTLE_RULES, zo
             fighter.vy *= -1;
           }
         });
+      }
+      // Exchanging directions at unequal speeds can leave an overtaking pair
+      // still closing, repeating the same zero-time collision indefinitely.
+      for (const axis of ['x', 'y']) {
+        const separation = second[axis] - first[axis];
+        if (Math.abs(separation) >= rules.fighterSize - epsilon &&
+            separation * (velocity(second, axis) - velocity(first, axis)) < -epsilon) {
+          [first, second].forEach((fighter, index) => {
+            const speed = Math.hypot(fighter.vx, fighter.vy);
+            fighter[`v${axis}`] = Math.abs(fighter[`v${axis}`]) * Math.sign(separation) * (index === 0 ? -1 : 1);
+            if ((fighter[axis] <= min + epsilon && fighter[`v${axis}`] < 0) ||
+                (fighter[axis] >= max - epsilon && fighter[`v${axis}`] > 0)) {
+              // A wall-pinned rear fighter exits along the wall instead of
+              // bouncing straight back into the slower fighter at time zero.
+              const tangent = axis === 'x' ? 'y' : 'x';
+              fighter[`v${axis}`] = 0;
+              fighter[`v${tangent}`] = (Math.sign(fighter[`v${tangent}`]) || 1) * speed;
+            }
+          });
+        }
       }
     }
 
@@ -487,7 +525,7 @@ export function createCombatEngine({
 
   function summonState(owner, overrides = {}) {
     return {
-      owner, target: null, x: owner.x, y: owner.y, prevX: owner.x, prevY: owner.y,
+      owner, target: null, bodySize: battle.rules.fighterSize, x: owner.x, y: owner.y, prevX: owner.x, prevY: owner.y,
       health: 1, maxHealth: 1, hitUntil: 0, marks: {}, priestMarks: 0, priestMarksBySource: {},
       rootUntil: 0, slowUntil: 0, slowFactor: 1, burn: null, bleed: null,
       targetable: false, ...overrides
@@ -547,12 +585,14 @@ export function createCombatEngine({
   }
 
   function startAttack(fighter, target) {
+    if (fighter.guardian?.flail || fighter.guardian?.dash) return null;
     prepareMageCycle(fighter);
     const elemental = isElementalMage(fighter);
     const priest = isPriest(fighter);
     const spell = elemental ? fighter.mageAbilities.cycles[fighter.mageCycle][fighter.mageSpellIndex] : null;
     const attack = {
       target,
+      guardianMode: fighter.guardian ? (fighter.guardian.shield > 0 ? 'charge' : 'flail') : null,
       startedAt: battle.elapsed,
       angle: facingAngle(fighter, target),
       empowered: isVineShot(fighter, fighter.attacksFired + 1),
@@ -566,8 +606,21 @@ export function createCombatEngine({
       hit: false
     };
     fighter.attack = attack;
+    if (fighter.weapon.art === 'star-thought') attack.starLaunch = createStarLaunch(battle.rules, random);
+    grantStarPassive(target, 'enemy-attack', battle.elapsed);
     emit('attack-started', { fighter, attack });
     return attack;
+  }
+
+  function spawnStar(projectile, launch = createStarLaunch(battle.rules, random)) {
+    const fighter = projectile.owner;
+    const starFlight = createStarFlight(fighter, projectile.target, battle.rules, launch);
+    const star = { ...projectile, starFlight, x: starFlight.x, y: starFlight.y,
+      angle: starFlight.angle, vx: Math.cos(starFlight.angle) * starFlight.speed,
+      vy: Math.sin(starFlight.angle) * starFlight.speed };
+    battle.projectiles.push(star);
+    emit('projectile-spawned', { fighter, projectile: star });
+    return star;
   }
 
   function spawnProjectile(fighter) {
@@ -593,6 +646,9 @@ export function createCombatEngine({
       radius: fighter.weapon.radius,
       age: 0
     };
+    if (fighter.weapon.art === 'star-thought') {
+      return spawnStar(projectile, attack.starLaunch);
+    }
     battle.projectiles.push(projectile);
     emit('projectile-spawned', { fighter, projectile });
     return projectile;
@@ -624,8 +680,9 @@ export function createCombatEngine({
       }
       const { attack } = fighter;
       if (!attack) return;
+      if (fighter.guardian) { updateGuardianAttack(fighter, target, alive); return; }
       const { weapon } = fighter;
-      const age = battle.elapsed - attack.startedAt;
+      const age = battle.elapsed - attack.startedAt + (attack.hasteAgeBonus ?? 0);
       if (alive && !attack.released && fighter.health > 0 && target.health > 0) {
         attack.angle = facingAngle(fighter, target);
         if (age >= weapon.windup - 1e-9) {
@@ -651,22 +708,99 @@ export function createCombatEngine({
     });
   }
 
+  function endCharge(fighter, target = null) {
+    const dash = fighter.guardian?.dash;
+    if (!dash) return;
+    fighter.guardian.dash = null;
+    if (target && !dash.attack.hit && fighter.health > 0 && target.health > 0) {
+      dash.attack.hit = true;
+      applyDirectDamage(fighter, target, dash.attack.damage);
+    }
+    emit('charge-ended', { fighter, target });
+  }
+
+  function endGuardianAttack(fighter) {
+    if (!fighter.attack) return;
+    emit('attack-ended', { fighter, attack: fighter.attack });
+    fighter.attack = null;
+  }
+
+  function updateGuardianAttack(fighter, target, alive) {
+    const { attack, weapon, guardian } = fighter;
+    if (!alive || fighter.health <= 0 || target.health <= 0) {
+      guardian.dash = null;
+      endGuardianAttack(fighter);
+      return;
+    }
+    const age = battle.elapsed - attack.startedAt;
+    if (!attack.released && age >= weapon.windup - 1e-9) {
+      // Aim once on release. The shield continues facing the opponent independently.
+      attack.angle = facingAngle(fighter, target);
+      attack.released = true;
+      fighter.cooldownElapsed = 0;
+      fighter.attacksFired += 1;
+      if (guardian.shield > 0) beginCharge(fighter, attack);
+      else {
+        guardian.flail = createFlail(fighter, target, attack.damage);
+        emit('flail-spawned', { fighter, flail: guardian.flail });
+      }
+      emit('attack-released', { fighter, attack });
+    }
+    if (attack.released && !guardian.dash && !guardian.flail && age >= weapon.duration) endGuardianAttack(fighter);
+  }
+
+  function updateGuardianFlails(seconds) {
+    for (const fighter of battle.fighters) {
+      const flail = fighter.guardian?.flail;
+      if (!flail) continue;
+      const done = advanceFlail(flail, seconds, battle.elapsed, (owner, target, damage, phase) => {
+        const amount = applyDirectDamage(owner, target, damage);
+        emit('flail-hit', { fighter: owner, target, amount, phase, flail });
+      }, emit);
+      if (done) {
+        fighter.guardian.flail = null;
+        emit('flail-removed', { fighter, flail });
+        endGuardianAttack(fighter);
+      }
+    }
+  }
+
+  function absorbIncoming(fighter, target, amount, damageType = null) {
+    const result = absorbShieldDamage(target, amount, battle.elapsed);
+    if (result.absorbed) emit('shield-damaged', { fighter, target, amount: result.absorbed, damageType });
+    if (result.broken) {
+      endCharge(target);
+      endGuardianAttack(target);
+      emit('shield-broken', { fighter: target });
+    }
+    return result.remaining;
+  }
+
   function updateProjectiles(seconds) {
     battle.projectiles = battle.projectiles.filter(projectile => {
       const { target } = projectile;
-      const nextX = projectile.x + projectile.vx * seconds;
-      const nextY = projectile.y + projectile.vy * seconds;
+      const segment = projectile.starFlight ? advanceStarFlight(projectile, seconds) : {
+        x: projectile.x, y: projectile.y,
+        nextX: projectile.x + projectile.vx * seconds,
+        nextY: projectile.y + projectile.vy * seconds, startFraction: 0
+      };
+      const nextX = segment?.nextX ?? projectile.x;
+      const nextY = segment?.nextY ?? projectile.y;
       let hit = null;
       let hitTarget = null;
-      for (const candidate of [...battle.fighters, ...battle.summons.filter(summon => summon.targetable)]) {
+      if (segment) for (const candidate of [...battle.fighters, ...battle.summons.filter(summon => summon.targetable)]) {
         if (candidate === projectile.owner || candidate.owner === projectile.owner || candidate.health <= 0) continue;
-        const candidateHit = segmentBoxTime(projectile.x - candidate.prevX, projectile.y - candidate.prevY, nextX - candidate.x, nextY - candidate.y, battle.rules.fighterSize / 2 + projectile.radius);
+        const startX = candidate.prevX + (candidate.x - candidate.prevX) * segment.startFraction;
+        const startY = candidate.prevY + (candidate.y - candidate.prevY) * segment.startFraction;
+        const candidateHit = segmentBoxTime(segment.x - startX, segment.y - startY,
+          nextX - candidate.x, nextY - candidate.y, battle.rules.fighterSize / 2 + projectile.radius);
         if (candidateHit !== null && (hit === null || candidateHit < hit)) { hit = candidateHit; hitTarget = candidate; }
       }
       projectile.age += seconds;
       if (hit !== null) {
         const target = hitTarget;
         if (projectile.priestMark) {
+          grantStarPassive(target, 'enemy-hit', battle.elapsed);
           const marks = applyPriestMark(target, projectile.owner.side, projectile.owner.priestAbilities, battle.elapsed);
           emit('priest-marked', { fighter: projectile.owner, target, marks });
           emit('projectile-removed', { projectile, reason: 'hit' });
@@ -707,13 +841,18 @@ export function createCombatEngine({
           }
         }
         applyDirectDamage(projectile.owner, target, damage);
-        if (projectile.empowered) applyVines(target, projectile.owner.trait, battle.elapsed, battle.rules.controlDurationScale);
+        if (projectile.empowered && target.health > 0) {
+          applyVines(target, projectile.owner.trait, battle.elapsed, battle.rules.controlDurationScale);
+          emit('vines-applied', { fighter: projectile.owner, target, projectile });
+        }
         emit('projectile-removed', { projectile, reason: 'hit' });
         return false;
       }
       projectile.x = nextX;
       projectile.y = nextY;
-      if (projectile.age > 5 || nextX < -30 || nextX > battle.rules.size + 30 || nextY < -30 || nextY > battle.rules.size + 30) {
+      const margin = (projectile.starFlight?.orbitRadius ?? 0) + 30;
+      const outside = nextX < -margin || nextX > battle.rules.size + margin || nextY < -margin || nextY > battle.rules.size + margin;
+      if (projectile.age > 5 || (projectile.starFlight?.phase !== 'flank' && outside)) {
         emit('projectile-removed', { projectile, reason: 'expired' });
         return false;
       }
@@ -885,6 +1024,7 @@ export function createCombatEngine({
 
   function startPrayer(fighter, target) {
     fighter.prayer = { startedAt: battle.elapsed, target };
+    grantStarPassive(target, 'enemy-attack', battle.elapsed);
     emit('prayer-started', { fighter, target });
   }
 
@@ -897,9 +1037,12 @@ export function createCombatEngine({
   }
 
   function applyDirectDamage(fighter, target, amount) {
-    const dealt = dealDamage(target, amount, battle.elapsed);
+    if (target.health <= 0 || amount <= 0) return 0;
+    const dealt = dealDamage(target, absorbIncoming(fighter, target, amount), battle.elapsed);
     if (dealt > 0) {
       interruptPrayer(target);
+      grantStarPassive(fighter, 'enemy-hurt', battle.elapsed);
+      grantStarPassive(target, 'enemy-hit', battle.elapsed);
       emit('damage', { fighter, target, amount: dealt });
     }
     return dealt;
@@ -951,8 +1094,12 @@ export function createCombatEngine({
     const end = battle.elapsed + seconds;
     let now = battle.elapsed;
     while (now < end - 1e-10) {
-      let until = end;
+      const hasGuardianMotion = battle.fighters.some(fighter => fighter.guardian?.dash || fighter.guardian?.flail?.phase === 'grounded');
+      let until = hasGuardianMotion ? Math.min(end, now + 1 / 120) : end;
       battle.fighters.forEach(fighter => {
+        const dash = fighter.guardian?.dash;
+        const speed = dash ? dash.speed * movementFactor(fighter, now, battle.zones) : 0;
+        if (speed > 0) until = Math.min(until, now + dash.remaining / speed);
         for (const expiry of [fighter.rootUntil, fighter.slowUntil]) {
           if (expiry > now + 1e-9 && expiry < until) until = expiry;
         }
@@ -960,7 +1107,32 @@ export function createCombatEngine({
       battle.zones.forEach(zone => {
         if (zone.expiresAt > now + 1e-9 && zone.expiresAt < until) until = zone.expiresAt;
       });
-      advanceMovement(battle.fighters, until - now, now, battle.rules, battle.zones);
+      const previous = new Map(battle.fighters.map(fighter => [fighter, { x: fighter.x, y: fighter.y }]));
+      const dashDistances = new Map(battle.fighters.filter(fighter => fighter.guardian?.dash).map(fighter =>
+        [fighter, fighter.guardian.dash.speed * movementFactor(fighter, now, battle.zones) * (until - now)]));
+      advanceMovement(battle.fighters, until - now, now, battle.rules, battle.zones, contact => {
+        if (contact.type === 'wall') endCharge(contact.fighter);
+        if (contact.type === 'fighters') {
+          const pair = [contact.first, contact.second];
+          const charging = pair.filter(fighter => fighter.guardian?.dash);
+          // Resolve both impacts when two guardians charge into each other.
+          const hits = charging.map(fighter => [fighter, pair.find(other => other !== fighter), fighter.guardian.dash.attack]);
+          charging.forEach(fighter => endCharge(fighter));
+          hits.forEach(([fighter, target, attack]) => {
+            if (!attack.hit && fighter.health > 0 && target.health > 0) {
+              attack.hit = true;
+              applyDirectDamage(fighter, target, attack.damage);
+            }
+          });
+        }
+      });
+      resolveChainWalls(battle.fighters, previous, battle.rules, now, fighter => endCharge(fighter));
+      dashDistances.forEach((distance, fighter) => {
+        const dash = fighter.guardian?.dash;
+        if (!dash) return;
+        dash.remaining -= distance;
+        if (dash.remaining <= 1e-7) endCharge(fighter);
+      });
       now = until;
     }
   }
@@ -973,11 +1145,15 @@ export function createCombatEngine({
         const effect = target[type];
         if (!effect) continue;
         const activeSeconds = Math.max(0, Math.min(seconds, effect.expiresAt - (battle.elapsed - seconds)));
-        if (activeSeconds > 0 && effect.dps > 0) {
-          const amount = effect.dps * activeSeconds;
-          target.health = Math.max(0, target.health - amount);
-          target.hitUntil = battle.elapsed + 0.12;
-          emit('damage-over-time', { target, type, amount });
+        if (activeSeconds > 0 && effect.dps > 0 && target.health > 0) {
+          const attacker = battle.fighters.find(fighter => fighter !== target);
+          const amount = Math.min(target.health, absorbIncoming(attacker, target, effect.dps * activeSeconds, type));
+          if (amount > 0) {
+            target.health = Math.max(0, target.health - amount);
+            target.hitUntil = battle.elapsed + 0.12;
+            battle.fighters.filter(fighter => fighter !== target).forEach(fighter => grantStarPassive(fighter, 'enemy-hurt', battle.elapsed));
+            emit('damage-over-time', { target, damageType: type, amount });
+          }
         }
         if (effect.expiresAt <= battle.elapsed + 1e-9) target[type] = null;
       }
@@ -1000,6 +1176,12 @@ export function createCombatEngine({
     battle.zones = [];
     battle.summons.slice().forEach(summon => removeSummon(summon, 'finished'));
     battle.fighters.forEach(fighter => {
+      if (fighter.guardian) {
+        endCharge(fighter);
+        if (fighter.guardian.flail) emit('flail-removed', { fighter, flail: fighter.guardian.flail });
+        fighter.guardian.flail = null;
+        endGuardianAttack(fighter);
+      }
       fighter.vx = 0;
       fighter.vy = 0;
     });
@@ -1016,14 +1198,20 @@ export function createCombatEngine({
       fighter.prevY = fighter.y;
     });
     advance(seconds);
+    battle.fighters.forEach(fighter => {
+      const attackTime = starCooldownAdvance(fighter, battle.elapsed, seconds);
+      fighter.cooldownElapsed += attackTime;
+      if (fighter.weapon.art === 'star-thought' && fighter.attack) {
+        // Casting and recovery keep pace with the cooldown, including stack expiry.
+        fighter.attack.hasteAgeBonus = (fighter.attack.hasteAgeBonus ?? 0) + attackTime - seconds;
+      }
+    });
     battle.elapsed += seconds;
     updateZones();
     updatePriestMarkDecay();
     applyDamageOverTime(seconds);
-    battle.fighters.forEach(fighter => {
-      fighter.cooldownElapsed += seconds;
-    });
     updateProjectiles(seconds);
+    updateGuardianFlails(seconds);
     updateSummons(seconds);
     updateAttacks();
     if (battle.fighters.filter(fighter => fighter.health > 0).length <= 1) finish();
@@ -1031,7 +1219,9 @@ export function createCombatEngine({
 
   function launch() {
     const firstAngle = random() * Math.PI * 2;
-    const angles = battle.fighters.map((fighter, index) => firstAngle + index * Math.PI * 2 / battle.fighters.length);
+    const angles = battle.fighters.length === 2
+      ? [firstAngle, firstAngle + Math.PI / 3 + random() * Math.PI * 4 / 3]
+      : battle.fighters.map((fighter, index) => firstAngle + index * Math.PI * 2 / battle.fighters.length);
     battle.fighters.forEach((fighter, index) => {
       fighter.vx = Math.cos(angles[index]) * fighter.movementSpeed;
       fighter.vy = Math.sin(angles[index]) * fighter.movementSpeed;
@@ -1045,5 +1235,5 @@ export function createCombatEngine({
     emit('stopped');
   }
 
-  return { state: battle, reset, startAttack, updateAttacks, updateProjectiles, advance, step, launch, finish, stop };
+  return { state: battle, reset, startAttack, updateAttacks, updateProjectiles, updateGuardianFlails, advance, step, launch, finish, stop };
 }

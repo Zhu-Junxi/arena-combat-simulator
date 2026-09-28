@@ -1,0 +1,22 @@
+{
+  "tool": "built-in image_gen",
+  "reference": "archive/artwork/concepts/priest-sacred-preview.png",
+  "prompts": [
+    [
+      "portrait",
+      "Extract/recreate ONLY the full-body adult mature female priestess on the LEFT of this approved reference sheet as one standalone game portrait. Preserve exact identity, face, blonde hair, ivory gold burgundy gown, statuesque figure, halo, ornate jewelry and scepter. Full body head to boots with tight framing and small safe margins, tall portrait canvas. Same semi-realistic painted RPG finish. Remove ALL background, cathedral, ground, text, border and other sheet components. True transparent background, clean alpha. Fully clothed elegant ceremonial gown as reference."
+    ],
+    [
+      "avatar",
+      "Extract/recreate ONLY the center-top square female priestess HEAD AND SHOULDERS avatar from this reference. Exact same mature adult woman's face and identity, blonde hair, amber eyes, gold halo, garnet details, ivory collar. Square image tightly framing face, shoulders. Match semi-realistic painted RPG art and colors exactly. Soft neutral taupe background filling square, no frame, no text, no sheet components."
+    ],
+    [
+      "battle",
+      "Extract/recreate ONLY the LARGE center-bottom priest battle ORB from reference as one standalone square sprite. Round pearl-white sphere, gold sunburst halo, gold filigree garnet ornament and white/burgundy fabric around lower half, exact same visual design. Absolutely NO face, eyes, mouth, nose, expression, limbs, human body or weapon. One single large orb, tightly centered with small transparent margins, spherical body dominant and readable at 48px, crisp dark gold silhouette. No ground shadow, text, borders, background or other objects. True transparent alpha."
+    ],
+    [
+      "scepter",
+      "Extract/recreate ONLY the rightmost ivory-gold priest SCEPTER from reference as a standalone 2D weapon sprite. Rotate layout HORIZONTAL: handle butt at LEFT, sunburst pearl and garnet head at RIGHT, long straight shaft on centerline, both endpoints completely in frame, thin burgundy ribbons close to shaft. Exact same matching painted fantasy materials and design, no hands or person. Wide 3:1 canvas tightly framed with safe margins. No text, border, scenery or ground shadow. True transparent background. Designed for firing light from the right tip."
+    ]
+  ]
+}

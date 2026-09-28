@@ -1,5 +1,6 @@
 import { CHARACTER_BY_ID, CHARACTER_CATEGORIES, CHARACTERS } from './config/characters.js';
 import { createCombatEngine } from './battle/combat-engine.js';
+import { createCombatAudio } from './battle/combat-audio.js';
 import { createBattleRuntime, createCombatRenderer } from './battle/combat-renderer.js';
 import { loadI18n } from './i18n/i18n.js';
 import { localizeDocument, populateLanguageSelector } from './i18n/dom-localizer.js';
@@ -30,7 +31,9 @@ async function initialize() {
     'countdown', 'dock', 'fighter-left', 'fighter-right', 'language-select', 'panel-left', 'panel-right',
     'projectile-effects', 'roster', 'selection-label', 'settings-content', 'settings-presets', 'settings-panel', 'settings-reset-all', 'advanced-tuning', 'adjustment-step',
     'settings-tabs', 'settings-toggle', 'stage', 'start', 'start-control', 'status', 'theme-select', 'view-label',
-    'weapon-effects', 'zone-effects', 'preset-dialog', 'preset-heading', 'preset-close', 'preset-search', 'preset-filters',
+    'weapon-effects', 'zone-effects', 'duel-corners', 'duel-left', 'duel-right', 'duel-name-left', 'duel-name-right',
+    'duel-clock', 'duel-speed', 'duel-phase', 'duel-result', 'duel-event-time', 'duel-event',
+    'preset-dialog', 'preset-heading', 'preset-close', 'preset-search', 'preset-filters',
     'preset-save-current', 'preset-import', 'preset-import-file', 'preset-grid', 'preset-editor', 'preset-editor-label',
     'preset-name', 'preset-editor-submit', 'preset-editor-cancel', 'preset-confirm', 'preset-confirm-message',
     'preset-confirm-primary', 'preset-confirm-secondary', 'preset-status', 'feedback-toast', 'preset-feedback-toast'
@@ -55,7 +58,12 @@ async function initialize() {
     return { ...setup, arena: { ...setup.arena, fighterCount: 2 } };
   };
   const renderer = createCombatRenderer(elements, i18n);
-  const engine = createCombatEngine({ onEvent: renderer.handleEvent });
+  const audio = createCombatAudio();
+  elements.start.addEventListener('click', () => { void audio.unlock(); });
+  const engine = createCombatEngine({ onEvent: event => {
+    renderer.handleEvent(event);
+    audio.handleEvent(event);
+  } });
   const runtime = createBattleRuntime({
     engine,
     renderer,

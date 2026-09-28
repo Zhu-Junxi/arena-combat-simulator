@@ -1,9 +1,14 @@
+import { createGuardianVisual, renderGuardianVisual, GUARDIAN_VISUAL_SCALE } from './guardian-visuals.js';
+import { createBattleHud } from './battle-hud.js';
 import { BATTLE_RULES } from '../config/combat.js';
+import { activeStarPassives, starAttackSpeed } from './star-passive.js';
 import { cooldownProgress, healthBand, healthRatio, priestMarkAttackCooldownFactor, zoneSlowFactor } from './combat-engine.js';
 import { createSvgEffect, explosionMarkup, frostRuneMarkup, prayerMarkup, projectileMarkup, updateWeaponVisual, weaponMarkup } from './weapon-effects.js';
 
 export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES) {
+  const hud = createBattleHud(elements, i18n);
   const fighterElements = new Map();
+  const guardianElements = new Map();
   const attackElements = new WeakMap();
   const projectileElements = new WeakMap();
   const zoneElements = new WeakMap();
@@ -21,8 +26,9 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
     const { character } = fighter;
     element.classList.toggle('has-art', Boolean(character.art));
     element.innerHTML = (character.art ? `<img class="fighter-art" src="${character.art.battle}" alt="" draggable="false">` : '') +
-      '<span class="fighter-name"></span><span class="control-label" hidden></span><span class="arcane-marks" hidden></span><span class="summon-command" hidden></span><div class="fighter-status">' +
+      '<span class="fighter-name"></span><span class="control-label" hidden></span><span class="arcane-marks" hidden></span><span class="star-passive" hidden></span><span class="guardian-state" hidden></span><span class="summon-command" hidden></span><div class="fighter-status">' +
       '<div class="fighter-meter health-bar" role="progressbar" aria-valuemin="0"><span class="fighter-meter-fill"></span></div>' +
+      '<div class="fighter-meter shield-bar" role="progressbar" aria-valuemin="0" hidden><span class="fighter-meter-fill"></span></div>' +
       '<div class="fighter-meter cooldown-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><span class="fighter-meter-fill"></span></div></div>';
     const name = i18n.t(character.nameKey);
     element.querySelector('.fighter-name').textContent = name;
@@ -30,6 +36,10 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
       element,
       controlLabel: element.querySelector('.control-label'),
       arcaneMarks: element.querySelector('.arcane-marks'),
+      starPassive: element.querySelector('.star-passive'),
+      guardianState: element.querySelector('.guardian-state'),
+      shieldBar: element.querySelector('.shield-bar'),
+      shieldFill: element.querySelector('.shield-bar .fighter-meter-fill'),
       summonCommand: element.querySelector('.summon-command'),
       healthBar: element.querySelector('.health-bar'),
       healthFill: element.querySelector('.health-bar .fighter-meter-fill'),
@@ -40,15 +50,40 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
     view.healthBar.setAttribute('aria-valuemax', String(fighter.maxHealth));
     view.cooldownBar.setAttribute('aria-label', i18n.t('accessibility.cooldown', { name }));
     fighterElements.set(fighter, view);
+    if (fighter.guardian) guardianElements.set(fighter, createGuardianVisual(fighter, elements['weapon-effects']));
   }
 
   function renderFighter(fighter, battle) {
     const { elapsed } = battle;
     const view = fighterElements.get(fighter);
     const ratio = healthRatio(fighter.health, fighter.maxHealth);
+    if (fighter.guardian) {
+      const { guardian } = fighter;
+      const target = battle.fighters.find(other => other !== fighter);
+      renderGuardianVisual(guardianElements.get(fighter), fighter, target, elapsed);
+      view.shieldBar.hidden = guardian.shield <= 0;
+      view.shieldBar.setAttribute('aria-label', i18n.t('battle.guardian_shield'));
+      view.shieldBar.setAttribute('aria-valuenow', String(guardian.shield));
+      view.shieldBar.setAttribute('aria-valuemax', String(guardian.maxShield));
+      view.shieldFill.style.transform = `scaleX(${guardian.shield / guardian.maxShield})`;
+      const status = guardian.shield > 0 ? i18n.t('battle.shield_durability', { value: Number(guardian.shield.toFixed(1)), maximum: guardian.maxShield }) :
+        guardian.flail?.phase === 'grounded' ? i18n.t('battle.flail_grounded', { seconds: Math.max(0, guardian.flail.expiresAt - elapsed).toFixed(1) }) :
+        i18n.t(guardian.flail?.phase === 'returning' ? 'battle.flail_returning' : guardian.flail ? 'battle.flail_outbound' : 'battle.shield_broken');
+      view.guardianState.hidden = fighter.health <= 0;
+      view.guardianState.textContent = status;
+      view.guardianState.dataset.tooltip = i18n.t('trait.shield_flail.description');
+      view.shieldBar.dataset.tooltip = status;
+    }
     const effectiveCooldown = fighter.attackCooldown * priestMarkAttackCooldownFactor(fighter);
     const progress = cooldownProgress(fighter.cooldownElapsed, effectiveCooldown);
     const currentHealth = Math.max(0, Math.min(fighter.maxHealth, fighter.health));
+    const starSources = activeStarPassives(fighter, elapsed);
+    view.starPassive.hidden = !starSources.length || fighter.health <= 0;
+    view.starPassive.textContent = starSources.length ? `✦ ×${starSources.length}` : '';
+    const starStatus = i18n.t('battle.star_passive', { count: starSources.length, bonus: Math.round((starAttackSpeed(fighter, elapsed) - 1) * 100) });
+    view.starPassive.setAttribute('aria-label', starStatus);
+    view.starPassive.dataset.tooltip = starStatus + '\n' + starSources.map(source =>
+      i18n.t(`battle.star_${source}`, { seconds: Math.max(0, fighter.starPassive[source] - elapsed).toFixed(1) })).join(' · ');
     view.element.style.left = `${fighter.x / rules.size * 100}%`;
     view.element.style.top = `${fighter.y / rules.size * 100}%`;
     view.element.dataset.defeated = String(fighter.health <= 0);
@@ -101,7 +136,7 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
       elapsed: fighter.cooldownElapsed.toFixed(1), duration: effectiveCooldown
     });
     view.cooldownFill.style.transform = `scaleX(${progress})`;
-    if (fighter.attack) updateWeaponVisual(attackElements.get(fighter.attack), fighter, elapsed);
+    if (fighter.attack && !fighter.guardian) updateWeaponVisual(attackElements.get(fighter.attack), fighter, elapsed);
   }
 
   function buildSummonElement(summon) {
@@ -131,6 +166,7 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
   }
 
   function render(battle) {
+    hud.render(battle);
     battle.fighters.forEach(fighter => renderFighter(fighter, battle));
     battle.summons.forEach(renderSummon);
     battle.projectiles.forEach(projectile => {
@@ -145,6 +181,7 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
     elements['zone-effects'].replaceChildren();
     elements['combat-effects'].setAttribute('viewBox', `0 0 ${rules.size} ${rules.size}`);
     fighterElements.clear();
+    guardianElements.clear();
     summonElements.clear();
     elements.battlefield.querySelectorAll('.fighter').forEach(element => element.remove());
     elements.battlefield.querySelectorAll('.summon').forEach(element => element.remove());
@@ -152,21 +189,24 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
     const fighterPercent = rules.fighterSize / rules.size * 100;
     battle.fighters.forEach(fighter => {
       const element = fighterElements.get(fighter).element;
-      element.style.width = `${fighterPercent}%`;
-      element.style.height = `${fighterPercent}%`;
+      const visualPercent = fighterPercent * (fighter.guardian ? GUARDIAN_VISUAL_SCALE : 1);
+      element.style.width = `${visualPercent}%`;
+      element.style.height = `${visualPercent}%`;
     });
     battle.summons.forEach(buildSummonElement);
     elements.battlefield.dataset.battlePhase = 'idle';
     elements.countdown.hidden = true;
     elements.countdown.textContent = '';
     elements['battle-note'].textContent = i18n.t('battle.ready');
+    hud.reset(battle);
     render(battle);
   }
 
   function handleEvent(event) {
     const { type } = event;
     if (type === 'reset') reset(event.battle);
-    if (type === 'attack-started') {
+    else hud.handleEvent(event);
+    if (type === 'attack-started' && !event.fighter.guardian) {
       const element = createSvgEffect('weapon', weaponMarkup(event.fighter.weapon, event.attack.empowered), elements['weapon-effects']);
       element.dataset.owner = event.fighter.side;
       element.dataset.kind = event.fighter.weapon.art;
@@ -204,6 +244,11 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
       element.setAttribute('transform', `translate(${event.x} ${event.y})`);
       setTimeout(() => element.remove(), 420);
     }
+    if (type === 'flail-landed') {
+      const element = createSvgEffect('flail-impact', `<circle r="${event.flail.impactRadius}"/>`, elements['projectile-effects']);
+      element.setAttribute('transform', `translate(${event.flail.x} ${event.flail.y}) scale(${GUARDIAN_VISUAL_SCALE})`);
+      setTimeout(() => element.remove(), 360);
+    }
     if (type === 'prayer-completed') {
       const element = createSvgEffect('prayer-effect', prayerMarkup(), elements['projectile-effects']);
       element.setAttribute('transform', `translate(${event.fighter.x} ${event.fighter.y})`);
@@ -225,6 +270,7 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
   }
 
   function refreshLocalization(battle) {
+    hud.refreshLocalization(battle);
     battle.fighters.forEach(fighter => {
       const view = fighterElements.get(fighter);
       if (!view) return;

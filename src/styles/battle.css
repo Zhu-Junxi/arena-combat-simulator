@@ -1,4 +1,6 @@
-.arena-view { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 24px; }
+/* Keep all battle overlays below the selection panels, including during transitions. */
+.arena-view { position: absolute; inset: 0; z-index: 0; opacity: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 24px; }
+.stage:is([data-phase="opening"], [data-phase="arena"], [data-phase="closing"]) .arena-view { opacity: 1; }
 
 .arena-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; width: min(100%, 540px); }
 
@@ -111,3 +113,27 @@
 .frost-rune-glyph { opacity: .7; }
 
 @keyframes frost-rune-spin { to { transform: rotate(360deg); } }
+.star-thought-charge, .star-thought-projectile { color: var(--color-effect); }
+.star-spark { fill: var(--color-star-bright); stroke: var(--color-star-outline); animation: star-twinkle 560ms ease-in-out infinite; }
+@keyframes star-twinkle {
+  0%, 100% { fill: var(--color-star-bright); }
+  50% { fill: var(--color-star-base); }
+}
+@media (prefers-reduced-motion: reduce) { .star-spark { animation: none; } }
+.star-passive { position: absolute; bottom: calc(100% + 24px); left: 50%; transform: translateX(-50%); white-space: nowrap; padding: 1px 4px; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-effect); font-size: 10px; line-height: 1.2; z-index: 4; }
+
+.guardian-state { position: absolute; bottom: calc(100% + 34px); left: 50%; transform: translateX(-50%); white-space: nowrap; padding: 1px 4px; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-effect); font-size: 9px; line-height: 1.2; z-index: 4; }
+.shield-bar { height: 6px; }
+.shield-bar .fighter-meter-fill { background: var(--color-shield-meter); }
+.guardian-shield[data-hit="true"] .weapon-sprite { filter: brightness(1.5); }
+.guardian-chain-edge, .guardian-chain-links { fill: none; stroke-linecap: round; }
+.guardian-chain-edge { stroke: var(--color-chain-edge); stroke-width: 8; }
+.guardian-chain-links { stroke: var(--color-chain-link); stroke-width: 4; stroke-dasharray: 6 5; }
+.guardian-flail[data-phase="grounded"] .guardian-chain-edge { stroke-width: 9; }
+.flail-spikes, .flail-steel { fill: var(--color-flail-steel); stroke: var(--color-chain-edge); stroke-width: 2.5; stroke-linejoin: round; }
+.flail-bevel { fill: var(--color-chain-link); }
+.flail-core { fill: var(--color-chain-edge); stroke: var(--color-chain-link); stroke-width: 2; }
+.flail-band { fill: none; stroke: var(--color-chain-link); stroke-width: 2; }
+.flail-ground-mark circle { fill: none; stroke: var(--color-chain-edge); stroke-width: 2; stroke-dasharray: 5 5; opacity: .45; }
+.flail-impact circle { fill: none; stroke: var(--color-chain-link); stroke-width: 5; animation: flail-impact 360ms ease-out forwards; }
+@keyframes flail-impact { from { opacity: .9; } to { opacity: 0; } }

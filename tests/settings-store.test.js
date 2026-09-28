@@ -15,6 +15,18 @@ function createStorage(initial = {}) {
   };
 }
 
+test('legacy star attack defaults become one without discarding other custom settings', () => {
+  const storage = createStorage({ [MATCH_SETTINGS_STORAGE_KEY]: JSON.stringify({ version: 2,
+    characterDefaults: { 'dongfang-changfan': { attack: [5] } },
+    fighters: { left: { 'dongfang-changfan': { attack: [5], health: 120 } },
+      right: { 'dongfang-changfan': { attack: [7] } } }
+  }) });
+  const store = createMatchSettingsStore({ characters: CHARACTERS, storage });
+  assert.deepEqual(store.getFighter('left', 'dongfang-changfan').attack, [1]);
+  assert.equal(store.getFighter('left', 'dongfang-changfan').health, 120);
+  assert.deepEqual(store.getFighter('right', 'dongfang-changfan').attack, [7]);
+});
+
 test('settings report persistence for defaults and resets while retaining session changes on failure', () => {
   const storage = createStorage();
   const store = createMatchSettingsStore({ characters: CHARACTERS, storage });
@@ -47,6 +59,21 @@ test('settings defaults activate character speed ratings without mutating charac
   assert.equal(store.getFighter('left', 'archer').movementSpeed, 132);
   assert.deepEqual(store.getFighter('left', 'mage').attack, [3, 2, 5]);
   assert.equal(CHARACTERS[0].stats.speed, 5);
+});
+
+test('doubled archer arrow speed survives saved defaults and reload without changing custom speeds', () => {
+  const storage = createStorage({ [MATCH_SETTINGS_STORAGE_KEY]: JSON.stringify({ version: 2,
+    characterDefaults: { archer: { projectileSpeed: 620 } },
+    fighters: { left: { archer: { projectileSpeed: 620 } }, right: { archer: { projectileSpeed: 900 } } }
+  }) });
+  const store = createMatchSettingsStore({ characters: CHARACTERS, storage });
+  assert.equal(store.getFighter('left', 'archer').projectileSpeed, 1240);
+  assert.equal(store.getFighter('right', 'archer').projectileSpeed, 900);
+  store.setFighterValue('left', 'archer', 'projectileSpeed', 1240);
+  const reloaded = createMatchSettingsStore({ characters: CHARACTERS, storage });
+  assert.equal(reloaded.getFighter('left', 'archer').projectileSpeed, 1240);
+  const fresh = createMatchSettingsStore({ characters: CHARACTERS, storage: createStorage() });
+  assert.equal(fresh.getFighter('right', 'archer').projectileSpeed, 1240);
 });
 
 test('property adjustment buttons support 0.001 through 10 while respecting a field minimum step', () => {
@@ -84,7 +111,7 @@ test('fighter values are clamped and remain independent by side and character', 
   assert.equal(store.getFighter('right', 'warrior').health, 40);
   assert.deepEqual(store.getFighter('left', 'mage').attack, [3, 17, 5]);
   assert.deepEqual(store.getFighter('right', 'mage').attack, [3, 2, 5]);
-  assert.equal(store.getFighter('left', 'archer').projectileSpeed, 1200);
+  assert.equal(store.getFighter('left', 'archer').projectileSpeed, 1240);
   assert.equal(store.getFighter('left', 'warrior').attackRange, 300);
 });
 

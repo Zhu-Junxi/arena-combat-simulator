@@ -31,5 +31,12 @@
   --color-bow-string: #d0ae71;
   --color-effect: #f2ede3;
   --color-effect-fill: #23211e;
+  --color-shield-meter: #83c8ee;
+  --color-chain-edge: #415965;
+  --color-chain-link: #d1e5ef;
+  --color-flail-steel: #91aebb;
+  --color-star-bright: #f5fcff;
+  --color-star-base: #bcecff;
+  --color-star-outline: #80caff;
   --color-weapon-trail: #d8d0c3;
 }
