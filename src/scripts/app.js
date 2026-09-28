@@ -1,5 +1,6 @@
 import { CHARACTER_BY_ID, CHARACTER_CATEGORIES, CHARACTERS } from './config/characters.js';
 import { createCombatEngine } from './battle/combat-engine.js';
+import { createCombatAudio } from './battle/combat-audio.js';
 import { createBattleRuntime, createCombatRenderer } from './battle/combat-renderer.js';
 import { loadI18n } from './i18n/i18n.js';
 import { localizeDocument, populateLanguageSelector } from './i18n/dom-localizer.js';
@@ -27,7 +28,8 @@ async function initialize() {
     'countdown', 'dock', 'fighter-left', 'fighter-right', 'language-select', 'panel-left', 'panel-right',
     'projectile-effects', 'roster', 'selection-label', 'settings-content', 'settings-export', 'settings-import', 'settings-import-file', 'settings-panel', 'settings-reset-all', 'advanced-tuning',
     'settings-tabs', 'settings-toggle', 'stage', 'start', 'start-control', 'status', 'theme-select', 'view-label',
-    'weapon-effects', 'zone-effects'
+    'weapon-effects', 'zone-effects', 'duel-corners', 'duel-left', 'duel-right', 'duel-name-left', 'duel-name-right',
+    'duel-clock', 'duel-speed', 'duel-phase', 'duel-result', 'duel-event-time', 'duel-event'
   ]);
 
   const theme = createThemeController();
@@ -41,7 +43,12 @@ async function initialize() {
   const settings = createMatchSettingsStore({ characters: CHARACTERS });
   const matchSetup = () => buildCombatSetup(settings, { left: state.left, right: state.right });
   const renderer = createCombatRenderer(elements, i18n);
-  const engine = createCombatEngine({ onEvent: renderer.handleEvent });
+  const audio = createCombatAudio();
+  elements.start.addEventListener('click', () => { void audio.unlock(); });
+  const engine = createCombatEngine({ onEvent: event => {
+    renderer.handleEvent(event);
+    audio.handleEvent(event);
+  } });
   const runtime = createBattleRuntime({
     engine,
     renderer,
