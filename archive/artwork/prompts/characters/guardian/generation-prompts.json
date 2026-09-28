@@ -1,0 +1,30 @@
+{
+  "tool": "built-in image_gen",
+  "reference": "archive/artwork/concepts/guardian-steel-preview.png",
+  "prompts": [
+    {
+      "asset": "assets/characters/guardian/portrait.png",
+      "prompt": "Extract/recreate ONLY the full-body GUARDIAN adult male on the LEFT of this approved sheet as one standalone transparent tall game portrait. Exact same identity and design, broad heavy steel/navy/brass armor, closed greathelm with exactly two tiny pupil points in shadow and absolutely no exposed skin, hair, eyeball whites or eyelids. Exact armor, tabard, stance and large matching tower shield by his side. Head to armored boots fully within canvas, tight framing with small safe margins, 2:3 tall composition. Preserve semi-realistic painted finish, colors and realistic armor wear. Remove all background, floor shadow, labels, sheet elements, extra weapons and other illustrations. True transparent alpha."
+    },
+    {
+      "asset": "assets/characters/guardian/avatar.png",
+      "prompt": "Extract/recreate ONLY the upper-middle GUARDIAN HEAD AND SHOULDERS PORTRAIT from this approved sheet as one square game avatar. Same closed greathelm, steel navy antique brass armor, close view of helmet and upper armored shoulders. Exactly TWO tiny pale pupil points visible in black eye slots, one per eye. All else within eye slits deep black; no exposed flesh, eyelids, sclera, face, hair or neck anywhere. Match helmet identity, metal material and illustration style precisely. Soft desaturated neutral taupe-gray painted studio background filling square, like the sheet portrait. No frames, text, labels, extra subjects or weapons. Tightly framed clear silhouette."
+    },
+    {
+      "asset": "assets/characters/guardian/battle.png",
+      "prompt": "Extract/recreate ONLY the LOWER MIDDLE BATTLE ORB from this approved sheet as one standalone transparent square game sprite. A spherical navy armored body WEARING the entire steel/brass guardian greathelm, not simply armor patterns painted on a ball. Complete peaked crown, central raised brass ridge, black visor slit, angular plate mask with ventilation holes, projecting helmet rim. Exact straight-on symmetrical FRONT VIEW, center ridge centered. Lower curved spherical body visibly peeks below helmet. Same approved design, materials, colors and proportions. Absolutely no eyes, pupils, face, expressions, human body, shoulders, arms, legs, shield or weapon. One compact round unit centered tightly, small transparent margin, readable at 64 pixels, high clarity. No background, ground or floor shadow, text, labels or extra sheet objects. Real transparent alpha."
+    },
+    {
+      "asset": "assets/weapons/guardian-shield-steel.png",
+      "prompt": "Extract/recreate ONLY the rightmost tower shield weapon from this approved sheet as standalone 2D game sprite, upright on a 2:3 portrait canvas. Preserve thick steel edges, navy inlays, old brass trim and central brass heraldic ornament, clipped upper corners, matching semi-realistic painted worn metal. Shield faces viewer nearly frontally with modest visible thickness, compact broad silhouette width roughly 65 percent of height for game shield bash. Entire shield visible with small clean transparent margins. No hands, character, orb, straps extending beyond outline, text, labels, floor shadow or background. True transparent alpha."
+    },
+    {
+      "asset": "assets/characters/warrior/avatar-background.png",
+      "prompt": "Edit image 1 ONLY by replacing its transparent background with a soft desaturated warm taupe-gray painted studio gradient, matching the restrained opaque portrait background style of image 2. Image 2 is BACKGROUND STYLE REFERENCE ONLY. Preserve image 1 warrior exactly: same adult male face, eyes, brown hair, red cloth, steel armor, identity, pose, lighting, original head-and-shoulders crop, and square composition. Do not insert anything from image 2, do not redesign or beautify face. Only previously empty background behind hair/shoulders gets filled; subtle atmospheric mottled texture, no scenery, halos, ornaments, text or border. Fully opaque final image."
+    },
+    {
+      "asset": "assets/characters/archer/avatar-background.png",
+      "prompt": "Edit image 1 ONLY by filling its transparent background with soft desaturated taupe-gray painted studio backdrop with a very subtle sage-green tint to suit forest elf, matching the restrained background treatment of image 2. Image 2 is BACKGROUND STYLE REFERENCE ONLY. Preserve image 1 archer precisely: same adult male elf identity, blond long braided hair, pointed ears, green eyes, emerald clothing and brooch, facial proportions, pose, lighting, square crop and head scale. Do not copy the woman, halo or ornaments from reference 2. Replace only empty background behind head/shoulders, subtle diffuse gradient texture, no forest scenery, text, frame, objects or redesign. Fully opaque final image."
+    }
+  ]
+}
