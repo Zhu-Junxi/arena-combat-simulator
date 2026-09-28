@@ -108,7 +108,7 @@ export function constrainStartingDistance(arena, advanced = false) {
   const maximumSpacing = count === 2 ? arena.size - arena.fighterSize :
     (arena.size - arena.fighterSize) * Math.sin(Math.PI / count);
   const maximum = Math.min(ARENA_CONTROLS.startingDistance.max, maximumSpacing);
-  return Math.max(minimum, Math.min(maximum, clampSetting(arena.startingDistance, ARENA_CONTROLS.startingDistance)));
+  return Number(Math.max(minimum, Math.min(maximum, clampSetting(arena.startingDistance, ARENA_CONTROLS.startingDistance))).toFixed(3));
 }
 
 function normalizeArena(value = {}, advanced = false) {
