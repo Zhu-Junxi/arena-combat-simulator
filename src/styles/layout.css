@@ -12,7 +12,7 @@ header span { font-size: 12px; letter-spacing: 2px; }
 
 .preference-control select { min-width: 96px; padding: 5px 7px; border: 1px solid var(--color-border); color: var(--color-ink); background: var(--color-surface); font: inherit; }
 
-.stage { height: min(780px, calc(100svh - 138px)); min-height: 570px; border: 2px solid var(--color-border); position: relative; overflow: hidden; isolation: isolate; }
+.stage { height: min(780px, calc(100svh - 138px)); min-height: 570px; border: 2px solid var(--color-border); position: relative; overflow: clip; isolation: isolate; }
 
 .panel { position: absolute; top: 0; bottom: 0; width: 50%; z-index: 2; background: var(--color-surface); will-change: transform; }
 
