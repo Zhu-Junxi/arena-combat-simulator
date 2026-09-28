@@ -49,6 +49,11 @@ export function fighterHudState(fighter, battle, t) {
     extraValue = theme;
     extraRatio = fighter.mageCycle ? (fighter.mageSpellIndex + 1) / 3 : 0;
     status = t('hud.spell_step', { step: fighter.mageSpellIndex + 1 });
+  } else if (fighter.summonAbilities) {
+    extraLabel = t('trait.beastmaster.name');
+    extraValue = `${number(fighter.summonMeter)} / ${number(fighter.summonAbilities.meterThreshold)}`;
+    extraRatio = clamp(fighter.summonMeter / fighter.summonAbilities.meterThreshold);
+    status = t('battle.command_meter', { current: fighter.summonMeter, maximum: fighter.summonAbilities.meterThreshold });
   } else if (fighter.priestAbilities) {
     extraLabel = t('hud.target_marks');
     extraValue = number(target?.priestMarks ?? 0);
@@ -70,7 +75,8 @@ export function fighterHudState(fighter, battle, t) {
 }
 
 export function battleEventText(event, t) {
-  const name = fighter => fighter ? t(fighter.character.nameKey) : '';
+  const name = fighter => fighter?.character ? t(fighter.character.nameKey) : fighter?.owner
+    ? t(fighter.kind === 'companion' ? 'battle.companion_name' : 'battle.pack_wolf') : '';
   const parameters = { name: name(event.fighter), target: name(event.target), amount: number(event.amount ?? 0) };
   const keys = {
     'shield-damaged': 'hud.event_shield', 'shield-broken': 'hud.event_break',
