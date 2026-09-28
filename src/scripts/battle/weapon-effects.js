@@ -22,10 +22,17 @@ function vineTrailMarkup() {
     '<path class="vine-trail-leaf" d="M-20-6q-5-10-10-5 0 7 10 5M-3 2q0 9 8 7-1-6-8-7" stroke="currentColor" stroke-width="1"/>';
 }
 
+function starSparkMarkup() {
+  return '<g class="star-spark"><path class="star-four-point" d="M0-15 3-3 12 0 3 3 0 15-3 3-12 0-3-3Z" stroke-width="1.2" stroke-linejoin="round"/></g>';
+}
+
 export function weaponMarkup(weapon, empowered = false) {
+  if (weapon.art === 'star-thought') {
+    return '<g class="star-thought-charge">' + starSparkMarkup() + '</g>';
+  }
   const sprite = WEAPON_SPRITES[weapon.art];
   const image = '<svg class="weapon-sprite" x="' + sprite.x + '" y="' + sprite.y + '" width="' + sprite.width + '" height="' + sprite.height +
-    '" viewBox="' + sprite.crop.join(' ') + '" overflow="hidden"><image href="assets/weapons/' + sprite.file +
+    '" viewBox="' + sprite.crop.join(' ') + '" preserveAspectRatio="' + (sprite.preserveAspectRatio || 'xMidYMid meet') + '" overflow="hidden"><image href="assets/weapons/' + sprite.file +
     '" x="0" y="0" width="' + sprite.source[0] + '" height="' + sprite.source[1] + '"/></svg>';
   if (weapon.art === 'bow') {
     const arrowLength = weapon.muzzle - (sprite.string.x - 24);
@@ -37,7 +44,8 @@ export function weaponMarkup(weapon, empowered = false) {
     return '<path class="sword-trail" d="M126 -66Q176 -43 185 -5" fill="none" stroke="currentColor" stroke-width="2" opacity="0"/>' + image;
   }
   if (weapon.art === 'shield') {
-    return image + '<path class="shield-impact" d="M129 -21l12 -7M132 0h16M129 21l12 7" fill="none" stroke="currentColor" stroke-width="2" opacity="0"/>';
+    const edge = sprite.x + sprite.width + 4;
+    return image + `<path class="shield-impact" d="M${edge} -21l12 -7M${edge + 3} 0h16M${edge} 21l12 7" fill="none" stroke="currentColor" stroke-width="2" opacity="0"/>`;
   }
   return image + '<g class="cast-charge" opacity="0"><circle class="charge-ring" cx="' + sprite.focus +
     '" cy="0" r="12" fill="none" stroke="currentColor" stroke-width="1.6"/><path class="charge-rays" d="M-20 0H-13M13 0H20M0 -20V-13M0 13V20" fill="none" stroke="currentColor" stroke-width="2"/></g>' +
@@ -45,6 +53,7 @@ export function weaponMarkup(weapon, empowered = false) {
 }
 
 export function projectileMarkup(fighter, mode, empowered = false, spell = '') {
+  if (fighter.weapon.art === 'star-thought') return '<g class="star-thought-projectile">' + starSparkMarkup() + '</g>';
   if (fighter.weapon.art === 'bow') return (empowered ? vineTrailMarkup() : '') + arrowSpriteMarkup(-46, 56);
   if (fighter.weapon.art === 'staff') {
     const theme = spell.split('-')[0] || 'ice';
@@ -83,6 +92,19 @@ export function updateWeaponVisual(element, fighter, elapsed) {
     const muzzle = muzzlePoint(fighter, pose);
     element.setAttribute('data-muzzle-x', String(muzzle.x));
     element.setAttribute('data-muzzle-y', String(muzzle.y));
+  }
+  if (weapon.art === 'star-thought') {
+    element.setAttribute('transform', `translate(${fighter.x} ${fighter.y}) rotate(${attack.angle * 180 / Math.PI})`);
+    const launch = attack.starLaunch;
+    const rearAngle = Math.PI - launch.rearOffset;
+    const rearX = Math.cos(rearAngle) * launch.orbitRadius;
+    const rearY = Math.sin(rearAngle) * launch.orbitRadius;
+    element.setAttribute('data-muzzle-x', String(fighter.x + Math.cos(attack.angle + rearAngle) * launch.orbitRadius));
+    element.setAttribute('data-muzzle-y', String(fighter.y + Math.sin(attack.angle + rearAngle) * launch.orbitRadius));
+    const charge = element.querySelector('.star-thought-charge');
+    charge.setAttribute('transform', `translate(${rearX} ${rearY})`);
+    charge.setAttribute('opacity', String(attack.released ? 0 : prepare));
+    return;
   }
   if (weapon.art === 'bow') {
     const string = sprite.string;
