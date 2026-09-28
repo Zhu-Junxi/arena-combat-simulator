@@ -1,1 +1,0 @@
-Add an architecture.md file that will explain everything about the project from all the different systems and the system design that will be followed for future features. It should also teach about how to add new things to existing systems such as for example adding new langauge to the software using the csv file and global drop down menu as an example

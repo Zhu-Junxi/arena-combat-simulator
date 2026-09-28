@@ -1,105 +1,99 @@
-# 角色对决
+<div align="center">
 
-一个无第三方依赖的纯网页 2D 对战原型。项目使用原生 HTML、CSS 和 JavaScript ES Modules，包含角色选择、开场动画、自动战斗、角色特性与回归测试。
+# Arena Duel
 
-界面支持英文和简体中文。首次打开时会优先使用已保存的语言，其次匹配浏览器语言；也可以通过页头的语言选单即时切换。
+**Choose your fighters. Tune the rules. Watch the battle unfold.**
 
-外观支持“跟随系统”“浅色”和“深色”三种模式。默认跟随操作系统；手动选择浅色或深色后会保存偏好。深色模式使用炭灰背景与暖白线条，切换外观不会重置选角或战斗状态。
+A browser-based 2D combat simulator built with HTML, CSS, and JavaScript modules. No framework, build step, or third-party dependencies.
 
-## 本地运行
+[Quick start](#quick-start) · [Features](#features) · [How to play](#how-to-play) · [Development](#development)
 
-需要安装 Node.js 18 或更高版本。
+</div>
 
-```bash
+## What is Arena Duel?
+
+Arena Duel is an automatic battle prototype. Choose two characters, adjust their attributes and arena rules, then start a match. Fighters move, target one another, use their weapons and abilities, and fight until a winner is determined.
+
+The interface includes English and Simplified Chinese, light and dark themes, saved match settings, and JSON files for sharing duel setups.
+
+## Quick start
+
+Requires **Node.js 18 or newer**.
+
+```sh
+cd arena-combat-simulator
 npm start
 ```
 
-然后打开 <http://127.0.0.1:4173/>。也可以直接运行 `node serve.cjs`。由于浏览器对本地 ES Modules 的安全限制，请通过本地服务器访问，不要直接双击 `index.html`。
+Open **<http://127.0.0.1:4173/>** in your browser. If you are already in the `arena-combat-simulator` directory, run `npm start` directly.
 
-## 测试
+The included server serves the app locally. Open the URL above rather than opening `index.html` as a file: the browser needs to load JavaScript modules and fetch the translation catalog over HTTP.
 
-```bash
+## Features
+
+| Feature | What it offers |
+| --- | --- |
+| **Character selection** | Choose a fighter for each side from the category roster. Both sides can use the same character with separate settings. |
+| **Automatic combat** | Watch movement, weapon attacks, projectiles, abilities, status effects, health, and the final result play out in the arena. |
+| **Match customization** | Tune fighter stats, character abilities, and arena rules. Changes are saved locally and applied to the next match. |
+| **Duel sharing** | Export a setup to JSON or import one from another player. Import restores the selected fighters and match rules. |
+| **Languages** | Switch between English and Simplified Chinese from the header. The choice is remembered in your browser. |
+| **Themes** | Follow your system appearance or choose light or dark mode without resetting the match. |
+
+### Playable roster
+
+- **Warrior** — plate armor reduces incoming damage, with a minimum of 1 damage per hit.
+- **Archer** — every fourth arrow applies a root followed by a slow.
+- **Guardian** — a shield-bearing melee fighter.
+- **Mage** — cycles through ice, fire, and leech magic with marks and finishing effects.
+- **Priest** — applies marks and uses prayer to heal or damage.
+- **Beastmaster** — fights alongside a summon and can unleash a pack attack.
+
+The roster also contains locked, unavailable character previews. Some playable characters still use placeholder artwork.
+
+## How to play
+
+1. **Select a side.** Click the left or right character panel, then choose a character from the roster below. Use the category rail to browse character groups.
+2. **Configure the match.** Expand the settings panel above the roster. The fighter tabs edit each side; the Arena tab controls shared rules. You can reset an individual section or all settings.
+3. **Start the battle.** Press **Start Battle**. The selection panels move away, a countdown runs, and the fighters battle automatically.
+4. **Return to selection.** Use **Back to Selection** or press **Esc** to leave the arena. The battlefield resets for the next match.
+
+The category rail supports mouse, touch, and keyboard navigation. Help tooltips can be opened with a pointer, keyboard focus, or touch.
+
+### Share a duel
+
+Open the settings panel and choose **Export Duel** to download the current duel as JSON. Choose **Import Duel** to load a shared file. The importer validates the file before applying it and leaves other saved character presets intact.
+
+### Change language or theme
+
+Both controls are in the page header. Language selection uses a saved preference when available, then your browser language, then English. Theme selection offers **System**, **Light**, and **Dark**; System follows operating system changes.
+
+## Development
+
+Run the regression suite with:
+
+```sh
 npm test
 ```
 
-测试使用 Node.js 内置的 `node:test`，无需安装任何 npm 依赖。
+Tests use Node.js's built-in test runner and require no package installation.
 
-## 操作
-
-- 点击左方或右方的立绘、头像，选择要更换的一侧，再点击下方角色卡。
-- 点击选角板顶部的箭头可展开完整设置面板；使用“左方角色”“右方角色”和“场地”标签调整下一场对战，按 Esc 或再次点击箭头收起。
-- 角色设置会按“左/右方 + 角色”分别保存；各标签可单独重置，也可全部恢复默认值。
-- 在设置面板中可导出当前对决为 JSON，或导入他人分享的 JSON；文件会恢复双方角色、当前属性与场地规则，不会覆盖其他已保存的角色预设。
-- 左侧分类支持点击、滚动和键盘方向键操作。
-- 属性下的“特性”支持鼠标悬停、键盘聚焦和触屏点击。
-- 点击“开始战斗”，石板展开后等待 2 秒，双方随机出发并自动攻击。
-- 点击“返回选角”或按 Esc，播放反向动画并重置战场、血量、冷却和特性计数。
-- 右侧选角立绘和头像镜像显示；文字及属性保持正常方向。
-
-## 当前内容
-
-- 基础角色：战士、弓箭手、盾卫士、法师、牧师。
-- 战士与弓箭手有完整立绘、头像和战斗形态；其他角色的部分美术仍为占位。
-- 战士“板甲”：每次受到的伤害减少 1，实际伤害最低为 1。
-- 弓箭手“藤箭”：每第 4 支箭强化；命中后禁锢 2 秒，再减速 50% 持续 3 秒。
-- 法师“元素循环”：每轮随机选择冰霜、火焰或汲取；前两次法术叠加对应元素印记，终结技消耗同类印记并触发冻结、燃烧或生命汲取等效果。
-
-## 项目结构
+The app is organized around a small browser entry point and separate modules for configuration, selection, customization, combat, sharing, localization, themes, and UI transitions:
 
 ```text
-arena-duel/
-├── index.html                  # 应用页面与语义化结构
-├── serve.cjs                  # 无依赖本地静态服务器
-├── package.json               # 启动与测试命令
-├── assets/                    # 运行时角色及武器图片
+arena-combat-simulator/
+├── index.html              Page shell and application entry point
+├── serve.cjs               Local static server
+├── assets/                 Runtime character and weapon images
 ├── src/
-│   ├── styles/                # 共享结构样式
-│   │   ├── base.css
-│   │   ├── layout.css
-│   │   ├── selection.css
-│   │   ├── battle.css
-│   │   ├── customization.css
-│   │   ├── responsive.css
-│   │   └── themes/            # 独立的浅色与深色语义色板
-│   ├── scripts/
-│   │   ├── app.js             # 唯一浏览器入口
-│   │   ├── config/            # 角色、武器、战斗和动画配置
-│   │   ├── state/             # 应用状态
-│   │   ├── selection/         # 角色选择视图与交互
-│   │   ├── battle/            # 战斗引擎、渲染和武器效果
-│   │   ├── customization/     # 对战设置存储、视图、控制和战斗适配
-│   │   ├── theme/             # 首屏主题引导、状态控制和选单
-│   │   └── ui/                # DOM、装饰和页面转场工具
-│   └── locales/
-│       └── translations.csv   # 所有运行时界面翻译
-├── tests/                     # 战斗规则及项目结构回归测试
-└── archive/artwork/           # 概念图、生成提示词和旧版素材
+│   ├── locales/            CSV translation catalog
+│   ├── scripts/            Game systems and browser controllers
+│   └── styles/             Components, layout, and theme palettes
+├── tests/                  Node regression tests
+├── archive/artwork/        Concept art and earlier assets
+└── architecture.md         System design and extension guide
 ```
 
-## 开发说明
+See [architecture.md](architecture.md) for module ownership, data flow, saved and shared formats, design rules, and a step-by-step example of adding a language through the CSV and global dropdown.
 
-- `combat-engine.js` 不依赖 DOM，可通过注入随机函数重现战斗过程。
-- `combat-renderer.js` 只负责将引擎状态绘制到页面和 SVG。
-- 新角色在 `src/scripts/config/characters.js` 中定义；武器表现及判定参数位于 `src/scripts/config/weapons.js`。
-- `archive/` 仅保存设计过程资料，运行时不应引用其中的文件。
-- 主题色只在 `src/styles/themes/light.css` 与 `dark.css` 中定义。两个文件必须保持相同的 CSS 自定义属性集合；其他样式通过语义变量引用颜色。
-- `localStorage["arena-duel.theme"]` 只保存 `light` 或 `dark`。选择“跟随系统”会删除该值，并实时响应操作系统外观变化。
-- `localStorage["arena-duel.match-settings.v1"]` 保存按角色与阵营区分的属性覆盖以及场地规则。读取时会校验版本、范围和角色 ID，损坏的数据自动回退到默认值。
-- 设置面板只生成不可变的下一场对战快照，不会直接修改角色、武器配置或正在运行的战斗。
-- 对决分享文件使用 `arena-duel.duel` 格式和版本 1；导入会校验版本、角色 ID、属性范围及场地规则，任何无效文件都不会修改当前设置。
-
-分享文件包含 `format`、`version`、`fighters.left/right.characterId`、各方的 `stats`，以及 `arena` 规则。`launchDelay` 使用界面中的秒数；角色特性和战斗表现由接收方相同角色 ID 的内置配置提供。
-
-## 添加语言
-
-运行时文字统一保存在 `src/locales/translations.csv`。第一列是稳定的翻译键，后续每一列代表一种语言：
-
-```csv
-key,en,zh-CN
-app.heading,Arena Duel,角色对决
-battle.winner,{name} wins,{name} 获胜
-```
-
-添加语言时，在表头增加新的 BCP 47 语言代码列，并为每一行填写翻译。`meta.language_name` 应填写该语言在选单中显示的本地名称。带有 `{name}`、`{count}` 或 `{seconds}` 的文字必须在每种翻译中保留相同的占位符。包含英文逗号、双引号或换行的字段应使用标准 CSV 双引号转义。
-
-图片由 OpenAI 内置 image generation 工具生成。运行时只加载 `assets/` 中的当前版本。
+> **Current scope:** The visible interface runs two-fighter duels. The underlying settings and combat modules contain groundwork for additional fighter slots, but those slots are not yet exposed in the selection and battle UI.
