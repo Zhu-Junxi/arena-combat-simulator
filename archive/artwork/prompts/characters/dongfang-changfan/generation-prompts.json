@@ -1,0 +1,8 @@
+{
+  "tool": "built-in image_gen",
+  "prompts": {
+    "portrait": "Extract/recreate ONLY full-body elderly Chinese scholar Dong Fang Chang Fan on LEFT as standalone tall game portrait. Exact same aged noble face, silver hair beard, crown, smoky ink-teal robes and gray inner layers, jade belt, subtle stars near extended hand. Full figure head to shoes, tight framing safe margins. Match painterly illustration. True transparent background; remove all scenery, ground shadow, text, panels and other objects.",
+    "avatar": "Create a square HEAD AND SHOULDERS game avatar of the elderly Chinese scholar on LEFT. Preserve exact face identity, aged noble angular face, long silver-gray hair, narrow gray beard, compact dark scholar crown and ink-teal cross collar robes. Calm calculating gaze. Close face crop, face prominent and legible at 64px; crown and shoulders visible. Same semi-realistic painterly finish. Soft muted jade-gray/taupe background with subtle distant mountains, no text, border or other sheet components.",
+    "battle": "Extract/recreate ONLY the large FRONT-FACING spherical battle character on RIGHT as a standalone square game sprite. Exact same centered compact Chinese scholar crown, symmetric swept silver-gray hair, plain opaque smoky celadon-gray sphere, ink-teal cross-collar robes with gray trim and central jade clasp/tassel. Strict front view, keep costume and harmonized subdued colors. No face, eyes, mouth, limbs, magical core, stars or effects on sphere. Tight centered framing, complete costume with small safe margins. True transparent background, no shadow, text, scenery or sheet components."
+  }
+}
