@@ -6,7 +6,7 @@ const deepFreeze = value => {
   return value;
 };
 
-const withBaseKind = character => deepFreeze({ ...character, category: 'base' });
+const withBaseKind = character => deepFreeze({ category: 'base', ...character });
 
 export const CHARACTER_KINDS = Object.freeze(['melee', 'ranged', 'special', 'defense', 'healing', 'summon', 'control', 'mobility']);
 export const CHARACTER_CATEGORIES = Object.freeze(['base', ...CHARACTER_KINDS]);
@@ -18,7 +18,7 @@ export const CHARACTERS = Object.freeze([
     trait: { id: 'plate', nameKey: 'trait.plate.name', descriptionKey: 'trait.plate.description', reduction: 1 },
     art: {
       portrait: 'assets/characters/warrior/portrait-color.png',
-      avatar: 'assets/characters/warrior/avatar-color.png',
+      avatar: 'assets/characters/warrior/avatar-background.png',
       battle: 'assets/characters/warrior/battle-orb-color.png'
     },
     stats: { attack: 5, attackCD: 1, speed: 5, health: 100 }
@@ -32,15 +32,29 @@ export const CHARACTERS = Object.freeze([
     },
     art: {
       portrait: 'assets/characters/archer/portrait.png',
-      avatar: 'assets/characters/archer/avatar.png',
+      avatar: 'assets/characters/archer/avatar-background.png',
       battle: 'assets/characters/archer/battle.png'
     },
     stats: { attack: 5, attackCD: 2.5, speed: 3, health: 80 }
   },
-  { id: 'guardian', nameKey: 'character.guardian.name', stats: { attack: 8, attackCD: 5, speed: 1.5, health: 100 } },
+  {
+    id: 'guardian', nameKey: 'character.guardian.name',
+    trait: { id: 'shield-flail', nameKey: 'trait.shield_flail.name', descriptionKey: 'trait.shield_flail.description' },
+    art: {
+      portrait: 'assets/characters/guardian/portrait.png',
+      avatar: 'assets/characters/guardian/avatar.png',
+      battle: 'assets/characters/guardian/battle.png'
+    },
+    stats: { attack: 10, attackCD: 4, speed: 1.5, health: 100 }
+  },
   {
     id: 'mage',
     nameKey: 'character.mage.name',
+    art: {
+      portrait: 'assets/characters/mage/portrait.png',
+      avatar: 'assets/characters/mage/avatar.png',
+      battle: 'assets/characters/mage/battle.png'
+    },
     trait: {
       id: 'elemental-cycles', nameKey: 'trait.elemental_cycles.name', descriptionKey: 'trait.elemental_cycles.description'
     },
@@ -49,8 +63,25 @@ export const CHARACTERS = Object.freeze([
   {
     id: 'priest',
     nameKey: 'character.priest.name',
+    art: {
+      portrait: 'assets/characters/priest/portrait.png',
+      avatar: 'assets/characters/priest/avatar.png',
+      battle: 'assets/characters/priest/battle.png'
+    },
     trait: { id: 'prayer', nameKey: 'trait.prayer.name', descriptionKey: 'trait.prayer.description' },
     stats: { attack: 5, attackCD: 3, speed: 3, health: 50 }
+  },
+  {
+    id: 'dongfang-changfan',
+    nameKey: 'character.dongfang_changfan.name',
+    trait: { id: 'myriad-star-fireflies', nameKey: 'trait.myriad_star_fireflies.name', descriptionKey: 'trait.myriad_star_fireflies.description' },
+    category: 'mobility',
+    art: {
+      portrait: 'assets/characters/dongfang-changfan/portrait.png',
+      avatar: 'assets/characters/dongfang-changfan/avatar.png',
+      battle: 'assets/characters/dongfang-changfan/battle.png'
+    },
+    stats: { attack: 1, attackCD: 2, speed: 3, health: 80 }
   }
 ].map(withBaseKind));
 

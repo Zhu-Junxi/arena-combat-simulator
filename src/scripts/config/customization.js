@@ -10,7 +10,7 @@ export const FIGHTER_CONTROLS = Object.freeze({
   attack: Object.freeze({ min: 1, max: 50, step: 0.001, labelKey: 'customization.attack' }),
   attackCD: Object.freeze({ min: 0.25, max: 10, step: 0.001, labelKey: 'customization.cooldown' }),
   movementSpeed: Object.freeze({ min: 25, max: 440, step: 0.001, labelKey: 'customization.movement_speed' }),
-  projectileSpeed: Object.freeze({ min: 100, max: 1200, step: 0.001, labelKey: 'customization.projectile_speed' }),
+  projectileSpeed: Object.freeze({ min: 100, max: 1240, step: 0.001, labelKey: 'customization.projectile_speed' }),
   attackRange: Object.freeze({ min: 30, max: 300, step: 0.001, labelKey: 'customization.attack_range' })
 });
 
