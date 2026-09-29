@@ -33,6 +33,8 @@ Open <http://127.0.0.1:4173/> after starting the server. Use the server because 
 
 `MANIFEST.sha256` is an inventory of file hashes, not an input to the runtime. If a workflow relies on its hashes, regenerate it after changing files; the application does not read it.
 
+War is listed in the Apocalypse category. Its combat cycle and continuous swept-blade collision are isolated in `battle/war-combat.js`; `war-visuals.js` draws the held sword and thin cleave trail. `war-entrance.js` owns the pre-combat screen tear, two-second roar and mount sequence; the runtime freezes both fighters until that sequence completes. War's factory JSON uses the existing melee stats shape, with damage, cooldown and reach as its three signature controls. Pre-War version-4 match files and version-1 backups receive only missing War entries from factory defaults, preserving existing fighter values and file revision checks.
+
 ### Dependency and data flow
 
 ```text
