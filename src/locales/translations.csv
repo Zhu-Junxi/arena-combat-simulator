@@ -137,7 +137,7 @@ character.placeholder.avatar,Avatar pending,头像预留
 trait.label,Trait,特性
 trait.none,—,—
 trait.plate.name,Plate Armor,板甲
-trait.plate.description,Reduces each instance of incoming damage by 1. Actual damage cannot be lower than 1.,每次受到的伤害减少 1 点，实际伤害最低为 1 点。
+trait.plate.description,Reduces each direct hit by 1 damage. A positive direct hit deals at least 0.001 HP.,每次直接命中的伤害减少 1 点。正值直接命中至少造成 0.001 点生命伤害。
 trait.vine.name,Vine Arrow,藤箭
 trait.vine.description,"Every fourth arrow is empowered. On hit, it roots the target for 2 seconds, then slows movement by 50% for 3 seconds. The target can still attack while rooted.",每发射 4 支箭，第 4 支强化为藤箭。命中后禁锢目标 2 秒，随后移动速度降低 50%，持续 3 秒。禁锢期间仍可攻击。
 trait.prayer.name,Prayer of Judgment,审判祈祷
@@ -175,7 +175,7 @@ tooltip.cooldown,Sets the time before this attack can be used again.,设置该�
 tooltip.movement_speed,Sets how far the fighter moves each second.,设置角色每秒移动的距离。
 tooltip.projectile_speed,Sets how far this projectile travels each second before arena scaling.,设置该投射物在场地倍率前每秒移动的距离。
 tooltip.attack_range,Sets the maximum distance at which this melee attack can connect.,设置该近战攻击能够命中的最大距离。
-tooltip.damage_reduction,Subtracts this amount from every incoming hit without reducing a hit below 1 damage.,从每次受到的伤害中减去该数值但单次伤害不会低于 1。
+tooltip.damage_reduction,Subtracts this amount from each direct hit without reducing a positive hit below 0.001 HP.,从每次直接命中的伤害中减去该数值，正值命中至少造成 0.001 点生命伤害。
 tooltip.empowered_arrow,Sets how often an arrow becomes a Vine Arrow.,设置藤蔓箭出现的频率。
 tooltip.every_arrow,Every {value} is empowered.,每 {value} 会获得强化。
 tooltip.root_duration,Sets how long the target cannot move after the Vine Arrow hits.,设置藤蔓箭命中后目标无法移动的时长。
@@ -442,3 +442,65 @@ feedback.advanced_off,Advanced tuning disabled.,已关闭高级调整。
 feedback.language,Language changed.,语言已更改。
 feedback.theme,Theme changed.,主题已更改。
 feedback.theme_error,Unable to change the theme.,无法更改主题。
+customization.guardian_heading,Guardian abilities,盾卫士技能
+customization.guardian_durability,Shield durability,盾牌耐久
+customization.guardian_shieldFlashDuration,Shield hit flash,盾牌受击闪光时长
+customization.guardian_chargeSpeed,Charge speed,冲锋速度
+customization.guardian_chargeDistance,Charge distance,冲锋距离
+customization.guardian_chargeDamageFactor,Charge damage multiplier,冲锋伤害倍率
+customization.guardian_throwSpeed,Flail throw speed,链锤投掷速度
+customization.guardian_returnSpeed,Flail return speed,链锤收回速度
+customization.guardian_headRadius,Flail head hitbox radius,锤头命中半径
+customization.guardian_impactRadius,Landing impact radius,落地冲击半径
+customization.guardian_groundDuration,Grounded duration,落地持续时间
+customization.guardian_outboundDamageFactor,Outbound damage multiplier,飞出伤害倍率
+customization.guardian_landingDamageFactor,Landing damage multiplier,落地伤害倍率
+customization.guardian_returnDamageFactor,Return damage multiplier,收回伤害倍率
+customization.guardian_contactDamage,Grounded contact damage,落地接触伤害
+customization.guardian_chainWidth,Chain collision width,链条碰撞宽度
+customization.guardian_windup,Attack windup,攻击前摇
+customization.guardian_active,Melee hit window,近战命中时间
+customization.guardian_duration,Attack animation duration,攻击动画时长
+customization.guardian_equipmentScale,Equipment visual scale,装备视觉缩放
+customization.guardian_chargeEnabled,Enable charge,启用冲锋
+customization.guardian_flailEnabled,Enable flail,启用链锤
+customization.guardian_autoSwitch,Switch to flail on shield break,破盾后自动切换链锤
+customization.guardian_outboundEnabled,Enable outbound hit,启用飞出命中
+customization.guardian_landingEnabled,Enable landing hit,启用落地命中
+customization.guardian_returnEnabled,Enable return hit,启用收回命中
+customization.guardian_contactEnabled,Enable grounded contact damage,启用落地接触伤害
+customization.guardian_chainBlocking,Chain blocks movement,链条阻挡移动
+customization.guardian_startingMode,Starting attack mode,初始攻击模式
+customization.guardian_mode_charge,Charge,冲锋
+customization.guardian_mode_flail,Flail,链锤
+customization.star_heading,Myriad Star Fireflies,万星飞莹
+customization.star_stackDuration,Stack duration,层数持续时间
+customization.star_hastePerStack,Attack speed bonus per stack,每层攻速加成
+customization.star_starsPerAttack,Stars per attack,每次攻击星星数量
+customization.star_rearSpreadDegrees,Rear spawn angle,后方生成角度
+customization.star_orbitRadiusMin,Minimum orbit radius multiplier,最小环绕半径倍率
+customization.star_orbitRadiusMax,Maximum orbit radius multiplier,最大环绕半径倍率
+customization.star_initialSpeedFactor,Initial speed multiplier,初始速度倍率
+customization.star_accelerationFactor,Acceleration multiplier,加速度倍率
+customization.star_lifetime,Star lifetime,星星存在时长
+customization.star_radius,Star hitbox radius,星星命中半径
+customization.star_windup,Attack windup,攻击前摇
+customization.star_duration,Attack animation duration,攻击动画时长
+customization.star_visualScale,Star visual scale,星星视觉缩放
+customization.star_enemyAttack,Enemy attack grants stack,敌方出手获得层数
+customization.star_enemyHurt,Enemy hurt grants stack,敌方受伤获得层数
+customization.star_enemyHit,Enemy hit grants stack,敌方命中获得层数
+unit.degrees,degrees,度
+customization.guardian_auto_mode,Automatic shield/flail,自动坚盾/链锤
+trait.shield_flail.tuned_description,"Shield absorbs {durability} damage. Attack mode: {mode}. Charge speed {chargeSpeed} over {chargeDistance} units. Flail stays grounded for {groundDuration}s. More combat and interaction values are in the tuning panel.","盾牌吸收 {durability} 点伤害。攻击模式：{mode}。冲锋速度 {chargeSpeed}，距离 {chargeDistance}。链锤落地持续 {groundDuration} 秒。更多战斗和交互数值见调节面板。"
+trait.myriad_star_fireflies.tuned_description,"Enabled events grant independent stacks for {duration}s. Each stack adds {bonus}% attack speed; {sources} sources can grant stacks. Each attack creates {stars} stars. Star flight details are in the tuning panel.","启用的事件会提供持续 {duration} 秒的独立层数。每层增加 {bonus}% 攻速；{sources} 种来源可提供层数。每次攻击生成 {stars} 颗星星。星星飞行详情见调节面板。"
+tooltip.special_setting,Changes this fighter's battle behavior.,调整该角色的战斗行为。
+tooltip.special_switch,Toggle this battle rule for this fighter.,切换该角色的战斗规则。
+tooltip.guardian_starting_mode,Used throughout the battle when automatic shield switching is off.,关闭破盾自动切换后全场使用此模式。
+customization.guardian_shield,Shield,坚盾
+customization.guardian_charge,Charge,冲锋
+customization.guardian_flail,Chain Flail,链锤
+customization.guardian_presentation,Timing and Appearance,时间与外观
+customization.star_passive,Star Fireflies,万星飞莹
+customization.star_flight,Star Flight,星星飞行
+customization.star_presentation,Timing and Appearance,时间与外观

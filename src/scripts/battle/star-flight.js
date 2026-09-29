@@ -1,19 +1,24 @@
+import { defaultStarAbilities } from '../config/customization.js';
+
 // Sample once per attack so the charge and released star share one launch point.
-export function createStarLaunch(rules, random = Math.random) {
-  const rearOffset = (random() * 2 - 1) * Math.PI / 7;
+export function createStarLaunch(rules, random = Math.random, abilities = defaultStarAbilities()) {
+  const rearOffset = (random() * 2 - 1) * Math.max(0, Math.min(89, abilities.rearSpreadDegrees)) * Math.PI / 180;
+  const minimum = Math.max(0.01, Math.min(1000, abilities.orbitRadiusMin, abilities.orbitRadiusMax));
+  const maximum = Math.max(minimum, Math.min(1000, abilities.orbitRadiusMax));
   return { rearOffset, side: rearOffset < 0 ? -1 : 1,
-    orbitRadius: rules.fighterSize * (1.15 + random() * 0.3),
+    orbitRadius: rules.fighterSize * (minimum + random() * (maximum - minimum)),
     arcAngle: Math.PI / 2 - Math.abs(rearOffset) };
 }
 
-export function createStarFlight(owner, target, rules, launch = createStarLaunch(rules)) {
+export function createStarFlight(owner, target, rules, launch = createStarLaunch(rules, Math.random, owner.starAbilities ?? defaultStarAbilities())) {
+  const abilities = owner.starAbilities ?? defaultStarAbilities();
   const facing = Math.atan2(target.y - owner.y, target.x - owner.x);
   const { orbitRadius, rearOffset, side } = launch;
   const startAngle = facing + Math.PI - rearOffset;
-  const baseSpeed = Math.max(1, owner.projectileSpeed * rules.projectileSpeedScale);
+  const baseSpeed = Math.max(1, Math.min(100000, owner.projectileSpeed * rules.projectileSpeedScale));
   return {
     ...launch, phase: 'flank', facing, startAngle, arcDistance: 0,
-    speed: baseSpeed * 0.2, acceleration: baseSpeed * 2.4,
+    speed: baseSpeed * Math.max(0.01, Math.min(100, abilities.initialSpeedFactor)), acceleration: baseSpeed * Math.max(0.01, Math.min(100, abilities.accelerationFactor)),
     x: owner.x + Math.cos(startAngle) * orbitRadius,
     y: owner.y + Math.sin(startAngle) * orbitRadius,
     angle: startAngle - side * Math.PI / 2

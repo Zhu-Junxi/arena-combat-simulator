@@ -1,4 +1,5 @@
 import { frameCorner, panelDecoration } from '../ui/decorations.js';
+import { fighterTraitDescription } from '../customization/trait-description.js';
 
 export function createSelectionView({ state, characters, categories, elements, i18n, getFighterSettings = null }) {
   const t = (key, parameters) => i18n.t(key, parameters);
@@ -15,14 +16,14 @@ export function createSelectionView({ state, characters, categories, elements, i
     return multiple ? `<span class="stat-modes">${content}</span>` : content;
   }
 
-  function renderTrait(character, side) {
+  function renderTrait(character, side, configured) {
     const { trait } = character;
     if (!trait) return `<div class="trait"><span>${t('trait.label')}</span><span>${t('trait.none')}</span></div>`;
     const tooltipId = `trait-description-${side}`;
     const name = t(trait.nameKey);
     return `<div class="trait"><span>${t('trait.label')}</span><button class="trait-button" type="button" ` +
       `aria-label="${characterName(character)}: ${name}" aria-describedby="${tooltipId}">${name}</button>` +
-      `<div class="trait-tooltip" id="${tooltipId}" role="tooltip"><strong>${name}</strong>${t(trait.descriptionKey)}</div></div>`;
+      `<div class="trait-tooltip" id="${tooltipId}" role="tooltip"><strong>${name}</strong>${fighterTraitDescription(character, configured, t)}</div></div>`;
   }
 
   function renderPanel(side) {
@@ -48,7 +49,7 @@ export function createSelectionView({ state, characters, categories, elements, i
       `<div data-tooltip="${t('tooltip.attack')}"><dt>${t('stats.attack')}</dt><dd>${formatStat(stats.attack, { unit: 'unit.damage_per_hit' })}</dd></div>` +
       `<div data-tooltip="${t('tooltip.cooldown')}"><dt>${t('stats.cooldown')}</dt><dd>${formatStat(stats.attackCD, { cooldown: true, unit: 'unit.seconds_short' })}</dd></div>` +
       `<div data-tooltip="${t('tooltip.movement_speed')}"><dt>${t('stats.speed')}</dt><dd>${formatStat(stats.speed, { unit: 'unit.arena_units_per_second' })}</dd></div>` +
-      `<div data-tooltip="${t('tooltip.health')}"><dt>${t('stats.health')}</dt><dd>${formatStat(stats.health, { unit: 'unit.hp' })}</dd></div></dl>${renderTrait(character, side)}</div>`;
+      `<div data-tooltip="${t('tooltip.health')}"><dt>${t('stats.health')}</dt><dd>${formatStat(stats.health, { unit: 'unit.hp' })}</dd></div></dl>${renderTrait(character, side, configured)}</div>`;
     const panel = elements[`panel-${side}`];
     panel.dataset.portraitCharacter = character.id;
     const active = state.side === side;

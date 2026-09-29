@@ -1,9 +1,9 @@
-import { ARENA_CONTROLS, COLLISION_MODES, FIGHTER_CONTROLS, PRIEST_ABILITY_CONTROLS, SUMMON_ABILITY_CONTROLS, TRAIT_CONTROLS, defaultFighterSettings } from '../config/customization.js';
-import { normalizeMageAbilities, normalizePriestAbilities, normalizeSummonAbilities } from '../customization/settings-store.js';
+import { ARENA_CONTROLS, COLLISION_MODES, FIGHTER_CONTROLS, PRIEST_ABILITY_CONTROLS, SUMMON_ABILITY_CONTROLS, TRAIT_CONTROLS, GUARDIAN_ABILITY_CONTROLS, GUARDIAN_ABILITY_SWITCHES, STAR_ABILITY_CONTROLS, STAR_ABILITY_SWITCHES, defaultFighterSettings } from '../config/customization.js';
+import { normalizeMageAbilities, normalizePriestAbilities, normalizeSummonAbilities, normalizeGuardianAbilities, normalizeStarAbilities } from '../customization/settings-store.js';
 import { TARGET_STRATEGIES, activeSlots } from '../config/match.js';
 
 export const DUEL_SHARE_FORMAT = 'arena-duel.duel';
-export const DUEL_SHARE_VERSION = 11;
+export const DUEL_SHARE_VERSION = 12;
 
 const FIGHTER_KEYS = Object.freeze(['health', 'attack', 'attackCD', 'movementSpeed']);
 const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
@@ -34,11 +34,13 @@ function readFighter(source, character, side, version, advanced = false) {
   const isMage = character.trait?.id === 'elemental-cycles';
   const isPriest = character.trait?.id === 'prayer';
   const isBeastmaster = character.trait?.id === 'beastmaster';
+  const isGuardian = character.id === 'guardian';
+  const isStar = character.id === 'dongfang-changfan';
   const traitControls = TRAIT_CONTROLS[character.trait?.id];
   const isRanged = defaults => defaults.projectileSpeed != null;
   const isMelee = defaults => defaults.attackRange != null;
   const defaults = defaultFighterSettings(character);
-  const statKeys = [...FIGHTER_KEYS, ...(isRanged(defaults) && version >= 5 ? ['projectileSpeed'] : []), ...(isMelee(defaults) && version >= 6 ? ['attackRange'] : []), ...((isMage && version >= 2) || (isPriest && version >= 7) || (isBeastmaster && version >= 11) ? ['abilities'] : []), ...(traitControls && version >= 4 ? ['trait'] : [])];
+  const statKeys = [...FIGHTER_KEYS, ...(isRanged(defaults) && version >= 5 ? ['projectileSpeed'] : []), ...(isMelee(defaults) && version >= 6 ? ['attackRange'] : []), ...((isMage && version >= 2) || (isPriest && version >= 7) || (isBeastmaster && version >= 11) || ((isGuardian || isStar) && version >= 12) ? ['abilities'] : []), ...(traitControls && version >= 4 ? ['trait'] : [])];
   exactKeys(source.stats, statKeys, `${side} fighter stats`);
   const stats = {};
   for (const key of FIGHTER_KEYS) {
@@ -91,6 +93,20 @@ function readFighter(source, character, side, version, advanced = false) {
     }
     stats.abilities = version >= 11 ? normalizeSummonAbilities(source.stats.abilities, undefined, advanced) : normalizeSummonAbilities();
   }
+  if (isGuardian || isStar) {
+    const controls = isGuardian ? GUARDIAN_ABILITY_CONTROLS : STAR_ABILITY_CONTROLS;
+    const switches = isGuardian ? GUARDIAN_ABILITY_SWITCHES : STAR_ABILITY_SWITCHES;
+    if (version >= 12) {
+      const abilities = source.stats.abilities;
+      exactKeys(abilities, [...Object.keys(controls), ...Object.keys(switches), ...(isGuardian ? ['startingMode'] : [])], `${side} fighter abilities`);
+      for (const [key, control] of Object.entries(controls)) {
+        if (abilities[key] !== control.default && !isControlValue(abilities[key], control, advanced)) fail(`${side} fighter ability ${key} is invalid`);
+      }
+      for (const key of Object.keys(switches)) if (typeof abilities[key] !== 'boolean') fail(`${side} fighter ability ${key} is invalid`);
+      if (isGuardian && !['charge', 'flail'].includes(abilities.startingMode)) fail(`${side} fighter starting mode is invalid`);
+    }
+    stats.abilities = isGuardian ? normalizeGuardianAbilities(source.stats.abilities, undefined, advanced) : normalizeStarAbilities(source.stats.abilities, undefined, advanced);
+  }
   return { characterId: character.id, stats };
 }
 
@@ -138,7 +154,7 @@ export function parseDuelRecipe(text, { characters }) {
   const version = source?.version;
   exactKeys(source, version >= 9 ? ['format', 'version', 'advanced', 'fighters', 'arena'] : ['format', 'version', 'fighters', 'arena'], 'recipe');
   if (source.format !== DUEL_SHARE_FORMAT) fail('the file format is unsupported');
-  if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, DUEL_SHARE_VERSION].includes(source.version)) fail('the recipe version is unsupported');
+  if (!Number.isInteger(source.version) || source.version < 1 || source.version > DUEL_SHARE_VERSION) fail('the recipe version is unsupported');
   if (version >= 9 && typeof source.advanced !== 'boolean') fail('advanced mode is invalid');
   const advanced = version >= 9 && source.advanced;
   const arena = readArena(source.arena, source.version, advanced);

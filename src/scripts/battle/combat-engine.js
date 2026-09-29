@@ -3,7 +3,8 @@ import { BATTLE_RULES } from '../config/combat.js';
 import { createStarLaunch, createStarFlight, advanceStarFlight } from './star-flight.js';
 import { grantStarPassive, starCooldownAdvance } from './star-passive.js';
 import { WEAPON_DEFINITIONS } from '../config/weapons.js';
-import { defaultMageAbilities, defaultPriestAbilities, defaultSummonAbilities } from '../config/customization.js';
+import { defaultMageAbilities, defaultPriestAbilities, defaultSummonAbilities, defaultGuardianAbilities, defaultStarAbilities } from '../config/customization.js';
+import { COMBAT_RESOLUTION, removeCombatHealth, restoreCombatHealth, roundCombat } from './combat-precision.js';
 
 export const MAGE_CYCLES = Object.freeze(['ice', 'fire', 'leech']);
 export const MAGE_SPELLS = Object.freeze(['normal', 'theme', 'final']);
@@ -36,8 +37,8 @@ export function smoothStep(value) {
 export function weaponPose(fighter, elapsed) {
   const { attack, weapon } = fighter;
   const age = Math.max(0, elapsed - attack.startedAt + (attack.hasteAgeBonus ?? 0));
-  const prepare = smoothStep(age / weapon.windup);
-  const recovery = Math.max(0, Math.min(1, (age - weapon.windup - 0.04) / (weapon.duration - weapon.windup - 0.04)));
+  const prepare = smoothStep(age / Math.max(0.001, weapon.windup));
+  const recovery = Math.max(0, Math.min(1, (age - weapon.windup - 0.04) / Math.max(0.001, weapon.duration - weapon.windup - 0.04)));
   let angle = attack.angle;
   let shift = 0;
   if (weapon.art === 'sword') {
@@ -83,7 +84,12 @@ export function weaponIntersectsTarget(fighter, target, pose, rules = BATTLE_RUL
 
 export function canAttack(fighter, target, rules = BATTLE_RULES) {
   if (!target || fighter.health <= 0 || target.health <= 0) return false;
-  if (fighter.guardian) return !fighter.guardian.flail && !fighter.guardian.dash;
+  if (fighter.guardian) {
+    if (fighter.guardian.flail || fighter.guardian.dash) return false;
+    const abilities = fighter.guardianAbilities ?? defaultGuardianAbilities();
+    const mode = abilities.autoSwitch ? (fighter.guardian.shield > 0 ? 'charge' : 'flail') : abilities.startingMode;
+    if (abilities[`${mode}Enabled`]) return true;
+  }
   return fighter.weapon.type === 'ranged' || weaponIntersectsTarget(
     fighter,
     target,
@@ -95,11 +101,8 @@ export function canAttack(fighter, target, rules = BATTLE_RULES) {
 export function dealDamage(target, amount, elapsed = 0) {
   if (target.health <= 0 || amount <= 0) return 0;
   const reduction = target.trait?.id === 'plate' ? target.trait.reduction : 0;
-  const damage = Math.max(1, amount - reduction);
-  const previousHealth = target.health;
-  target.health = Math.max(0, target.health - damage);
-  target.hitUntil = elapsed + 0.12;
-  return previousHealth - target.health;
+  const damage = Math.max(COMBAT_RESOLUTION, roundCombat(amount - reduction));
+  return removeCombatHealth(target, damage, elapsed);
 }
 
 export function isVineShot(fighter, shotNumber) {
@@ -204,9 +207,7 @@ export function priestMarkAttackCooldownFactor(fighter) {
 }
 
 export function healFighter(fighter, amount) {
-  const healed = Math.max(0, Math.min(amount, fighter.maxHealth - fighter.health));
-  fighter.health += healed;
-  return healed;
+  return restoreCombatHealth(fighter, amount);
 }
 
 export function zoneSlowFactor(fighter, zones = [], now = 0) {
@@ -241,19 +242,23 @@ export function segmentBoxTime(x0, y0, x1, y1, half) {
 }
 
 export function createFighter(side, character, weapon, index, settings = null, rules = BATTLE_RULES) {
-  const health = settings?.health ?? character.stats.health;
+  const health = roundCombat(settings?.health ?? character.stats.health);
   const attackValues = settings?.attack ?? character.stats.attack;
   const attackCooldownValues = settings?.attackCD ?? character.stats.attackCD;
   const movementSpeed = settings?.movementSpeed ?? rules.speed;
   const mageAbilities = character.trait?.id === 'elemental-cycles' ? settings?.abilities ?? defaultMageAbilities() : null;
   const priestAbilities = character.trait?.id === 'prayer' ? settings?.abilities ?? defaultPriestAbilities() : null;
   const summonAbilities = character.trait?.id === 'beastmaster' ? settings?.abilities ?? defaultSummonAbilities() : null;
+  const guardianAbilities = character.id === 'guardian' ? { ...defaultGuardianAbilities(), ...settings?.abilities } : null;
+  const starAbilities = character.id === 'dongfang-changfan' ? { ...defaultStarAbilities(), ...settings?.abilities } : null;
+  const tunedWeapon = guardianAbilities ? { ...weapon, windup: Math.max(0.001, guardianAbilities.windup), active: Math.max(0.001, guardianAbilities.active), duration: Math.max(0.002, guardianAbilities.duration) } :
+    starAbilities ? { ...weapon, windup: Math.max(0.001, starAbilities.windup), duration: Math.max(0.002, starAbilities.duration), radius: Math.max(0.1, Math.min(10000, starAbilities.radius)) } : weapon;
   const x = rules.size / 2 + (index === 0 ? -1 : 1) * rules.startingDistance / 2;
   return {
     side,
     character,
     trait: { ...character.trait, ...settings?.trait },
-    weapon,
+    weapon: tunedWeapon,
     bodySize: rules.fighterSize,
     health,
     maxHealth: health,
@@ -269,7 +274,9 @@ export function createFighter(side, character, weapon, index, settings = null, r
     hitUntil: 0,
     attacksFired: 0,
     starPassive: {},
-    guardian: character.id === 'guardian' ? createGuardianState() : null,
+    guardian: guardianAbilities ? createGuardianState(guardianAbilities) : null,
+    guardianAbilities,
+    starAbilities,
     marks: {},
     mageCycle: null,
     mageSpellIndex: 0,
@@ -537,7 +544,7 @@ export function createCombatEngine({
     const abilities = owner.summonAbilities;
     const angle = (owner.side.length * 1.7) % (Math.PI * 2);
     const summon = summonState(owner, {
-      kind: 'companion', targetable: true, health: abilities.companionHealth, maxHealth: abilities.companionHealth,
+      kind: 'companion', targetable: true, health: roundCombat(abilities.companionHealth), maxHealth: roundCombat(abilities.companionHealth),
       x: owner.x + Math.cos(angle) * 32, y: owner.y + Math.sin(angle) * 32,
       speed: abilities.companionSpeed, biteElapsed: abilities.biteCooldown,
       homeAngle: angle, state: 'ready'
@@ -592,7 +599,11 @@ export function createCombatEngine({
     const spell = elemental ? fighter.mageAbilities.cycles[fighter.mageCycle][fighter.mageSpellIndex] : null;
     const attack = {
       target,
-      guardianMode: fighter.guardian ? (fighter.guardian.shield > 0 ? 'charge' : 'flail') : null,
+      guardianMode: fighter.guardian ? (() => {
+        const abilities = fighter.guardianAbilities;
+        const mode = abilities.autoSwitch ? (fighter.guardian.shield > 0 ? 'charge' : 'flail') : abilities.startingMode;
+        return abilities[`${mode}Enabled`] ? mode : 'melee';
+      })() : null,
       startedAt: battle.elapsed,
       angle: facingAngle(fighter, target),
       empowered: isVineShot(fighter, fighter.attacksFired + 1),
@@ -605,14 +616,15 @@ export function createCombatEngine({
       released: false,
       hit: false
     };
+    if (attack.guardianMode === 'charge') attack.damage *= Math.max(0, Math.min(1000, fighter.guardianAbilities.chargeDamageFactor));
     fighter.attack = attack;
-    if (fighter.weapon.art === 'star-thought') attack.starLaunch = createStarLaunch(battle.rules, random);
+    if (fighter.weapon.art === 'star-thought') attack.starLaunch = createStarLaunch(battle.rules, random, fighter.starAbilities);
     grantStarPassive(target, 'enemy-attack', battle.elapsed);
     emit('attack-started', { fighter, attack });
     return attack;
   }
 
-  function spawnStar(projectile, launch = createStarLaunch(battle.rules, random)) {
+  function spawnStar(projectile, launch = createStarLaunch(battle.rules, random, projectile.owner.starAbilities)) {
     const fighter = projectile.owner;
     const starFlight = createStarFlight(fighter, projectile.target, battle.rules, launch);
     const star = { ...projectile, starFlight, x: starFlight.x, y: starFlight.y,
@@ -647,7 +659,11 @@ export function createCombatEngine({
       age: 0
     };
     if (fighter.weapon.art === 'star-thought') {
-      return spawnStar(projectile, attack.starLaunch);
+      const count = Math.max(0, Math.min(10, Math.round(fighter.starAbilities.starsPerAttack)));
+      const stars = [];
+      for (let index = 0; index < count; index += 1) stars.push(spawnStar(projectile,
+        index === 0 ? attack.starLaunch : createStarLaunch(battle.rules, random, fighter.starAbilities)));
+      return stars[0] ?? null;
     }
     battle.projectiles.push(projectile);
     emit('projectile-spawned', { fighter, projectile });
@@ -739,12 +755,17 @@ export function createCombatEngine({
       attack.released = true;
       fighter.cooldownElapsed = 0;
       fighter.attacksFired += 1;
-      if (guardian.shield > 0) beginCharge(fighter, attack);
-      else {
-        guardian.flail = createFlail(fighter, target, attack.damage);
+      if (attack.guardianMode === 'charge') beginCharge(fighter, attack);
+      else if (attack.guardianMode === 'flail') {
+        guardian.flail = createFlail(fighter, target, modeValue(fighter.attackValues, fighter.attackMode));
         emit('flail-spawned', { fighter, flail: guardian.flail });
       }
       emit('attack-released', { fighter, attack });
+    }
+    if (attack.guardianMode === 'melee' && attack.released && !attack.hit && age <= weapon.windup + weapon.active &&
+      weaponIntersectsTarget(fighter, target, weaponPose(fighter, battle.elapsed), battle.rules)) {
+      applyDirectDamage(fighter, target, attack.damage);
+      attack.hit = true;
     }
     if (attack.released && !guardian.dash && !guardian.flail && age >= weapon.duration) endGuardianAttack(fighter);
   }
@@ -852,7 +873,7 @@ export function createCombatEngine({
       projectile.y = nextY;
       const margin = (projectile.starFlight?.orbitRadius ?? 0) + 30;
       const outside = nextX < -margin || nextX > battle.rules.size + margin || nextY < -margin || nextY > battle.rules.size + margin;
-      if (projectile.age > 5 || (projectile.starFlight?.phase !== 'flank' && outside)) {
+      if (projectile.age > Math.max(0.001, projectile.owner.starAbilities?.lifetime ?? 5) || (projectile.starFlight?.phase !== 'flank' && outside)) {
         emit('projectile-removed', { projectile, reason: 'expired' });
         return false;
       }
@@ -1038,7 +1059,8 @@ export function createCombatEngine({
 
   function applyDirectDamage(fighter, target, amount) {
     if (target.health <= 0 || amount <= 0) return 0;
-    const dealt = dealDamage(target, absorbIncoming(fighter, target, amount), battle.elapsed);
+    const incoming = Math.max(COMBAT_RESOLUTION, roundCombat(amount));
+    const dealt = dealDamage(target, absorbIncoming(fighter, target, incoming), battle.elapsed);
     if (dealt > 0) {
       interruptPrayer(target);
       grantStarPassive(fighter, 'enemy-hurt', battle.elapsed);
@@ -1147,12 +1169,13 @@ export function createCombatEngine({
         const activeSeconds = Math.max(0, Math.min(seconds, effect.expiresAt - (battle.elapsed - seconds)));
         if (activeSeconds > 0 && effect.dps > 0 && target.health > 0) {
           const attacker = battle.fighters.find(fighter => fighter !== target);
-          const amount = Math.min(target.health, absorbIncoming(attacker, target, effect.dps * activeSeconds, type));
-          if (amount > 0) {
-            target.health = Math.max(0, target.health - amount);
-            target.hitUntil = battle.elapsed + 0.12;
-            battle.fighters.filter(fighter => fighter !== target).forEach(fighter => grantStarPassive(fighter, 'enemy-hurt', battle.elapsed));
-            emit('damage-over-time', { target, damageType: type, amount });
+          const tick = roundCombat(effect.dps * activeSeconds);
+          if (tick > 0) {
+            const amount = removeCombatHealth(target, absorbIncoming(attacker, target, tick, type), battle.elapsed);
+            if (amount > 0) {
+              battle.fighters.filter(fighter => fighter !== target).forEach(fighter => grantStarPassive(fighter, 'enemy-hurt', battle.elapsed));
+              emit('damage-over-time', { target, damageType: type, amount });
+            }
           }
         }
         if (effect.expiresAt <= battle.elapsed + 1e-9) target[type] = null;

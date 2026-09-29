@@ -6,8 +6,8 @@ export const MOVEMENT_UNITS_PER_STAT = 44;
 export const COLLISION_MODES = Object.freeze(['bounce', 'stop', 'pass']);
 
 export const FIGHTER_CONTROLS = Object.freeze({
-  health: Object.freeze({ min: 25, max: 300, step: 0.001, labelKey: 'customization.health' }),
-  attack: Object.freeze({ min: 1, max: 50, step: 0.001, labelKey: 'customization.attack' }),
+  health: Object.freeze({ min: 0.001, max: 300, step: 0.001, labelKey: 'customization.health' }),
+  attack: Object.freeze({ min: 0.001, max: 50, step: 0.001, labelKey: 'customization.attack' }),
   attackCD: Object.freeze({ min: 0.25, max: 10, step: 0.001, labelKey: 'customization.cooldown' }),
   movementSpeed: Object.freeze({ min: 25, max: 440, step: 0.001, labelKey: 'customization.movement_speed' }),
   projectileSpeed: Object.freeze({ min: 100, max: 1240, step: 0.001, labelKey: 'customization.projectile_speed' }),
@@ -69,7 +69,7 @@ export const PRIEST_ABILITY_CONTROLS = Object.freeze({
 });
 
 export const SUMMON_ABILITY_CONTROLS = Object.freeze({
-  companionHealth: Object.freeze({ min: 1, max: 200, step: 0.001, default: 45, labelKey: 'customization.summon_companion_health' }),
+  companionHealth: Object.freeze({ min: 0.001, max: 200, step: 0.001, default: 45, labelKey: 'customization.summon_companion_health' }),
   companionSpeed: Object.freeze({ min: 25, max: 600, step: 0.001, default: 285, labelKey: 'customization.summon_companion_speed' }),
   biteDamage: Object.freeze({ min: 0, max: 50, step: 0.001, default: 4, labelKey: 'customization.summon_bite_damage' }),
   biteRange: Object.freeze({ min: 10, max: 300, step: 0.001, default: 54, labelKey: 'customization.summon_bite_range' }),
@@ -83,6 +83,51 @@ export const SUMMON_ABILITY_CONTROLS = Object.freeze({
   chargeSpeed: Object.freeze({ min: 100, max: 1500, step: 0.001, default: 720, labelKey: 'customization.summon_charge_speed' }),
   chargeLifetime: Object.freeze({ min: 0.1, max: 10, step: 0.001, default: 0.9, labelKey: 'customization.summon_charge_lifetime' })
 });
+
+// Fighter-specific controls live with the rest of the match schema so saved
+// defaults, exports and the battle all use the same numbers.
+export const GUARDIAN_ABILITY_CONTROLS = Object.freeze({
+  durability: { min: 0, max: 200, step: 0.001, default: 40 },
+  shieldFlashDuration: { min: 0, max: 2, step: 0.001, default: 0.15 },
+  chargeSpeed: { min: 25, max: 2000, step: 0.001, default: 1150 },
+  chargeDistance: { min: 0, max: 700, step: 0.001, default: 270 },
+  chargeDamageFactor: { min: 0, max: 5, step: 0.001, default: 1 },
+  throwSpeed: { min: 25, max: 1500, step: 0.001, default: 380 },
+  returnSpeed: { min: 25, max: 1500, step: 0.001, default: 500 },
+  headRadius: { min: 1, max: 100, step: 0.001, default: 24 },
+  impactRadius: { min: 1, max: 200, step: 0.001, default: 44 },
+  groundDuration: { min: 0, max: 20, step: 0.001, default: 5 },
+  outboundDamageFactor: { min: 0, max: 5, step: 0.001, default: 1 },
+  landingDamageFactor: { min: 0, max: 5, step: 0.001, default: 1 },
+  returnDamageFactor: { min: 0, max: 5, step: 0.001, default: 1 },
+  contactDamage: { min: 0, max: 50, step: 0.001, default: 5 },
+  chainWidth: { min: 1, max: 40, step: 0.001, default: 8 },
+  windup: { min: 0.01, max: 3, step: 0.001, default: 0.22 },
+  active: { min: 0.01, max: 3, step: 0.001, default: 0.18 },
+  duration: { min: 0.02, max: 5, step: 0.001, default: 0.68 },
+  equipmentScale: { min: 0.25, max: 4, step: 0.001, default: 1.5 }
+});
+export const GUARDIAN_ABILITY_SWITCHES = Object.freeze({
+  chargeEnabled: true, flailEnabled: true, autoSwitch: true,
+  outboundEnabled: true, landingEnabled: true, returnEnabled: true,
+  contactEnabled: true, chainBlocking: true
+});
+export const STAR_ABILITY_CONTROLS = Object.freeze({
+  stackDuration: { min: 0.1, max: 20, step: 0.001, default: 2 },
+  hastePerStack: { min: 0, max: 10, step: 0.001, default: 2 },
+  starsPerAttack: { min: 0, max: 10, step: 1, default: 1 },
+  rearSpreadDegrees: { min: 0, max: 89, step: 0.001, default: 180 / 7 },
+  orbitRadiusMin: { min: 0.1, max: 5, step: 0.001, default: 1.15 },
+  orbitRadiusMax: { min: 0.1, max: 5, step: 0.001, default: 1.45 },
+  initialSpeedFactor: { min: 0.01, max: 5, step: 0.001, default: 0.2 },
+  accelerationFactor: { min: 0.01, max: 10, step: 0.001, default: 2.4 },
+  lifetime: { min: 0.1, max: 20, step: 0.001, default: 5 },
+  radius: { min: 1, max: 60, step: 0.001, default: 7 },
+  windup: { min: 0.01, max: 3, step: 0.001, default: 0.28 },
+  duration: { min: 0.02, max: 5, step: 0.001, default: 0.76 },
+  visualScale: { min: 0.25, max: 4, step: 0.001, default: 1 }
+});
+export const STAR_ABILITY_SWITCHES = Object.freeze({ enemyAttack: true, enemyHurt: true, enemyHit: true });
 
 export const ARENA_CONTROLS = Object.freeze({
   fighterCount: Object.freeze({ min: 2, max: 4, step: 1, default: 2, labelKey: 'customization.fighter_count' }),
@@ -114,6 +159,8 @@ export function defaultFighterSettings(character) {
   if (character.trait?.id === 'elemental-cycles') settings.abilities = defaultMageAbilities();
   if (character.trait?.id === 'prayer') settings.abilities = defaultPriestAbilities();
   if (character.trait?.id === 'beastmaster') settings.abilities = defaultSummonAbilities();
+  if (character.id === 'guardian') settings.abilities = defaultGuardianAbilities();
+  if (character.id === 'dongfang-changfan') settings.abilities = defaultStarAbilities();
   return settings;
 }
 
@@ -138,6 +185,16 @@ export function defaultPriestAbilities() {
 
 export function defaultSummonAbilities() {
   return Object.fromEntries(Object.entries(SUMMON_ABILITY_CONTROLS).map(([key, control]) => [key, control.default]));
+}
+
+export function defaultGuardianAbilities() {
+  return { ...Object.fromEntries(Object.entries(GUARDIAN_ABILITY_CONTROLS).map(([key, control]) => [key, control.default])),
+    ...GUARDIAN_ABILITY_SWITCHES, startingMode: 'charge' };
+}
+
+export function defaultStarAbilities() {
+  return { ...Object.fromEntries(Object.entries(STAR_ABILITY_CONTROLS).map(([key, control]) => [key, control.default])),
+    ...STAR_ABILITY_SWITCHES };
 }
 
 export function defaultArenaSettings() {

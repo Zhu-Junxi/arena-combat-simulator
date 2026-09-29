@@ -2,6 +2,8 @@ import { createGuardianVisual, renderGuardianVisual, GUARDIAN_VISUAL_SCALE } fro
 import { createBattleHud } from './battle-hud.js';
 import { BATTLE_RULES } from '../config/combat.js';
 import { activeStarPassives, starAttackSpeed } from './star-passive.js';
+import { fighterTraitDescription } from '../customization/trait-description.js';
+import { formatCombat, roundCombat } from './combat-precision.js';
 import { cooldownProgress, healthBand, healthRatio, priestMarkAttackCooldownFactor, zoneSlowFactor } from './combat-engine.js';
 import { createSvgEffect, explosionMarkup, frostRuneMarkup, prayerMarkup, projectileMarkup, updateWeaponVisual, weaponMarkup } from './weapon-effects.js';
 
@@ -47,7 +49,7 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
       cooldownFill: element.querySelector('.cooldown-bar .fighter-meter-fill')
     };
     view.healthBar.setAttribute('aria-label', i18n.t('accessibility.health', { name }));
-    view.healthBar.setAttribute('aria-valuemax', String(fighter.maxHealth));
+    view.healthBar.setAttribute('aria-valuemax', formatCombat(fighter.maxHealth));
     view.cooldownBar.setAttribute('aria-label', i18n.t('accessibility.cooldown', { name }));
     fighterElements.set(fighter, view);
     if (fighter.guardian) guardianElements.set(fighter, createGuardianVisual(fighter, elements['weapon-effects']));
@@ -63,20 +65,20 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
       renderGuardianVisual(guardianElements.get(fighter), fighter, target, elapsed);
       view.shieldBar.hidden = guardian.shield <= 0;
       view.shieldBar.setAttribute('aria-label', i18n.t('battle.guardian_shield'));
-      view.shieldBar.setAttribute('aria-valuenow', String(guardian.shield));
-      view.shieldBar.setAttribute('aria-valuemax', String(guardian.maxShield));
-      view.shieldFill.style.transform = `scaleX(${guardian.shield / guardian.maxShield})`;
-      const status = guardian.shield > 0 ? i18n.t('battle.shield_durability', { value: Number(guardian.shield.toFixed(1)), maximum: guardian.maxShield }) :
+      view.shieldBar.setAttribute('aria-valuenow', formatCombat(guardian.shield));
+      view.shieldBar.setAttribute('aria-valuemax', formatCombat(guardian.maxShield));
+      view.shieldFill.style.transform = `scaleX(${guardian.maxShield > 0 ? guardian.shield / guardian.maxShield : 0})`;
+      const status = guardian.shield > 0 ? i18n.t('battle.shield_durability', { value: formatCombat(guardian.shield), maximum: formatCombat(guardian.maxShield) }) :
         guardian.flail?.phase === 'grounded' ? i18n.t('battle.flail_grounded', { seconds: Math.max(0, guardian.flail.expiresAt - elapsed).toFixed(1) }) :
         i18n.t(guardian.flail?.phase === 'returning' ? 'battle.flail_returning' : guardian.flail ? 'battle.flail_outbound' : 'battle.shield_broken');
       view.guardianState.hidden = fighter.health <= 0;
       view.guardianState.textContent = status;
-      view.guardianState.dataset.tooltip = i18n.t('trait.shield_flail.description');
+      view.guardianState.dataset.tooltip = fighterTraitDescription(fighter.character, { abilities: fighter.guardianAbilities }, i18n.t);
       view.shieldBar.dataset.tooltip = status;
     }
     const effectiveCooldown = fighter.attackCooldown * priestMarkAttackCooldownFactor(fighter);
     const progress = cooldownProgress(fighter.cooldownElapsed, effectiveCooldown);
-    const currentHealth = Math.max(0, Math.min(fighter.maxHealth, fighter.health));
+    const currentHealth = roundCombat(Math.max(0, Math.min(fighter.maxHealth, fighter.health)));
     const starSources = activeStarPassives(fighter, elapsed);
     view.starPassive.hidden = !starSources.length || fighter.health <= 0;
     view.starPassive.textContent = starSources.length ? `✦ ×${starSources.length}` : '';
@@ -122,9 +124,9 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
       view.summonCommand.dataset.tooltip = i18n.t('battle.command_meter', { current: fighter.summonMeter, maximum: command.meterThreshold });
     }
     view.healthBar.dataset.band = healthBand(ratio);
-    view.healthBar.setAttribute('aria-valuenow', String(currentHealth));
-    view.healthBar.setAttribute('aria-valuetext', `${currentHealth} / ${fighter.maxHealth}`);
-    view.healthBar.dataset.tooltip = i18n.t('tooltip.health_state', { current: currentHealth, maximum: fighter.maxHealth });
+    view.healthBar.setAttribute('aria-valuenow', formatCombat(currentHealth));
+    view.healthBar.setAttribute('aria-valuetext', `${formatCombat(currentHealth)} / ${formatCombat(fighter.maxHealth)}`);
+    view.healthBar.dataset.tooltip = i18n.t('tooltip.health_state', { current: formatCombat(currentHealth), maximum: formatCombat(fighter.maxHealth) });
     view.healthFill.style.transform = `scaleX(${ratio})`;
     view.cooldownBar.dataset.ready = String(progress >= 1);
     view.cooldownBar.setAttribute('aria-valuenow', String(Math.round(progress * 100)));
@@ -159,7 +161,7 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
     if (summon.kind === 'companion') {
       const ratio = healthRatio(summon.health, summon.maxHealth);
       element.querySelector('.summon-meter span').style.transform = `scaleX(${ratio})`;
-      element.setAttribute('aria-label', i18n.t('battle.companion_health', { current: Math.max(0, summon.health), maximum: summon.maxHealth }));
+      element.setAttribute('aria-label', i18n.t('battle.companion_health', { current: formatCombat(summon.health), maximum: formatCombat(summon.maxHealth) }));
     } else if (summon.kind === 'pack-wolf') {
       element.setAttribute('aria-label', i18n.t('battle.pack_wolf'));
     }
@@ -189,7 +191,7 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
     const fighterPercent = rules.fighterSize / rules.size * 100;
     battle.fighters.forEach(fighter => {
       const element = fighterElements.get(fighter).element;
-      const visualPercent = fighterPercent * (fighter.guardian ? GUARDIAN_VISUAL_SCALE : 1);
+      const visualPercent = fighterPercent * (fighter.guardian ? Math.max(0.05, Math.min(100, fighter.guardianAbilities?.equipmentScale ?? GUARDIAN_VISUAL_SCALE)) : 1);
       element.style.width = `${visualPercent}%`;
       element.style.height = `${visualPercent}%`;
     });
@@ -216,6 +218,7 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
     if (type === 'projectile-spawned') {
       const { projectile, fighter } = event;
       const element = createSvgEffect('projectile', projectileMarkup(fighter, projectile.mode, projectile.empowered, projectile.spell), elements['projectile-effects']);
+      if (fighter.starAbilities) element.querySelector('.star-thought-projectile')?.setAttribute('transform', `scale(${Math.max(0.05, Math.min(100, fighter.starAbilities.visualScale))})`);
       Object.assign(element.dataset, {
         owner: fighter.side,
         mode: String(projectile.mode + 1),

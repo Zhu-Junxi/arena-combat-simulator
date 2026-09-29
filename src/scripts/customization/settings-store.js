@@ -7,6 +7,7 @@ import {
   MAGE_SPELL_SLOTS,
   PRIEST_ABILITY_CONTROLS,
   SUMMON_ABILITY_CONTROLS,
+  GUARDIAN_ABILITY_CONTROLS, GUARDIAN_ABILITY_SWITCHES, STAR_ABILITY_CONTROLS, STAR_ABILITY_SWITCHES,
   TRAIT_CONTROLS,
   MATCH_SETTINGS_STORAGE_KEY,
   MATCH_SETTINGS_VERSION,
@@ -14,7 +15,9 @@ import {
   defaultFighterSettings,
   defaultMageAbilities,
   defaultPriestAbilities,
-  defaultSummonAbilities
+  defaultSummonAbilities,
+  defaultGuardianAbilities,
+  defaultStarAbilities
 } from '../config/customization.js';
 import { FIGHTER_SLOTS, TARGET_STRATEGIES, activeSlots } from '../config/match.js';
 
@@ -62,6 +65,8 @@ function normalizeFighter(value, character, fallback = defaultFighterSettings(ch
   if (character.trait?.id === 'elemental-cycles') fighter.abilities = normalizeMageAbilities(value?.abilities, defaults.abilities, advanced);
   if (character.trait?.id === 'prayer') fighter.abilities = normalizePriestAbilities(value?.abilities, defaults.abilities, advanced);
   if (character.trait?.id === 'beastmaster') fighter.abilities = normalizeSummonAbilities(value?.abilities, defaults.abilities, advanced);
+  if (character.id === 'guardian') fighter.abilities = normalizeGuardianAbilities(value?.abilities, defaults.abilities, advanced);
+  if (character.id === 'dongfang-changfan') fighter.abilities = normalizeStarAbilities(value?.abilities, defaults.abilities, advanced);
   return fighter;
 }
 
@@ -97,6 +102,24 @@ export function normalizeSummonAbilities(value, fallback = defaultSummonAbilitie
   return Object.fromEntries(Object.entries(SUMMON_ABILITY_CONTROLS).map(([key, control]) => [key,
     Number.isFinite(Number(value?.[key])) ? clampSetting(value[key], control, advanced) : fallback[key]
   ]));
+}
+
+function normalizeSpecialAbilities(value, fallback, controls, switches, advanced) {
+  return {
+    ...Object.fromEntries(Object.entries(controls).map(([key, control]) => [key,
+      value?.[key] === control.default ? control.default : Number.isFinite(Number(value?.[key])) ? clampSetting(value[key], control, advanced) : fallback[key]
+    ])),
+    ...Object.fromEntries(Object.keys(switches).map(key => [key, typeof value?.[key] === 'boolean' ? value[key] : fallback[key]]))
+  };
+}
+
+export function normalizeGuardianAbilities(value, fallback = defaultGuardianAbilities(), advanced = false) {
+  return { ...normalizeSpecialAbilities(value, fallback, GUARDIAN_ABILITY_CONTROLS, GUARDIAN_ABILITY_SWITCHES, advanced),
+    startingMode: ['charge', 'flail'].includes(value?.startingMode) ? value.startingMode : fallback.startingMode };
+}
+
+export function normalizeStarAbilities(value, fallback = defaultStarAbilities(), advanced = false) {
+  return normalizeSpecialAbilities(value, fallback, STAR_ABILITY_CONTROLS, STAR_ABILITY_SWITCHES, advanced);
 }
 
 export function constrainStartingDistance(arena, advanced = false) {
@@ -275,6 +298,21 @@ export function createMatchSettingsStore({ characters, storage = globalThis.loca
     return getFighter(side, characterId).abilities;
   }
 
+  function setSpecialAbilityValue(side, characterId, key, value) {
+    const target = fighters[side]?.[characterId];
+    const guardian = characterId === 'guardian';
+    const star = characterId === 'dongfang-changfan';
+    if (!target?.abilities || (!guardian && !star)) throw new Error('Unknown special ability target');
+    const controls = guardian ? GUARDIAN_ABILITY_CONTROLS : STAR_ABILITY_CONTROLS;
+    const switches = guardian ? GUARDIAN_ABILITY_SWITCHES : STAR_ABILITY_SWITCHES;
+    if (controls[key]) target.abilities[key] = clampSetting(value, controls[key], advanced);
+    else if (key in switches && typeof value === 'boolean') target.abilities[key] = value;
+    else if (guardian && key === 'startingMode' && ['charge', 'flail'].includes(value)) target.abilities[key] = value;
+    else throw new Error('Unknown special ability setting');
+    notify({ scope: side, characterId, specialAbility: key });
+    return getFighter(side, characterId).abilities;
+  }
+
   function setArenaValue(key, value) {
     if (key === 'collisionMode') {
       if (!COLLISION_MODES.includes(value)) throw new Error('Unknown collision mode');
@@ -369,5 +407,5 @@ export function createMatchSettingsStore({ characters, storage = globalThis.loca
     return () => listeners.delete(listener);
   }
 
-  return Object.freeze({ getFighter, setFighterValue, setTraitValue, getMageAbilities, setMageAbilityValue, setPriestAbilityValue, setSummonAbilityValue, getArena, setArenaValue, getAdvanced: () => advanced, getLastPersistenceStatus: () => lastPersistenceSucceeded, setAdvanced, resetFighter, setCharacterDefault, resetArena, resetAll, snapshot, applyDuel, subscribe });
+  return Object.freeze({ getFighter, setFighterValue, setTraitValue, getMageAbilities, setMageAbilityValue, setPriestAbilityValue, setSummonAbilityValue, setSpecialAbilityValue, getArena, setArenaValue, getAdvanced: () => advanced, getLastPersistenceStatus: () => lastPersistenceSucceeded, setAdvanced, resetFighter, setCharacterDefault, resetArena, resetAll, snapshot, applyDuel, subscribe });
 }

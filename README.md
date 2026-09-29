@@ -40,15 +40,19 @@ The included server serves the app locally. Open the URL above rather than openi
 | **Languages** | Switch between English and Simplified Chinese from the header. The choice is remembered in your browser. |
 | **Themes** | Follow your system appearance or choose light or dark mode without resetting the match. |
 
+Damage, healing, shields, and HP resolve to 0.001 HP. The tuning panel accepts starting HP and attack damage as low as 0.001.
+
 ### Playable roster
 
-- **Warrior** — plate armor reduces incoming damage, with a minimum of 1 damage per hit.
+- **Warrior** — plate armor reduces direct-hit damage, with a minimum of 0.001 HP per positive hit.
 - **Archer** — every fourth arrow applies a root followed by a slow.
 - **Guardian** — a 40-durability shield and a straight charge every 4 seconds; after the shield breaks, a chain flail lands for 5 seconds and blocks movement. Body and weapon visuals use 1.5× scale.
 - **Mage** — cycles through ice, fire, and leech magic with marks and finishing effects.
 - **Priest** — applies marks and uses prayer to heal or damage.
 - **Dong Fang Chang Fan** — blue-white twinkling stars launch from behind, curve around the sides and accelerate toward enemies. Myriad Star Fireflies grants up to three independent 2-second stacks, each adding 200% attack speed; every attack creates one star.
 - **Beastmaster** — fights alongside a summon and can unleash a pack attack.
+
+Guardian and Dong Fang Chang Fan have detailed ability controls in their tuning tabs, including combat values, visual scale, and battle-rule switches. The values above are their defaults.
 
 Warrior, Archer, Guardian, Mage, Priest and Dong Fang Chang Fan have portraits, avatars and battle artwork. The roster also contains locked, unavailable character previews; Beastmaster currently uses placeholder artwork.
 

@@ -1,4 +1,6 @@
 // Guardian's shield, charge and tethered flail share one per-fighter state.
+import { defaultGuardianAbilities } from '../config/customization.js';
+import { roundCombat } from './combat-precision.js';
 export const GUARDIAN_RULES = Object.freeze({
   durability: 40, chargeSpeed: 1150, chargeDistance: 270,
   throwSpeed: 380, returnSpeed: 500, headRadius: 24,
@@ -8,18 +10,20 @@ export const GUARDIAN_RULES = Object.freeze({
 const EPSILON = 1e-7;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
-export function createGuardianState() {
-  return { shield: GUARDIAN_RULES.durability, maxShield: GUARDIAN_RULES.durability,
+export function createGuardianState(abilities = defaultGuardianAbilities()) {
+  const durability = roundCombat(Math.max(0, abilities.durability));
+  return { shield: durability, maxShield: durability,
     shieldHitUntil: 0, dash: null, flail: null };
 }
 
 export function absorbShieldDamage(fighter, amount, now) {
   const guardian = fighter.guardian;
-  if (!guardian || guardian.shield <= 0 || amount <= 0) return { absorbed: 0, remaining: amount, broken: false };
-  const absorbed = Math.min(amount, guardian.shield);
-  guardian.shield -= absorbed;
-  guardian.shieldHitUntil = now + 0.15;
-  return { absorbed, remaining: amount - absorbed, broken: guardian.shield <= 0 };
+  const incoming = roundCombat(Math.max(0, amount));
+  if (!guardian || guardian.shield <= 0 || incoming <= 0) return { absorbed: 0, remaining: incoming, broken: false };
+  const absorbed = Math.min(incoming, roundCombat(guardian.shield));
+  guardian.shield = roundCombat(guardian.shield - absorbed);
+  guardian.shieldHitUntil = now + Math.max(0, fighter.guardianAbilities?.shieldFlashDuration ?? 0.15);
+  return { absorbed, remaining: roundCombat(incoming - absorbed), broken: guardian.shield <= 0 };
 }
 
 export function beginCharge(fighter, attack) {
@@ -29,12 +33,13 @@ export function beginCharge(fighter, attack) {
   fighter.vx = Math.cos(attack.angle) * movementSpeed;
   fighter.vy = Math.sin(attack.angle) * movementSpeed;
   fighter.guardian.dash = {
-    angle: attack.angle, remaining: GUARDIAN_RULES.chargeDistance,
-    speed: GUARDIAN_RULES.chargeSpeed, attack
+    angle: attack.angle, remaining: Math.max(0.001, fighter.guardianAbilities?.chargeDistance ?? GUARDIAN_RULES.chargeDistance),
+    speed: Math.max(1, Math.min(100000, fighter.guardianAbilities?.chargeSpeed ?? GUARDIAN_RULES.chargeSpeed)), attack
   };
 }
 
 export function createFlail(fighter, target, damage) {
+  const abilities = fighter.guardianAbilities ?? defaultGuardianAbilities();
   const dx = target.x - fighter.x;
   const dy = target.y - fighter.y;
   const distance = Math.hypot(dx, dy);
@@ -44,7 +49,7 @@ export function createFlail(fighter, target, damage) {
     owner: fighter, target, damage, phase: 'outbound',
     x: fighter.x + Math.cos(angle) * start, y: fighter.y + Math.sin(angle) * start,
     targetX: target.x, targetY: target.y, angle,
-    radius: GUARDIAN_RULES.headRadius, impactRadius: GUARDIAN_RULES.impactRadius,
+    radius: Math.max(1, Math.min(10000, abilities.headRadius)), impactRadius: Math.max(1, Math.min(10000, abilities.impactRadius)),
     outboundHit: false, returningHit: false, touching: false,
     landedAt: null, expiresAt: null
   };
@@ -77,6 +82,7 @@ export function sweptHeadHit(x0, y0, x1, y1, half, radius) {
 
 export function advanceFlail(flail, seconds, now, hit, emit) {
   const { owner, target } = flail;
+  const abilities = owner.guardianAbilities ?? defaultGuardianAbilities();
   let remaining = seconds;
   let time = now - seconds;
   const half = target.bodySize / 2;
@@ -96,8 +102,8 @@ export function advanceFlail(flail, seconds, now, hit, emit) {
     if (flail.phase === 'grounded') {
       const duration = Math.min(remaining, Math.max(0, flail.expiresAt - time));
       const end = targetAt(time + duration);
-      if (!flail.touching && sweep(flail.x, flail.y, flail.x, flail.y, time, time + duration)) {
-        hit(owner, target, GUARDIAN_RULES.contactDamage, 'contact');
+      if (abilities.contactEnabled && !flail.touching && sweep(flail.x, flail.y, flail.x, flail.y, time, time + duration)) {
+        hit(owner, target, Math.max(0, abilities.contactDamage), 'contact');
       }
       flail.touching = circleTouchesFighter(flail.x, flail.y, flail.radius, { ...target, ...end }, half);
       time += duration;
@@ -114,15 +120,15 @@ export function advanceFlail(flail, seconds, now, hit, emit) {
     const dx = destination.x - flail.x;
     const dy = destination.y - flail.y;
     const distance = Math.hypot(dx, dy);
-    const speed = returning ? GUARDIAN_RULES.returnSpeed : GUARDIAN_RULES.throwSpeed;
+    const speed = Math.max(1, Math.min(100000, returning ? abilities.returnSpeed : abilities.throwSpeed));
     const duration = Math.min(remaining, distance / speed);
     const ratio = distance > EPSILON ? Math.min(1, speed * duration / distance) : 1;
     const nextX = flail.x + dx * ratio;
     const nextY = flail.y + dy * ratio;
     const hitKey = returning ? 'returningHit' : 'outboundHit';
-    if (!flail[hitKey] && sweep(flail.x, flail.y, nextX, nextY, time, time + duration)) {
+    if ((returning ? abilities.returnEnabled : abilities.outboundEnabled) && !flail[hitKey] && sweep(flail.x, flail.y, nextX, nextY, time, time + duration)) {
       flail[hitKey] = true;
-      hit(owner, target, flail.damage, returning ? 'return' : 'outbound');
+      hit(owner, target, flail.damage * Math.max(0, Math.min(1000, returning ? abilities.returnDamageFactor : abilities.outboundDamageFactor)), returning ? 'return' : 'outbound');
     }
     flail.angle = Math.atan2(dy, dx);
     flail.x = nextX;
@@ -133,10 +139,10 @@ export function advanceFlail(flail, seconds, now, hit, emit) {
     if (returning) return true;
     flail.phase = 'grounded';
     flail.landedAt = time;
-    flail.expiresAt = time + GUARDIAN_RULES.groundDuration;
+    flail.expiresAt = time + Math.max(0, abilities.groundDuration);
     const landingTarget = { ...target, ...targetAt(time) };
-    if (target.health > 0 && circleTouchesFighter(flail.x, flail.y, flail.impactRadius, landingTarget, half)) {
-      hit(owner, target, flail.damage, 'landing');
+    if (abilities.landingEnabled && target.health > 0 && circleTouchesFighter(flail.x, flail.y, flail.impactRadius, landingTarget, half)) {
+      hit(owner, target, flail.damage * Math.max(0, Math.min(1000, abilities.landingDamageFactor)), 'landing');
     }
     // Landing has its own damage; staying inside the head does not add contact damage.
     flail.touching = circleTouchesFighter(flail.x, flail.y, flail.radius, landingTarget, half);
@@ -184,10 +190,10 @@ export function sweptChainContact(from, to, anchorFrom, anchorTo, head, radius) 
 export function resolveChainWalls(fighters, previous, rules, now, onContact) {
   for (const owner of fighters) {
     const flail = owner.guardian?.flail;
-    if (flail?.phase !== 'grounded' || now >= flail.expiresAt - EPSILON) continue;
+    if (flail?.phase !== 'grounded' || owner.guardianAbilities?.chainBlocking === false || now >= flail.expiresAt - EPSILON) continue;
     for (const fighter of fighters) {
       if (fighter === owner || fighter.health <= 0) continue;
-      const radius = rules.fighterSize / 2 + GUARDIAN_RULES.chainWidth / 2;
+      const radius = rules.fighterSize / 2 + Math.max(0, Math.min(10000, owner.guardianAbilities?.chainWidth ?? GUARDIAN_RULES.chainWidth)) / 2;
       const contact = sweptChainContact(previous.get(fighter), fighter, previous.get(owner), owner, flail, radius);
       if (!contact) continue;
       const nearest = closestOnSegment(contact, owner, flail);

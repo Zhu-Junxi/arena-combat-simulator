@@ -1,4 +1,4 @@
-import { ARENA_CONTROLS, COLLISION_MODES, FIGHTER_CONTROLS, MAGE_ABILITY_CONTROLS, MAGE_CYCLES, MAGE_SPELL_SLOTS, PRIEST_ABILITY_CONTROLS, SUMMON_ABILITY_CONTROLS, TRAIT_CONTROLS } from '../config/customization.js';
+import { ARENA_CONTROLS, COLLISION_MODES, FIGHTER_CONTROLS, MAGE_ABILITY_CONTROLS, MAGE_CYCLES, MAGE_SPELL_SLOTS, PRIEST_ABILITY_CONTROLS, SUMMON_ABILITY_CONTROLS, TRAIT_CONTROLS, GUARDIAN_ABILITY_CONTROLS, GUARDIAN_ABILITY_SWITCHES, STAR_ABILITY_CONTROLS, STAR_ABILITY_SWITCHES } from '../config/customization.js';
 import { displayControl, presentationFor, settingTooltip, toDisplayValue } from './setting-presentation.js';
 
 const SIDES = Object.freeze(['left', 'right']);
@@ -60,6 +60,8 @@ export function createSettingsView({ state, settings, elements, i18n }) {
     const mageRows = character.trait?.id === 'elemental-cycles' ? renderMageAbilities(side, values.abilities) : '';
     const priestRows = character.trait?.id === 'prayer' ? renderPriestAbilities(side, values.abilities) : '';
     const summonRows = character.trait?.id === 'beastmaster' ? renderSummonAbilities(side, values.abilities) : '';
+    const specialRows = character.id === 'guardian' ? renderSpecialAbilities(side, 'guardian', values.abilities, GUARDIAN_ABILITY_CONTROLS, GUARDIAN_ABILITY_SWITCHES) :
+      character.id === 'dongfang-changfan' ? renderSpecialAbilities(side, 'star', values.abilities, STAR_ABILITY_CONTROLS, STAR_ABILITY_SWITCHES) : '';
     // Mage and Priest replace their primary attack with spell/mark actions. Beastmaster
     // keeps its ordinary ranged hunter attack in addition to its summon controls.
     const replacesPrimaryAttack = mageRows || priestRows;
@@ -71,7 +73,28 @@ export function createSettingsView({ state, settings, elements, i18n }) {
       (replacesPrimaryAttack ? '' : attackRows + cooldownRows) + valueControl({ id: `${side}-speed`, label: t(FIGHTER_CONTROLS.movementSpeed.labelKey), value: values.movementSpeed, ...FIGHTER_CONTROLS.movementSpeed, scope: side, key: 'movementSpeed' }) +
       (values.projectileSpeed == null ? '' : valueControl({ id: `${side}-projectile-speed`, label: t(FIGHTER_CONTROLS.projectileSpeed.labelKey), value: values.projectileSpeed, ...FIGHTER_CONTROLS.projectileSpeed, scope: side, key: 'projectileSpeed' })) +
       (values.attackRange == null ? '' : valueControl({ id: `${side}-attack-range`, label: t(FIGHTER_CONTROLS.attackRange.labelKey), value: values.attackRange, ...FIGHTER_CONTROLS.attackRange, scope: side, key: 'attackRange' })) +
-      `</div>${traitRows}${mageRows}${priestRows}${summonRows}</section>`;
+      `</div>${traitRows}${mageRows}${priestRows}${summonRows}${specialRows}</section>`;
+  }
+
+  function renderSpecialAbilities(side, kind, abilities, controls, switches) {
+    const numeric = key => valueControl({
+      id: `${side}-${kind}-${key}`, label: t(`customization.${kind}_${key}`), value: abilities[key], ...controls[key],
+      scope: side, key: 'special', magePath: key, presentationKey: `${kind}_${key}`
+    });
+    const flag = key => `<label class="setting-row setting-select" data-tooltip="${t('tooltip.special_switch')}"><span>${t(`customization.${kind}_${key}`)}</span><input type="checkbox" data-special-switch="${key}" data-setting-scope="${side}" ${abilities[key] ? 'checked' : ''}></label>`;
+    const mode = `<label class="setting-row setting-select" data-tooltip="${t('tooltip.guardian_starting_mode')}"><span>${t('customization.guardian_startingMode')}</span><select data-special-mode data-setting-scope="${side}"><option value="charge" ${abilities.startingMode === 'charge' ? 'selected' : ''}>${t('customization.guardian_mode_charge')}</option><option value="flail" ${abilities.startingMode === 'flail' ? 'selected' : ''}>${t('customization.guardian_mode_flail')}</option></select></label>`;
+    const groups = kind === 'guardian' ? [
+      ['shield', ['durability', 'shieldFlashDuration'], []],
+      ['charge', ['chargeSpeed', 'chargeDistance', 'chargeDamageFactor'], ['chargeEnabled', 'autoSwitch']],
+      ['flail', ['throwSpeed', 'returnSpeed', 'headRadius', 'impactRadius', 'groundDuration', 'outboundDamageFactor', 'landingDamageFactor', 'returnDamageFactor', 'contactDamage', 'chainWidth'], ['flailEnabled', 'outboundEnabled', 'landingEnabled', 'returnEnabled', 'contactEnabled', 'chainBlocking']],
+      ['presentation', ['windup', 'active', 'duration', 'equipmentScale'], []]
+    ] : [
+      ['passive', ['stackDuration', 'hastePerStack'], ['enemyAttack', 'enemyHurt', 'enemyHit']],
+      ['flight', ['starsPerAttack', 'rearSpreadDegrees', 'orbitRadiusMin', 'orbitRadiusMax', 'initialSpeedFactor', 'accelerationFactor', 'lifetime', 'radius'], []],
+      ['presentation', ['windup', 'duration', 'visualScale'], []]
+    ];
+    return `<section class="mage-abilities"><h4>${t(`customization.${kind}_heading`)}</h4>${groups.map(([group, fields, flags]) =>
+      `<h4>${t(`customization.${kind}_${group}`)}</h4><div class="settings-grid">${fields.map(numeric).join('')}${flags.map(flag).join('')}${kind === 'guardian' && group === 'charge' ? mode : ''}</div>`).join('')}</section>`;
   }
 
   function renderPriestAbilities(side, abilities) {

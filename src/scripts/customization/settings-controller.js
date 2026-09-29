@@ -68,6 +68,9 @@ export function createSettingsController({ state, settings, view, elements, pane
     } else if (key === 'summon') {
       settings.setSummonAbilityValue(scope, state[scope].id, input.dataset.magePath, value);
       view.renderContent();
+    } else if (key === 'special') {
+      settings.setSpecialAbilityValue(scope, state[scope].id, input.dataset.magePath, value);
+      view.renderContent();
     } else if (key === 'trait') {
       settings.setTraitValue(scope, state[scope].id, input.dataset.magePath, value);
       view.renderContent();
@@ -115,6 +118,16 @@ export function createSettingsController({ state, settings, view, elements, pane
       if (event.target.matches('input[type="range"][data-setting-key]')) updateSetting(event.target);
     });
     elements['settings-content'].addEventListener('change', event => {
+      if (event.target.matches('[data-special-switch], [data-special-mode]')) {
+        const input = event.target;
+        const scope = input.dataset.settingScope;
+        settings.setSpecialAbilityValue(scope, state[scope].id, input.dataset.specialSwitch ?? 'startingMode',
+          input.dataset.specialSwitch ? input.checked : input.value);
+        view.renderContent();
+        onSettingsChange(scope);
+        warnIfSessionOnly(input);
+        return;
+      }
       if (event.target.matches('input[type="number"][data-setting-key], select[data-setting-key]')) {
         updateSetting(event.target);
         warnIfSessionOnly(event.target);

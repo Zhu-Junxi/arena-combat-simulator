@@ -41,14 +41,14 @@ function castMageSpellWithoutHit(engine, mage, target) {
   return attack;
 }
 
-test('plate armor reduces damage with a minimum of one', () => {
+test('plate armor reduces damage with a minimum of 0.001 HP', () => {
   const engine = createCombatEngine();
   engine.reset(selected);
   const [warrior, archer] = engine.state.fighters;
-  for (const [input, expected] of [[8, 7], [5, 4], [2, 1], [1, 1]]) {
+  for (const [input, expected] of [[8, 7], [5, 4], [2, 1], [1, 0.001]]) {
     warrior.health = 100;
     assert.equal(dealDamage(warrior, input), expected);
-    assert.equal(warrior.health, 100 - expected);
+    assert.equal(warrior.health, Number((100 - expected).toFixed(3)));
   }
   archer.health = 80;
   assert.equal(dealDamage(archer, 5), 5);

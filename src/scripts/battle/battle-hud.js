@@ -2,6 +2,8 @@ import { frameCorner } from '../ui/decorations.js';
 import { cooldownProgress, modeValue, movementFactor, priestMarkAttackCooldownFactor } from './combat-engine.js';
 import { activeStarPassives, starAttackSpeed } from './star-passive.js';
 import { GUARDIAN_RULES } from './guardian.js';
+import { fighterTraitDescription } from '../customization/trait-description.js';
+import { formatCombat } from './combat-precision.js';
 
 const clamp = value => Math.max(0, Math.min(1, value));
 const number = value => String(Number(Math.max(0, value).toFixed(1)));
@@ -17,18 +19,22 @@ export function fighterHudState(fighter, battle, t) {
   const target = battle.fighters.find(other => other !== fighter);
   const cooldown = fighter.attackCooldown * priestMarkAttackCooldownFactor(fighter);
   const haste = starAttackSpeed(fighter, now);
+  const guardianMode = fighter.guardian ? (fighter.guardianAbilities?.autoSwitch === false ? fighter.guardianAbilities.startingMode : fighter.guardian.shield > 0 ? 'charge' : 'flail') : null;
+  const guardianDamage = fighter.guardian && guardianMode === 'charge' && fighter.guardianAbilities?.chargeEnabled !== false ?
+    modeValue(fighter.attackValues, fighter.attackMode) * Math.max(0, Math.min(1000, fighter.guardianAbilities?.chargeDamageFactor ?? 1)) : modeValue(fighter.attackValues, fighter.attackMode);
   const progress = cooldownProgress(fighter.cooldownElapsed, cooldown);
   let extraLabel = t('hud.armor');
-  let extraValue = number(fighter.trait?.reduction ?? 0);
+  let extraValue = formatCombat(fighter.trait?.reduction ?? 0);
   let extraRatio = null;
   let status = t('hud.melee');
   if (fighter.guardian) {
     const g = fighter.guardian;
     extraLabel = t(g.shield > 0 ? 'battle.guardian_shield' : 'hud.flail');
-    extraValue = g.shield > 0 ? `${number(g.shield)} / ${number(g.maxShield)}` :
+    extraValue = g.shield > 0 ? `${formatCombat(g.shield)} / ${formatCombat(g.maxShield)}` :
       g.flail?.phase === 'grounded' ? t('hud.seconds', { seconds: Math.max(0, g.flail.expiresAt - now).toFixed(1) }) : t('hud.shield_broken');
-    extraRatio = g.shield > 0 ? clamp(g.shield / g.maxShield) : g.flail?.phase === 'grounded' ? clamp((g.flail.expiresAt - now) / GUARDIAN_RULES.groundDuration) : 0;
-    status = t(g.shield > 0 ? (g.dash ? 'hud.charging' : 'hud.shield_charge') :
+    extraRatio = g.shield > 0 ? clamp(g.shield / g.maxShield) : g.flail?.phase === 'grounded' ? clamp((g.flail.expiresAt - now) / Math.max(0.001, fighter.guardianAbilities?.groundDuration ?? GUARDIAN_RULES.groundDuration)) : 0;
+    const selectedMode = guardianMode;
+    status = t(fighter.attack?.guardianMode === 'melee' || fighter.guardianAbilities?.[`${selectedMode}Enabled`] === false ? 'hud.melee' : selectedMode === 'charge' ? (g.dash ? 'hud.charging' : 'hud.shield_charge') :
       g.flail?.phase === 'grounded' ? 'hud.chain_wall' : g.flail?.phase === 'returning' ? 'hud.flail_return' : g.flail ? 'hud.flail_throw' : 'hud.flail_ready');
   } else if (fighter.character.id === 'archer') {
     const every = Math.max(1, Math.round(fighter.trait?.every ?? 4));
@@ -40,8 +46,9 @@ export function fighterHudState(fighter, battle, t) {
   } else if (fighter.character.id === 'dongfang-changfan') {
     const count = activeStarPassives(fighter, now).length;
     extraLabel = t('trait.myriad_star_fireflies.name');
-    extraValue = `${count} / 3`;
-    extraRatio = count / 3;
+    const enabled = ['enemyAttack', 'enemyHurt', 'enemyHit'].filter(key => fighter.starAbilities?.[key] !== false).length;
+    extraValue = `${count} / ${enabled}`;
+    extraRatio = enabled ? count / enabled : 0;
     status = t('hud.star_haste', { bonus: Math.round((haste - 1) * 100) });
   } else if (fighter.mageAbilities) {
     const theme = fighter.mageCycle ? t(`battle.theme_${fighter.mageCycle}`) : t('hud.preparing');
@@ -65,9 +72,9 @@ export function fighterHudState(fighter, battle, t) {
     battle.phase !== 'running' ? t('hud.preparing') : fighter.attack ? t('hud.attacking') :
     progress >= 1 ? t('battle.cooldown_ready') : t('hud.next_attack', { seconds: ((cooldown - fighter.cooldownElapsed) / haste).toFixed(1) });
   return {
-    health: number(fighter.health), maximum: number(fighter.maxHealth), healthRatio: clamp(fighter.health / fighter.maxHealth),
+    health: formatCombat(fighter.health), maximum: formatCombat(fighter.maxHealth), healthRatio: clamp(fighter.health / fighter.maxHealth),
     extraLabel, extraValue, extraRatio, status, attackState, progress,
-    attack: number(fighter.attack?.damage ?? (fighter.priestAbilities ? 0 : fighter.mageCycle ? fighter.mageAbilities.cycles[fighter.mageCycle][fighter.mageSpellIndex].damage : modeValue(fighter.attackValues, fighter.attackMode))),
+    attack: formatCombat(fighter.attack?.damage ?? (fighter.priestAbilities ? 0 : fighter.mageCycle ? fighter.mageAbilities.cycles[fighter.mageCycle][fighter.mageSpellIndex].damage : guardianDamage)),
     cooldown: `${(cooldown / haste).toFixed(1)} s`,
     speed: number(fighter.movementSpeed * movementFactor(fighter, now, battle.zones)),
     defeated: fighter.health <= 0
@@ -77,7 +84,7 @@ export function fighterHudState(fighter, battle, t) {
 export function battleEventText(event, t) {
   const name = fighter => fighter?.character ? t(fighter.character.nameKey) : fighter?.owner
     ? t(fighter.kind === 'companion' ? 'battle.companion_name' : 'battle.pack_wolf') : '';
-  const parameters = { name: name(event.fighter), target: name(event.target), amount: number(event.amount ?? 0) };
+  const parameters = { name: name(event.fighter), target: name(event.target), amount: formatCombat(event.amount ?? 0) };
   const keys = {
     'shield-damaged': 'hud.event_shield', 'shield-broken': 'hud.event_break',
     damage: 'hud.event_damage', 'damage-over-time': 'hud.event_dot', healed: 'hud.event_heal',
@@ -87,7 +94,7 @@ export function battleEventText(event, t) {
   };
   if (event.type === 'finished') return event.winner ? t('battle.winner', { name: name(event.winner) }) : t('battle.draw');
   if (event.type === 'launched') return t('hud.event_start');
-  if (event.type === 'attack-released' && event.fighter.guardian?.shield > 0) return t('hud.event_charge', parameters);
+  if (event.type === 'attack-released' && event.attack?.guardianMode === 'charge') return t('hud.event_charge', parameters);
   if (!keys[event.type] || (['damage', 'damage-over-time', 'shield-damaged', 'healed'].includes(event.type) && !(event.amount > 0))) return null;
   return t(keys[event.type], parameters);
 }
@@ -134,9 +141,9 @@ export function createBattleHud(elements, i18n) {
     for (const [key, value] of Object.entries(labels)) setText(view.fields[key], value);
     view.element.setAttribute('aria-label', t(`accessibility.side_${fighter.side}`));
     view.element.querySelector('.duel-portrait').alt = t('accessibility.portrait', { name });
-    view.fields.trait.dataset.tooltip = fighter.trait?.descriptionKey ? t(fighter.trait.descriptionKey) : '';
+    view.fields.trait.dataset.tooltip = fighterTraitDescription(fighter.character, { abilities: fighter.guardianAbilities ?? fighter.starAbilities }, t);
     view.health.setAttribute('aria-label', t('accessibility.health', { name }));
-    view.health.setAttribute('aria-valuemax', String(fighter.maxHealth));
+    view.health.setAttribute('aria-valuemax', formatCombat(fighter.maxHealth));
     setText(elements[`duel-name-${fighter.side}`], name);
   }
 
@@ -152,7 +159,7 @@ export function createBattleHud(elements, i18n) {
       if (!view) continue;
       const state = fighterHudState(fighter, battle, t);
       for (const key of ['health', 'maximum', 'extraLabel', 'extraValue', 'attack', 'cooldown', 'speed', 'status', 'attackState']) setText(view.fields[key], state[key]);
-      view.health.setAttribute('aria-valuenow', String(fighter.health));
+      view.health.setAttribute('aria-valuenow', state.health);
       view.healthFill.style.width = `${state.healthRatio * 100}%`;
       view.extra.dataset.empty = String(state.extraRatio === null);
       view.extraFill.style.width = `${(state.extraRatio ?? 0) * 100}%`;

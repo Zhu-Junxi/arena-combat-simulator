@@ -70,6 +70,18 @@ export const SETTING_PRESENTATIONS = Object.freeze({
 });
 
 export function presentationFor(key) {
+  if (key.startsWith('guardian_') || key.startsWith('star_')) {
+    const field = key.slice(key.indexOf('_') + 1);
+    if (field === 'hastePerStack') return { unit: 'unit.percent', display: DISPLAY_PERCENT, description: 'tooltip.special_setting', example: 'tooltip.current_value' };
+    const unit = /Duration|duration|windup|active|lifetime|shieldFlash/.test(field) ? 'unit.seconds_short' :
+      /Speed$/.test(field) ? 'unit.arena_units_per_second' :
+      /Distance|Radius|Width/.test(field) ? 'unit.arena_units' :
+      field === 'durability' ? 'unit.hp' :
+      /Damage$/.test(field) ? 'unit.damage_per_hit' :
+      /Degrees/.test(field) ? 'unit.degrees' :
+      /Factor|Scale/.test(field) ? 'unit.multiplier' : '';
+    return { unit, description: 'tooltip.special_setting', example: 'tooltip.current_value' };
+  }
   return SETTING_PRESENTATIONS[key] ?? { unit: '', description: 'tooltip.current_value', example: 'tooltip.current_value' };
 }
 

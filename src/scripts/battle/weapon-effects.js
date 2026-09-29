@@ -102,7 +102,7 @@ export function updateWeaponVisual(element, fighter, elapsed) {
     element.setAttribute('data-muzzle-x', String(fighter.x + Math.cos(attack.angle + rearAngle) * launch.orbitRadius));
     element.setAttribute('data-muzzle-y', String(fighter.y + Math.sin(attack.angle + rearAngle) * launch.orbitRadius));
     const charge = element.querySelector('.star-thought-charge');
-    charge.setAttribute('transform', `translate(${rearX} ${rearY})`);
+    charge.setAttribute('transform', `translate(${rearX} ${rearY}) scale(${Math.max(0.05, Math.min(100, fighter.starAbilities?.visualScale ?? 1))})`);
     charge.setAttribute('opacity', String(attack.released ? 0 : prepare));
     return;
   }
@@ -117,7 +117,7 @@ export function updateWeaponVisual(element, fighter, elapsed) {
     const swing = Math.max(0, Math.min(1, afterRelease / weapon.active));
     element.querySelector('.sword-trail').setAttribute('opacity', String(attack.released ? Math.sin(swing * Math.PI) * 0.45 : 0));
   } else if (weapon.art === 'shield') {
-    element.querySelector('.shield-impact').setAttribute('opacity', String(attack.released ? Math.max(0, 1 - afterRelease / 0.18) * 0.8 : 0));
+    element.querySelector('.shield-impact').setAttribute('opacity', String(attack.released ? Math.max(0, 1 - afterRelease / Math.max(0.001, weapon.active)) * 0.8 : 0));
   } else {
     const charge = element.querySelector('.cast-charge');
     charge.setAttribute('opacity', attack.released ? '0' : String(prepare * 0.8));
