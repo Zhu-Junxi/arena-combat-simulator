@@ -1,0 +1,12 @@
+{
+  "format": "arena-duel.character-default",
+  "version": 1,
+  "characterId": "war",
+  "stats": {
+    "health": 100,
+    "attack": [10],
+    "attackCD": [5],
+    "movementSpeed": 220,
+    "attackRange": 220
+  }
+}
