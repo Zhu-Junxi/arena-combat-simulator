@@ -1,5 +1,7 @@
 import { createGuardianVisual, renderGuardianVisual, GUARDIAN_VISUAL_SCALE } from './guardian-visuals.js';
 import { createBattleHud } from './battle-hud.js';
+import { createWarEntrance } from './war-entrance.js';
+import { WAR_VISUAL_SCALE, warBodyMarkup, createWarCombatVisual, renderWarCombatVisual } from './war-visuals.js';
 import { BATTLE_RULES } from '../config/combat.js';
 import { activeStarPassives, starAttackSpeed } from './star-passive.js';
 import { fighterTraitDescription } from '../customization/trait-description.js';
@@ -11,6 +13,7 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
   const hud = createBattleHud(elements, i18n);
   const fighterElements = new Map();
   const guardianElements = new Map();
+  const warElements = new Map();
   const attackElements = new WeakMap();
   const projectileElements = new WeakMap();
   const zoneElements = new WeakMap();
@@ -26,8 +29,15 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
       elements.battlefield.append(element);
     }
     const { character } = fighter;
+    element.dataset.fighterCharacter = character.id;
+    if (character.id === 'war') {
+      element.dataset.arrived = 'false';
+      element.style.setProperty('--war-seat', '0');
+      element.style.setProperty('--war-facing', fighter.side === 'right' ? '-1' : '1');
+      element.style.setProperty('--war-rider-x', fighter.side === 'right' ? '22%' : '14%');
+    }
     element.classList.toggle('has-art', Boolean(character.art));
-    element.innerHTML = (character.art ? `<img class="fighter-art" src="${character.art.battle}" alt="" draggable="false">` : '') +
+    element.innerHTML = (character.id === 'war' ? warBodyMarkup(character.art) : character.art ? `<img class="fighter-art" src="${character.art.battle}" alt="" draggable="false">` : '') +
       '<span class="fighter-name"></span><span class="control-label" hidden></span><span class="arcane-marks" hidden></span><span class="star-passive" hidden></span><span class="guardian-state" hidden></span><span class="summon-command" hidden></span><div class="fighter-status">' +
       '<div class="fighter-meter health-bar" role="progressbar" aria-valuemin="0"><span class="fighter-meter-fill"></span></div>' +
       '<div class="fighter-meter shield-bar" role="progressbar" aria-valuemin="0" hidden><span class="fighter-meter-fill"></span></div>' +
@@ -53,12 +63,22 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
     view.cooldownBar.setAttribute('aria-label', i18n.t('accessibility.cooldown', { name }));
     fighterElements.set(fighter, view);
     if (fighter.guardian) guardianElements.set(fighter, createGuardianVisual(fighter, elements['weapon-effects']));
+    if (fighter.war) warElements.set(fighter, createWarCombatVisual(fighter, elements['weapon-effects']));
   }
 
   function renderFighter(fighter, battle) {
     const { elapsed } = battle;
     const view = fighterElements.get(fighter);
     const ratio = healthRatio(fighter.health, fighter.maxHealth);
+    if (fighter.war) {
+      renderWarCombatVisual(warElements.get(fighter), fighter, battle);
+      const w = fighter.war;
+      view.element.dataset.warPhase = w.swing && !w.swing.finished ? 'swing' : w.phase;
+      view.element.style.setProperty('--war-facing', Math.cos(w.angle) < 0 ? '-1' : '1');
+      const moving = battle.phase === 'running' && elapsed >= fighter.rootUntil && Math.hypot(fighter.vx, fighter.vy) > 0;
+      const bob = moving ? Math.sin(elapsed * (w.charge ? 42 : 18)) * (w.charge ? 1.7 : .6) : 0;
+      view.element.querySelector('.war-body').style.transform = `translateY(${bob}%)`;
+    }
     if (fighter.guardian) {
       const { guardian } = fighter;
       const target = battle.fighters.find(other => other !== fighter);
@@ -138,7 +158,7 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
       elapsed: fighter.cooldownElapsed.toFixed(1), duration: effectiveCooldown
     });
     view.cooldownFill.style.transform = `scaleX(${progress})`;
-    if (fighter.attack && !fighter.guardian) updateWeaponVisual(attackElements.get(fighter.attack), fighter, elapsed);
+    if (fighter.attack && !fighter.guardian && !fighter.war) updateWeaponVisual(attackElements.get(fighter.attack), fighter, elapsed);
   }
 
   function buildSummonElement(summon) {
@@ -184,6 +204,7 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
     elements['combat-effects'].setAttribute('viewBox', `0 0 ${rules.size} ${rules.size}`);
     fighterElements.clear();
     guardianElements.clear();
+    warElements.clear();
     summonElements.clear();
     elements.battlefield.querySelectorAll('.fighter').forEach(element => element.remove());
     elements.battlefield.querySelectorAll('.summon').forEach(element => element.remove());
@@ -191,7 +212,7 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
     const fighterPercent = rules.fighterSize / rules.size * 100;
     battle.fighters.forEach(fighter => {
       const element = fighterElements.get(fighter).element;
-      const visualPercent = fighterPercent * (fighter.guardian ? Math.max(0.05, Math.min(100, fighter.guardianAbilities?.equipmentScale ?? GUARDIAN_VISUAL_SCALE)) : 1);
+      const visualPercent = fighterPercent * (fighter.guardian ? Math.max(0.05, Math.min(100, fighter.guardianAbilities?.equipmentScale ?? GUARDIAN_VISUAL_SCALE)) : fighter.war ? WAR_VISUAL_SCALE : 1);
       element.style.width = `${visualPercent}%`;
       element.style.height = `${visualPercent}%`;
     });
@@ -208,7 +229,7 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
     const { type } = event;
     if (type === 'reset') reset(event.battle);
     else hud.handleEvent(event);
-    if (type === 'attack-started' && !event.fighter.guardian) {
+    if (type === 'attack-started' && !event.fighter.guardian && !event.fighter.war) {
       const element = createSvgEffect('weapon', weaponMarkup(event.fighter.weapon, event.attack.empowered), elements['weapon-effects']);
       element.dataset.owner = event.fighter.side;
       element.dataset.kind = event.fighter.weapon.art;
@@ -303,13 +324,16 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
   return { handleEvent, render, reset, refreshLocalization };
 }
 
-export function createBattleRuntime({ engine, renderer, elements, getAppPhase, i18n }) {
+export function createBattleRuntime({ engine, renderer, elements, getAppPhase, i18n, entrance = createWarEntrance({ elements, i18n }) }) {
   let frame = 0;
   let launchAt = 0;
   let lastTime = 0;
   let accumulator = 0;
+  let entering = false;
 
   function stop() {
+    entrance.stop();
+    entering = false;
     cancelAnimationFrame(frame);
     frame = 0;
     launchAt = 0;
@@ -321,7 +345,13 @@ export function createBattleRuntime({ engine, renderer, elements, getAppPhase, i
     frame = 0;
     if (getAppPhase() !== 'arena' || engine.state.phase === 'idle') return;
     if (engine.state.phase === 'waiting') {
-      if (now < launchAt) {
+      if (entering) {
+        if (entrance.update(now)) {
+          entering = false;
+          engine.launch();
+          lastTime = now;
+        }
+      } else if (now < launchAt) {
         elements.countdown.textContent = String(Math.ceil((launchAt - now) / 1000));
       } else {
         engine.launch();
@@ -352,6 +382,12 @@ export function createBattleRuntime({ engine, renderer, elements, getAppPhase, i
     stop();
     engine.reset(selectedCharacters, matchSetup);
     engine.state.phase = 'waiting';
+    entering = entrance.begin(engine.state);
+    if (entering) {
+      elements.battlefield.dataset.battlePhase = 'entrance';
+      frame = requestAnimationFrame(tick);
+      return;
+    }
     launchAt = performance.now() + engine.state.rules.launchDelay;
     elements.battlefield.dataset.battlePhase = 'waiting';
     elements.countdown.textContent = String(Math.ceil(engine.state.rules.launchDelay / 1000));

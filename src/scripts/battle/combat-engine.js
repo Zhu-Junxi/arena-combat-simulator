@@ -1,4 +1,5 @@
 import { createGuardianState, absorbShieldDamage, beginCharge, createFlail, advanceFlail, resolveChainWalls } from './guardian.js';
+import { WAR_COMBAT, createWarState, warSwordPose, warSweepTouches, beginWarAttack, beginWarSwing, stopWarCharge, resetWarCycle } from './war-combat.js';
 import { BATTLE_RULES } from '../config/combat.js';
 import { createStarLaunch, createStarFlight, advanceStarFlight } from './star-flight.js';
 import { grantStarPassive, starCooldownAdvance } from './star-passive.js';
@@ -35,13 +36,14 @@ export function smoothStep(value) {
 }
 
 export function weaponPose(fighter, elapsed) {
+  if (fighter.war) return warSwordPose(fighter, elapsed);
   const { attack, weapon } = fighter;
   const age = Math.max(0, elapsed - attack.startedAt + (attack.hasteAgeBonus ?? 0));
   const prepare = smoothStep(age / Math.max(0.001, weapon.windup));
   const recovery = Math.max(0, Math.min(1, (age - weapon.windup - 0.04) / Math.max(0.001, weapon.duration - weapon.windup - 0.04)));
   let angle = attack.angle;
   let shift = 0;
-  if (weapon.art === 'sword') {
+  if (weapon.art === 'sword' || weapon.art === 'war-sword') {
     angle += age < weapon.windup ? -1 + 0.22 * prepare : -0.78 + 1.65 * smoothStep((age - weapon.windup) / weapon.active);
   } else if (weapon.art === 'shield') {
     shift = age < weapon.windup ? -24 * (1 - prepare) : -18 * smoothStep(recovery);
@@ -84,6 +86,7 @@ export function weaponIntersectsTarget(fighter, target, pose, rules = BATTLE_RUL
 
 export function canAttack(fighter, target, rules = BATTLE_RULES) {
   if (!target || fighter.health <= 0 || target.health <= 0) return false;
+  if (fighter.war) return fighter.war.phase === 'move';
   if (fighter.guardian) {
     if (fighter.guardian.flail || fighter.guardian.dash) return false;
     const abilities = fighter.guardianAbilities ?? defaultGuardianAbilities();
@@ -275,6 +278,8 @@ export function createFighter(side, character, weapon, index, settings = null, r
     hitUntil: 0,
     attacksFired: 0,
     starPassive: {},
+    war: character.id === 'war' ? createWarState(side) : null,
+    knockback: null,
     guardian: guardianAbilities ? createGuardianState(guardianAbilities) : null,
     guardianAbilities,
     starAbilities,
@@ -314,7 +319,8 @@ export function advanceMovement(fighters, seconds, now, rules = BATTLE_RULES, zo
   let elapsed = 0;
   const factor = fighter => movementFactor(fighter, now + elapsed, zones);
   const velocity = (fighter, axis) => {
-    const dash = fighter.guardian?.dash;
+    if (fighter.knockback) return (axis === 'x' ? Math.cos(fighter.knockback.angle) : Math.sin(fighter.knockback.angle)) * fighter.knockback.speed;
+    const dash = fighter.war?.charge ?? fighter.guardian?.dash;
     const speed = dash ? (axis === 'x' ? Math.cos(dash.angle) : Math.sin(dash.angle)) * dash.speed : fighter[`v${axis}`];
     return speed * factor(fighter);
   };
@@ -593,6 +599,14 @@ export function createCombatEngine({
   }
 
   function startAttack(fighter, target) {
+    if (fighter.war) {
+      if (fighter.war.phase !== 'move' || fighter.health <= 0 || target.health <= 0) return null;
+      const attack = beginWarAttack(fighter, target, battle.elapsed, modeValue(fighter.attackValues, 0));
+      grantStarPassive(target, 'enemy-attack', battle.elapsed);
+      emit('attack-started', { fighter, attack });
+      emit('war-charge-started', { fighter, attack });
+      return attack;
+    }
     if (fighter.guardian?.flail || fighter.guardian?.dash) return null;
     prepareMageCycle(fighter);
     const elemental = isElementalMage(fighter);
@@ -689,6 +703,7 @@ export function createCombatEngine({
     const alive = battle.phase === 'running';
     battle.fighters.forEach(fighter => {
       const target = selectTarget(fighter);
+      if (fighter.war) { updateWarAttack(fighter, target, alive); return; }
       if (!target) return;
       updatePrayer(fighter, target);
       if (!fighter.attack) prepareMageCycle(fighter);
@@ -723,6 +738,59 @@ export function createCombatEngine({
         fighter.attack = null;
       }
     });
+  }
+
+  function updateWarAttack(fighter, target, alive) {
+    const w = fighter.war;
+    if (!alive || fighter.health <= 0 || !target) {
+      if (fighter.attack) emit('attack-ended', { fighter, attack: fighter.attack });
+      resetWarCycle(fighter);
+      return;
+    }
+    if (w.phase === 'move') {
+      w.angle = facingAngle(fighter, target);
+      if (!fighter.knockback && fighter.cooldownElapsed >= fighter.attackCooldown * priestMarkAttackCooldownFactor(fighter) - 1e-9) startAttack(fighter, target);
+      else return;
+    }
+    const targets = [...battle.fighters.filter(other => other !== fighter && other.health > 0),
+      ...battle.summons.filter(s => s.targetable && s.owner !== fighter && s.health > 0)];
+    if (!w.swing && (!w.charge || targets.some(other => warSweepTouches(fighter, other,
+      warSwordPose(fighter, battle.elapsed).angle, w.angle - w.side * Math.PI / 2)))) {
+      beginWarSwing(fighter, battle.elapsed);
+      emit('attack-released', { fighter, attack: fighter.attack });
+      emit('war-swing', { fighter, attack: fighter.attack });
+    }
+    if (w.swing && !w.swing.finished) {
+      const pose = warSwordPose(fighter, battle.elapsed);
+      for (const other of targets) {
+        if (fighter.attack.hitTargets.has(other) || !warSweepTouches(fighter, other, w.swing.previousAngle, pose.angle)) continue;
+        fighter.attack.hitTargets.add(other);
+        fighter.attack.hit = true;
+        const amount = applyDirectDamage(fighter, other, fighter.attack.damage);
+        if (other.health > 0) {
+          const angle = facingAngle(fighter, other);
+          stopWarCharge(other);
+          endCharge(other);
+          other.knockback = { angle, remaining: WAR_COMBAT.knockbackDistance,
+            speed: WAR_COMBAT.knockbackDistance / WAR_COMBAT.knockbackDuration };
+          const speed = other.movementSpeed ?? 0;
+          other.vx = Math.cos(angle) * speed; other.vy = Math.sin(angle) * speed;
+          if (other.kind) {
+            const half = other.bodySize / 2;
+            other.x = Math.max(half, Math.min(battle.rules.size - half, other.x + Math.cos(angle) * WAR_COMBAT.knockbackDistance));
+            other.y = Math.max(half, Math.min(battle.rules.size - half, other.y + Math.sin(angle) * WAR_COMBAT.knockbackDistance));
+            other.knockback = null;
+          }
+        }
+        emit('war-sweep-hit', { fighter, target: other, amount });
+      }
+      w.swing.previousAngle = pose.angle;
+      w.swing.finished = battle.elapsed >= w.swing.startedAt + WAR_COMBAT.swingDuration - 1e-9;
+    }
+    if (!w.charge && w.swing?.finished && battle.elapsed >= w.swing.startedAt + WAR_COMBAT.swingDuration + WAR_COMBAT.recovery - 1e-9) {
+      emit('attack-ended', { fighter, attack: fighter.attack });
+      resetWarCycle(fighter, true);
+    }
   }
 
   function endCharge(fighter, target = null) {
@@ -1117,11 +1185,11 @@ export function createCombatEngine({
     const end = battle.elapsed + seconds;
     let now = battle.elapsed;
     while (now < end - 1e-10) {
-      const hasGuardianMotion = battle.fighters.some(fighter => fighter.guardian?.dash || fighter.guardian?.flail?.phase === 'grounded');
-      let until = hasGuardianMotion ? Math.min(end, now + 1 / 120) : end;
+      const hasSpecialMotion = battle.fighters.some(fighter => fighter.war?.charge || fighter.knockback || fighter.guardian?.dash || fighter.guardian?.flail?.phase === 'grounded');
+      let until = hasSpecialMotion ? Math.min(end, now + 1 / 120) : end;
       battle.fighters.forEach(fighter => {
-        const dash = fighter.guardian?.dash;
-        const speed = dash ? dash.speed * movementFactor(fighter, now, battle.zones) : 0;
+        const dash = fighter.knockback ?? fighter.war?.charge ?? fighter.guardian?.dash;
+        const speed = dash ? dash.speed * (fighter.knockback ? 1 : movementFactor(fighter, now, battle.zones)) : 0;
         if (speed > 0) until = Math.min(until, now + dash.remaining / speed);
         for (const expiry of [fighter.rootUntil, fighter.slowUntil]) {
           if (expiry > now + 1e-9 && expiry < until) until = expiry;
@@ -1133,10 +1201,14 @@ export function createCombatEngine({
       const previous = new Map(battle.fighters.map(fighter => [fighter, { x: fighter.x, y: fighter.y }]));
       const dashDistances = new Map(battle.fighters.filter(fighter => fighter.guardian?.dash).map(fighter =>
         [fighter, fighter.guardian.dash.speed * movementFactor(fighter, now, battle.zones) * (until - now)]));
+      const warDistances = new Map(battle.fighters.filter(f => f.war?.charge).map(f =>
+        [f, f.war.charge.speed * movementFactor(f, now, battle.zones) * (until - now)]));
+      const knockDistances = new Map(battle.fighters.filter(f => f.knockback).map(f => [f, f.knockback.speed * (until - now)]));
       advanceMovement(battle.fighters, until - now, now, battle.rules, battle.zones, contact => {
-        if (contact.type === 'wall') endCharge(contact.fighter);
+        if (contact.type === 'wall') { endCharge(contact.fighter); stopWarCharge(contact.fighter); contact.fighter.knockback = null; }
         if (contact.type === 'fighters') {
           const pair = [contact.first, contact.second];
+          pair.forEach(fighter => { stopWarCharge(fighter); fighter.knockback = null; });
           const charging = pair.filter(fighter => fighter.guardian?.dash);
           // Resolve both impacts when two guardians charge into each other.
           const hits = charging.map(fighter => [fighter, pair.find(other => other !== fighter), fighter.guardian.dash.attack]);
@@ -1149,12 +1221,24 @@ export function createCombatEngine({
           });
         }
       });
-      resolveChainWalls(battle.fighters, previous, battle.rules, now, fighter => endCharge(fighter));
+      resolveChainWalls(battle.fighters, previous, battle.rules, now, fighter => { endCharge(fighter); stopWarCharge(fighter); fighter.knockback = null; });
       dashDistances.forEach((distance, fighter) => {
         const dash = fighter.guardian?.dash;
         if (!dash) return;
         dash.remaining -= distance;
         if (dash.remaining <= 1e-7) endCharge(fighter);
+      });
+      warDistances.forEach((distance, fighter) => {
+        const dash = fighter.war.charge;
+        if (!dash) return;
+        fighter.war.travelled += distance;
+        dash.remaining -= distance;
+        if (dash.remaining <= 1e-7) stopWarCharge(fighter);
+      });
+      knockDistances.forEach((distance, fighter) => {
+        if (!fighter.knockback) return;
+        fighter.knockback.remaining -= distance;
+        if (fighter.knockback.remaining <= 1e-7) fighter.knockback = null;
       });
       now = until;
     }
@@ -1200,6 +1284,11 @@ export function createCombatEngine({
     battle.zones = [];
     battle.summons.slice().forEach(summon => removeSummon(summon, 'finished'));
     battle.fighters.forEach(fighter => {
+      if (fighter.war) {
+        if (fighter.attack) emit('attack-ended', { fighter, attack: fighter.attack });
+        resetWarCycle(fighter);
+      }
+      fighter.knockback = null;
       if (fighter.guardian) {
         endCharge(fighter);
         if (fighter.guardian.flail) emit('flail-removed', { fighter, flail: fighter.guardian.flail });
@@ -1215,7 +1304,7 @@ export function createCombatEngine({
     return winner;
   }
 
-  function step(seconds) {
+  function stepSlice(seconds) {
     if (battle.phase !== 'running') return;
     battle.fighters.forEach(fighter => {
       fighter.prevX = fighter.x;
@@ -1241,6 +1330,17 @@ export function createCombatEngine({
     if (battle.fighters.filter(fighter => fighter.health > 0).length <= 1) finish();
   }
 
+  function step(seconds) {
+    if (!battle.fighters.some(fighter => fighter.war)) { stepSlice(seconds); return; }
+    // Fast half-turns and target-entry checks must not tunnel when a caller
+    // advances a long replay frame or changes the battle time scale.
+    let remaining = seconds;
+    while (remaining > 1e-10 && battle.phase === 'running') {
+      const slice = Math.min(remaining, 1 / 120);
+      stepSlice(slice); remaining -= slice;
+    }
+  }
+
   function launch() {
     const firstAngle = random() * Math.PI * 2;
     const angles = battle.fighters.length === 2
@@ -1249,6 +1349,10 @@ export function createCombatEngine({
     battle.fighters.forEach((fighter, index) => {
       fighter.vx = Math.cos(angles[index]) * fighter.movementSpeed;
       fighter.vy = Math.sin(angles[index]) * fighter.movementSpeed;
+      if (fighter.war) {
+        const target = selectTarget(fighter);
+        if (target) fighter.war.angle = facingAngle(fighter, target);
+      }
     });
     battle.phase = 'running';
     emit('launched');

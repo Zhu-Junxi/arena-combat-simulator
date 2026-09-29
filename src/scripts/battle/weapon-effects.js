@@ -27,6 +27,9 @@ function starSparkMarkup() {
 }
 
 export function weaponMarkup(weapon, empowered = false) {
+  if (weapon.art === 'war-sword') {
+    return '<path class="sword-trail war-sword-trail" d="M126 -66Q176 -43 185 -5" fill="none" stroke="currentColor" stroke-width="3" opacity="0"/><g transform="translate(26 0) rotate(-90)"><image href="assets/weapons/war-greatsword.png" x="-39.5" y="0" width="79" height="158"/></g>';
+  }
   if (weapon.art === 'star-thought') {
     return '<g class="star-thought-charge">' + starSparkMarkup() + '</g>';
   }
@@ -113,7 +116,7 @@ export function updateWeaponVisual(element, fighter, elapsed) {
     const arrow = element.querySelector('.nocked-arrow');
     arrow.setAttribute('transform', `translate(${pull} 0)`);
     arrow.setAttribute('opacity', attack.released ? '0' : String(Math.min(1, prepare * 3)));
-  } else if (weapon.art === 'sword') {
+  } else if (weapon.art === 'sword' || weapon.art === 'war-sword') {
     const swing = Math.max(0, Math.min(1, afterRelease / weapon.active));
     element.querySelector('.sword-trail').setAttribute('opacity', String(attack.released ? Math.sin(swing * Math.PI) * 0.45 : 0));
   } else if (weapon.art === 'shield') {
