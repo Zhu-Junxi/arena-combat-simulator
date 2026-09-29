@@ -13,7 +13,7 @@ test('index is a clean application shell with external CSS and module JavaScript
   assert.doesNotMatch(html, /<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?[^\s][\s\S]*?<\/script>/i);
   assert.match(html, /<script type="module" src="src\/scripts\/app\.js"><\/script>/);
   assert.match(html, /<script src="src\/scripts\/theme\/theme-bootstrap\.js"><\/script>/);
-  for (const stylesheet of ['base', 'layout', 'selection', 'customization', 'duel-presets', 'battle', 'responsive']) {
+  for (const stylesheet of ['base', 'layout', 'selection', 'customization', 'duel-presets', 'battle', 'responsive', 'battle-layout', 'polish']) {
     assert.match(html, new RegExp(`src/styles/${stylesheet}\\.css`));
   }
 });

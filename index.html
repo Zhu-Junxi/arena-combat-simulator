@@ -29,6 +29,7 @@
 <link rel="preload" as="image" href="assets/characters/war/battle.png">
 <link rel="preload" as="image" href="assets/characters/war/horse.png">
 <link rel="preload" as="image" href="assets/weapons/war-greatsword.png">
+<link rel="stylesheet" href="src/styles/polish.css">
 </head>
 <body data-i18n-ready="false">
 <div class="bootstrap-status" id="bootstrap-status" role="status" data-i18n="bootstrap.loading">Loading language data… / 正在加载语言数据…</div>
@@ -79,9 +80,10 @@
 <path class="start-art-highlight" d="m35 71 4 4-4 4-4-4Zm230 0 4 4-4 4-4-4Z"/>
 </svg><span data-i18n="action.start"></span></button></div>
     <section class="dock" id="dock" data-expanded="false" data-i18n-aria-label="accessibility.character_select">
-      <button class="settings-toggle" id="settings-toggle" type="button" aria-expanded="false" aria-controls="settings-panel" data-i18n-aria-label="customization.expand" data-i18n-tooltip="tooltip.settings">
+      <button class="settings-toggle" id="settings-toggle" type="button" aria-expanded="false" aria-controls="settings-panel roster-grid-panel" data-i18n-aria-label="customization.expand" data-i18n-tooltip="tooltip.settings">
         <span aria-hidden="true">▲</span>
       </button>
+      <button class="roster-grid-toggle" id="roster-grid-toggle" type="button" aria-expanded="false" aria-controls="roster-grid-panel" aria-hidden="true" hidden data-i18n-aria-label="selection.grid_open" data-i18n-tooltip="selection.grid_open"><span aria-hidden="true">▲</span></button>
       <section class="settings-panel" id="settings-panel" aria-hidden="true" inert data-i18n-aria-label="customization.heading">
         <header class="settings-toolbar">
           <div><span data-i18n="customization.eyebrow"></span><h2 data-i18n="customization.heading"></h2></div>
@@ -104,6 +106,11 @@
         <div class="settings-tabs" id="settings-tabs" role="tablist" data-i18n-aria-label="customization.tabs"></div>
         <div class="settings-content" id="settings-content"></div>
       </section>
+      <section class="roster-grid-panel" id="roster-grid-panel" aria-hidden="true" inert aria-labelledby="roster-grid-heading">
+        <header class="roster-grid-heading"><div><span data-i18n="selection.grid_eyebrow"></span><h2 id="roster-grid-heading" data-i18n="selection.grid_heading"></h2></div><div class="roster-grid-actions"><div class="roster-grid-sides" id="roster-grid-sides" role="group" data-i18n-aria-label="selection.grid_side_label"></div><button id="roster-grid-start" type="button" data-i18n="action.start" data-i18n-tooltip="tooltip.start"></button></div></header>
+        <div class="roster-grid-filters" id="roster-grid-filters" role="group" data-i18n-aria-label="selection.grid_filter_label"></div>
+        <div class="roster-grid-cards" id="roster-grid-cards" role="group" data-i18n-aria-label="accessibility.roster"></div>
+      </section>
       <div class="dock-main">
         <aside class="category-rail" data-i18n-aria-label="accessibility.category_rail">
           <button class="category-scroll" id="categories-up" data-i18n-aria-label="accessibility.categories_up" data-i18n-title="accessibility.categories_up" data-i18n-tooltip="tooltip.scroll_categories">▲</button>
@@ -117,7 +124,7 @@
       </div>
     </section>
   </section>
-  <footer><span id="status" role="status" aria-live="polite"></span><span id="view-label"></span></footer>
+  <footer><span id="status" role="status" aria-live="polite"></span><div class="footer-settings"><button id="global-settings-toggle" type="button" aria-expanded="false" aria-controls="global-settings-popover" data-i18n-aria-label="global_settings.open" data-i18n-tooltip="global_settings.open"><span id="view-label"></span><span class="footer-settings-icon" aria-hidden="true">⚙</span></button><section id="global-settings-popover" class="global-settings-popover" role="dialog" aria-modal="false" aria-labelledby="global-settings-heading" hidden inert><div class="global-settings-head"><h2 id="global-settings-heading" data-i18n="global_settings.heading"></h2><button id="global-settings-close" type="button" data-i18n-aria-label="global_settings.close" data-i18n-tooltip="global_settings.close">×</button></div><p data-i18n="global_settings.placeholder"></p></section></div></footer>
 </main>
 <div id="feedback-toast" class="feedback-toast" aria-hidden="true" hidden></div>
 <dialog id="preset-dialog" class="preset-dialog" aria-labelledby="preset-heading">

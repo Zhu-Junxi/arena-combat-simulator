@@ -7,6 +7,7 @@ export function createSelectionView({ state, characters, categories, elements, i
   const sideName = side => t(`side.${side}`);
   const categoryName = category => t(`category.${category}`);
   const visibleCharacters = () => characters.filter(character => character.category === state.category);
+  let gridCategory = 'all';
 
   function formatStat(value, { cooldown = false, unit = '' } = {}) {
     if (value == null) return '—';
@@ -67,10 +68,16 @@ export function createSelectionView({ state, characters, categories, elements, i
       category: categoryName(state.category),
       count: visibleCharacters().length
     });
-    document.querySelectorAll('[data-category]').forEach(button => {
+    elements.categories.querySelectorAll('[data-category]').forEach(button => {
       button.setAttribute('aria-pressed', String(button.dataset.category === state.category));
     });
-    document.querySelectorAll('[data-character]').forEach(button => {
+    elements['roster-grid-filters'].querySelectorAll('[data-grid-category]').forEach(button => {
+      button.setAttribute('aria-pressed', String(button.dataset.gridCategory === gridCategory));
+    });
+    elements['roster-grid-sides'].querySelectorAll('[data-grid-side]').forEach(button => {
+      button.setAttribute('aria-pressed', String(button.dataset.gridSide === state.side));
+    });
+    elements.dock.querySelectorAll('[data-character]').forEach(button => {
       const id = button.dataset.character;
       button.setAttribute('aria-pressed', String(state[state.side].id === id));
       const badge = button.querySelector('.badge');
@@ -82,17 +89,34 @@ export function createSelectionView({ state, characters, categories, elements, i
     });
   }
 
+  function characterCard(character) {
+    const name = characterName(character);
+    const locked = Boolean(character.locked);
+    return `<button class="character${locked ? ' locked' : ''}"${locked ? ' disabled' : ` data-character="${character.id}"`} aria-label="${locked ? t('selection.coming_soon', { name }) : t('selection.character_aria', { name })}" aria-pressed="false" data-tooltip="${locked ? t('tooltip.coming_soon') : t('tooltip.character')}">` +
+      `<span class="mini-avatar${character.art ? ' has-art' : ''}">` +
+      (character.art ? `<img class="avatar-image" src="${character.art.avatar}" alt="" draggable="false">` : t('character.placeholder.avatar')) +
+      `</span><span class="name">${name}</span>${locked ? `<small class="coming-soon">${t(character.roleKey)} · ${t('selection.coming_soon_short')}</small>` : '<span class="badge" hidden></span>'}</button>`;
+  }
+
   function renderRoster() {
-    elements.roster.innerHTML = visibleCharacters().map(character => {
-      const name = characterName(character);
-      const locked = Boolean(character.locked);
-      return `<button class="character${locked ? ' locked' : ''}"${locked ? ' disabled' : ` data-character="${character.id}"`} aria-label="${locked ? t('selection.coming_soon', { name }) : t('selection.character_aria', { name })}" aria-pressed="false" data-tooltip="${locked ? t('tooltip.coming_soon') : t('tooltip.character')}">` +
-        `<span class="mini-avatar${character.art ? ' has-art' : ''}">` +
-        (character.art ? `<img class="avatar-image" src="${character.art.avatar}" alt="" draggable="false">` : t('character.placeholder.avatar')) +
-        `</span><span class="name">${name}</span>${locked ? `<small class="coming-soon">${t(character.roleKey)} · ${t('selection.coming_soon_short')}</small>` : '<span class="badge" hidden></span>'}</button>`;
-    }).join('');
+    elements.roster.innerHTML = visibleCharacters().map(characterCard).join('');
     elements.roster.scrollTop = 0;
     syncSelection();
+  }
+
+  function renderGrid() {
+    elements['roster-grid-sides'].innerHTML = ['left', 'right'].map(side =>
+      `<button type="button" data-grid-side="${side}" aria-pressed="false">${t('selection.grid_side', { side: sideName(side) })}</button>`).join('');
+    elements['roster-grid-filters'].innerHTML = ['all', ...categories].map(category =>
+      `<button type="button" data-grid-category="${category}" aria-pressed="false">${category === 'all' ? t('selection.grid_all') : categoryName(category)}</button>`).join('');
+    elements['roster-grid-cards'].innerHTML = characters.filter(character => gridCategory === 'all' || character.category === gridCategory).map(characterCard).join('');
+    syncSelection();
+  }
+
+  function setGridCategory(category) {
+    if (category !== 'all' && !categories.includes(category)) return;
+    gridCategory = category;
+    renderGrid();
   }
 
   function updateCategoryScrollButtons() {
@@ -113,8 +137,19 @@ export function createSelectionView({ state, characters, categories, elements, i
     renderPanel('left');
     renderPanel('right');
     renderRoster();
+    renderGrid();
     updateCategoryScrollButtons();
   }
 
-  return { render, refresh: render, renderPanel, renderRoster, syncSelection, updateCategoryScrollButtons, visibleCharacters, sideName, categoryName, characterName };
+  function refresh() {
+    const focused = document.activeElement;
+    const grid = elements['roster-grid-panel'];
+    const selector = grid.contains(focused) && (focused?.dataset.gridSide ? `[data-grid-side="${focused.dataset.gridSide}"]` :
+      focused?.dataset.gridCategory ? `[data-grid-category="${focused.dataset.gridCategory}"]` :
+      focused?.dataset.character ? `[data-character="${focused.dataset.character}"]` : null);
+    render();
+    if (selector) grid.querySelector(selector)?.focus({ preventScroll: true });
+  }
+
+  return { render, refresh, renderPanel, renderRoster, renderGrid, setGridCategory, syncSelection, updateCategoryScrollButtons, visibleCharacters, sideName, categoryName, characterName };
 }

@@ -1,9 +1,10 @@
 import { MOTION } from '../config/combat.js';
 
-export function createTransitions({ state, elements, panels, beginBattle, resetBattle, collapseCustomization = () => {}, i18n }) {
+export function createTransitions({ state, elements, panels, beginBattle, resetBattle, collapseCustomization = () => {}, closeGlobalSettings = () => {}, i18n }) {
   const animations = [];
 
   async function slide(element, transform, duration, from = 'translate(0, 0)') {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) duration = 0;
     const animation = element.animate([{ transform: from }, { transform }], {
       duration,
       easing: MOTION.easing,
@@ -14,6 +15,7 @@ export function createTransitions({ state, elements, panels, beginBattle, resetB
   }
 
   function resetSelection() {
+    closeGlobalSettings();
     collapseCustomization();
     resetBattle();
     animations.forEach(animation => animation.cancel());
@@ -34,6 +36,7 @@ export function createTransitions({ state, elements, panels, beginBattle, resetB
 
   async function enterArena() {
     if (state.phase !== 'select') return;
+    closeGlobalSettings();
     collapseCustomization();
     state.phase = 'lowering';
     elements.stage.dataset.phase = state.phase;
@@ -45,13 +48,13 @@ export function createTransitions({ state, elements, panels, beginBattle, resetB
     const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
     try {
       elements.status.textContent = i18n.t('transition.lowering');
-      await slide(elements.dock, 'translateY(102%)', reduceMotion ? 120 : MOTION.dockDuration);
+      await slide(elements.dock, 'translateY(102%)', reduceMotion ? 0 : MOTION.dockDuration);
       state.phase = 'opening';
       elements.stage.dataset.phase = state.phase;
       elements.status.textContent = i18n.t('transition.opening');
       await Promise.all([
-        slide(panels[0], 'translateX(-102%)', reduceMotion ? 120 : MOTION.panelDuration),
-        slide(panels[1], 'translateX(102%)', reduceMotion ? 120 : MOTION.panelDuration)
+        slide(panels[0], 'translateX(-102%)', reduceMotion ? 0 : MOTION.panelDuration),
+        slide(panels[1], 'translateX(102%)', reduceMotion ? 0 : MOTION.panelDuration)
       ]);
       state.phase = 'arena';
       elements.stage.dataset.phase = state.phase;
@@ -69,6 +72,7 @@ export function createTransitions({ state, elements, panels, beginBattle, resetB
 
   async function returnToSelection() {
     if (state.phase !== 'arena') return;
+    closeGlobalSettings();
     resetBattle();
     state.phase = 'closing';
     elements.stage.dataset.phase = state.phase;
@@ -78,14 +82,14 @@ export function createTransitions({ state, elements, panels, beginBattle, resetB
     try {
       elements.status.textContent = i18n.t('transition.closing');
       await Promise.all([
-        slide(panels[0], 'translateX(0)', reduceMotion ? 120 : MOTION.panelDuration, 'translateX(-102%)'),
-        slide(panels[1], 'translateX(0)', reduceMotion ? 120 : MOTION.panelDuration, 'translateX(102%)')
+        slide(panels[0], 'translateX(0)', reduceMotion ? 0 : MOTION.panelDuration, 'translateX(-102%)'),
+        slide(panels[1], 'translateX(0)', reduceMotion ? 0 : MOTION.panelDuration, 'translateX(102%)')
       ]);
       state.phase = 'raising';
       elements.stage.dataset.phase = state.phase;
       elements.arena.setAttribute('aria-hidden', 'true');
       elements.status.textContent = i18n.t('transition.raising');
-      await slide(elements.dock, 'translateY(0)', reduceMotion ? 120 : MOTION.dockDuration, 'translateY(102%)');
+      await slide(elements.dock, 'translateY(0)', reduceMotion ? 0 : MOTION.dockDuration, 'translateY(102%)');
       resetSelection();
     } catch (error) {
       resetSelection();
@@ -96,6 +100,7 @@ export function createTransitions({ state, elements, panels, beginBattle, resetB
 
   function bind() {
     elements.start.addEventListener('click', enterArena);
+    elements['roster-grid-start'].addEventListener('click', enterArena);
     elements.back.addEventListener('click', returnToSelection);
     document.addEventListener('keydown', event => {
       if (event.key === 'Escape' && state.phase === 'arena') returnToSelection();

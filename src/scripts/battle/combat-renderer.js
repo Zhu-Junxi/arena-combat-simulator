@@ -2,6 +2,7 @@ import { createGuardianVisual, renderGuardianVisual, GUARDIAN_VISUAL_SCALE } fro
 import { createBattleHud } from './battle-hud.js';
 import { createWarEntrance } from './war-entrance.js';
 import { WAR_VISUAL_SCALE, warBodyMarkup, createWarCombatVisual, renderWarCombatVisual } from './war-visuals.js';
+import { clearResultReveal, showResultReveal } from './result-reveal.js';
 import { BATTLE_RULES } from '../config/combat.js';
 import { activeStarPassives, starAttackSpeed } from './star-passive.js';
 import { fighterTraitDescription } from '../customization/trait-description.js';
@@ -218,6 +219,7 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
     });
     battle.summons.forEach(buildSummonElement);
     elements.battlefield.dataset.battlePhase = 'idle';
+    clearResultReveal(elements.arena);
     elements.countdown.hidden = true;
     elements.countdown.textContent = '';
     elements['battle-note'].textContent = i18n.t('battle.ready');
@@ -286,6 +288,7 @@ export function createCombatRenderer(elements, i18n, initialRules = BATTLE_RULES
     }
     if (type === 'finished') {
       elements.battlefield.dataset.battlePhase = 'finished';
+      showResultReveal(elements.arena, event.winner);
       elements.countdown.textContent = event.winner ? i18n.t('battle.winner', { name: i18n.t(event.winner.character.nameKey) }) : i18n.t('battle.draw');
       elements.countdown.hidden = false;
       elements['battle-note'].textContent = i18n.t('battle.finished');
