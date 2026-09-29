@@ -56,6 +56,7 @@ export function createSettingsView({ state, settings, elements, i18n }) {
     });
     const signature = ({
       warrior: () => [basic('attack', 0), basic('attackCD', 0), trait('reduction')],
+      war: () => [basic('attack', 0), basic('attackCD', 0), basic('attackRange')],
       archer: () => [basic('attack', 0), basic('attackCD', 0), trait('every')],
       guardian: () => [basic('attack', 0), basic('attackCD', 0), ability('special', 'durability', GUARDIAN_ABILITY_CONTROLS)],
       mage: () => ['markDuration', 'maxMarks', 'damagePerMark'].map(key => ability('mage', key, MAGE_ABILITY_CONTROLS, `effects.${key}`)),
@@ -92,7 +93,7 @@ export function createSettingsView({ state, settings, elements, i18n }) {
         scope: side, key: 'weapon', magePath: key, presentationKey: `weapon_${key}` })).join('')}</div></section>` : '';
     const detailedBasics = (character.id === 'beastmaster' ? attackRows + cooldownRows : '') +
       (values.projectileSpeed == null ? '' : basic('projectileSpeed')) +
-      (values.attackRange == null ? '' : basic('attackRange'));
+      (values.attackRange == null || character.id === 'war' ? '' : basic('attackRange'));
     const detailed = (detailedBasics ? `<div class="settings-grid">${detailedBasics}</div>` : '') +
       traitRows + weaponRows + mageRows + priestRows + summonRows + specialRows;
     return `<section class="settings-sheet" role="tabpanel" id="settings-panel-${side}" aria-labelledby="settings-tab-${side}">` +
