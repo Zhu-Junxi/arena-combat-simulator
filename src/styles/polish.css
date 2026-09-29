@@ -1,0 +1,113 @@
+:root { --ui-ease: cubic-bezier(.22, .75, .2, 1); --ui-fast: 180ms; --ui-medium: 320ms; }
+
+.dock { transition: height 420ms var(--ui-ease); }
+.settings-toggle, .settings-toggle span, .category, .character, .avatar, .start-control button, .roster-grid-toggle, .roster-grid-toggle span { transition-timing-function: var(--ui-ease); }
+.feedback-toast, .settings-sheet-reveal, .preset-dialog[open], .preset-dialog[open]::backdrop, .preset-dialog[open] .preset-tile, .preset-inline-panel:not([hidden]) { animation-timing-function: var(--ui-ease); }
+.settings-panel { transition: opacity var(--ui-fast) var(--ui-ease), transform var(--ui-medium) var(--ui-ease), visibility 0s linear var(--ui-medium); }
+.dock[data-expanded="true"][data-grid-open="true"] .settings-panel { opacity: 0; visibility: hidden; transform: translateY(-10px); pointer-events: none; transition-delay: 0s, 0s, var(--ui-medium); }
+.roster-grid-toggle { position: absolute; z-index: 9; left: 50%; top: calc(100% - var(--dock-height) + 3px); width: 54px; height: 28px; padding: 0; transform: translate(-50%, -50%); display: grid; place-items: center; border: 1px solid var(--color-border); background: var(--color-surface); }
+.roster-grid-toggle::before, .roster-grid-toggle::after { content: ""; position: absolute; top: 5px; bottom: 5px; width: 1px; background: var(--color-border); opacity: .35; }
+.roster-grid-toggle::before { left: 8px; }
+.roster-grid-toggle::after { right: 8px; }
+.roster-grid-toggle span { font-size: 11px; transition: transform var(--ui-fast) var(--ui-ease); }
+.dock[data-grid-open="true"] .roster-grid-toggle span { transform: rotate(180deg); }
+.dock:not([data-expanded="true"]) .roster-grid-toggle { display: none; }
+.roster-grid-panel { position: absolute; z-index: 2; inset: 0 0 calc(var(--dock-height) - 6px); min-width: 0; display: flex; flex-direction: column; gap: 16px; padding: clamp(42px, 4vw, 54px) clamp(20px, 4vw, 58px) 20px; background: var(--color-surface); opacity: 0; visibility: hidden; transform: translateY(16px); pointer-events: none; transition: opacity var(--ui-fast) var(--ui-ease), transform var(--ui-medium) var(--ui-ease), visibility 0s linear var(--ui-medium); }
+.dock[data-expanded="true"][data-grid-open="true"] .roster-grid-panel { opacity: 1; visibility: visible; transform: none; pointer-events: auto; transition-delay: 0s, 0s, 0s; }
+.roster-grid-heading { display: flex; justify-content: space-between; align-items: end; gap: 16px; border-bottom: 1px solid var(--color-border); padding-bottom: 14px; min-width: 0; }
+.roster-grid-heading > div:first-child { min-width: 0; }
+.roster-grid-heading span { color: var(--color-text-muted); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; }
+.roster-grid-heading h2 { margin: 4px 0 0; font: 500 clamp(18px, 2vw, 26px) var(--serif); overflow-wrap: anywhere; }
+.roster-grid-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; min-width: 0; }
+.roster-grid-sides, .roster-grid-filters { display: flex; flex-wrap: wrap; gap: 7px; min-width: 0; }
+.roster-grid-sides button, .roster-grid-filters button { padding: 8px 12px; font-size: 11px; line-height: 1.25; }
+.roster-grid-actions #roster-grid-start { padding: 8px 17px; font-size: 11px; line-height: 1.25; font-weight: bold; color: var(--color-selected-fg); background: var(--color-selected-bg); }
+.roster-grid-sides button[aria-pressed="true"], .roster-grid-filters button[aria-pressed="true"] { color: var(--color-selected-fg); background: var(--color-selected-bg); }
+.roster-grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); align-content: start; gap: 16px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 5px 6px 12px; scrollbar-width: thin; }
+.roster-grid-cards .character { min-width: 0; max-width: 220px; justify-self: stretch; }
+.roster-grid-cards .character .mini-avatar { width: 100%; }
+.roster-grid-cards .character .name { text-align: center; }
+.character.locked { opacity: .56; }
+.character .name, .character .coming-soon, .info h2 { max-width: 100%; white-space: normal; overflow-wrap: anywhere; text-align: center; }
+.character .name { min-width: 0; }
+.character .coming-soon { line-height: 1.3; }
+.info, .panel.right .info { min-width: 0; }
+.info h2 { font-size: clamp(12px, 1.7vw, 23px); line-height: 1.2; }
+.stats, .stats div { min-width: 0; }
+.stats dt, .stats dd { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+.stats dd { text-align: right; }
+.trait { min-width: 0; }
+.trait-button, .trait-tooltip { overflow-wrap: anywhere; }
+.floating-tooltip { overflow-wrap: anywhere; }
+.settings-panel { display: flex; flex-direction: column; min-height: 0; }
+.settings-toolbar { flex: 0 0 auto; flex-wrap: wrap; min-width: 0; }
+.settings-toolbar > div:first-child, .settings-actions { min-width: 0; }
+.settings-content { flex: 1 1 auto; height: auto; min-height: 0; }
+.settings-tabs { flex: 0 0 auto; overflow-x: auto; }
+.setting-label, .setting-select, .settings-sheet-heading { min-width: 0; }
+.setting-label label, .setting-select label, .settings-sheet-heading h3 { min-width: 0; overflow-wrap: anywhere; }
+.setting-inputs { min-width: 0; }
+.setting-inputs input { min-width: 0; }
+
+footer { min-width: 0; position: relative; }
+footer #status { min-width: 0; overflow-wrap: anywhere; }
+.footer-settings { position: relative; flex: 0 0 auto; }
+#global-settings-toggle { display: inline-flex; align-items: center; justify-content: flex-end; gap: 10px; max-width: min(50vw, 280px); min-height: 36px; padding: 5px 8px; border: 0; background: transparent; text-align: right; letter-spacing: inherit; }
+#global-settings-toggle #view-label { min-width: 0; overflow-wrap: anywhere; }
+.footer-settings-icon { flex: 0 0 auto; font-size: 17px; line-height: 1; }
+.global-settings-popover { position: absolute; z-index: 60; bottom: calc(100% + 8px); right: 0; width: min(320px, calc(100vw - 24px)); padding: 16px; border: 1px solid var(--color-border); background: var(--color-surface); box-shadow: 0 10px 28px var(--color-tooltip-shadow); animation: popover-in var(--ui-fast) var(--ui-ease) both; font-size: 13px; letter-spacing: 0; line-height: 1.5; }
+.global-settings-head { display: flex; align-items: start; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--color-border); padding-bottom: 10px; }
+.global-settings-head h2 { margin: 0; font: 500 19px var(--serif); overflow-wrap: anywhere; }
+.global-settings-head button { flex: 0 0 auto; width: 28px; height: 28px; padding: 0; font-size: 21px; line-height: 1; }
+.global-settings-popover p { margin: 14px 0 0; color: var(--color-text-muted); overflow-wrap: anywhere; }
+@keyframes popover-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+.arena-view .field-center { width: min(92%, 410px); max-height: 80%; padding: 10px 15px; text-align: center; line-height: 1.25; font-size: clamp(21px, 3vw, 36px); overflow-wrap: anywhere; overflow-y: auto; }
+.arena-view[data-result] .field-center { animation: result-reveal 520ms var(--ui-ease) both; }
+.arena-view[data-result="left"] #duel-left, .arena-view[data-result="right"] #duel-right { animation: winner-emphasis 750ms var(--ui-ease) both; }
+.arena-view[data-result="left"] #duel-right, .arena-view[data-result="right"] #duel-left { opacity: .62; filter: grayscale(.65); transition: opacity 700ms var(--ui-ease), filter 700ms var(--ui-ease); }
+.arena-view[data-result="draw"] .duel-arena-frame { animation: draw-emphasis 650ms var(--ui-ease) both; }
+@keyframes result-reveal { from { opacity: 0; transform: translate(-50%, -44%) scale(.98); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+@keyframes winner-emphasis { 0% { filter: brightness(1); } 40% { filter: brightness(1.25); } 100% { filter: brightness(1); } }
+@keyframes draw-emphasis { 40% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--color-border) 12%, transparent); } }
+.duel-heading, .duel-layout, .duel-side, .duel-identity, .duel-caption, .duel-footer, .duel-arena-bottom { min-width: 0; }
+.duel-side-tag { height: auto; min-height: 32px; }
+.duel-side-tag span, .duel-identity h3, .duel-identity p, .duel-caption span, .duel-arena-bottom strong, .duel-event > span { white-space: normal; overflow-wrap: anywhere; }
+.duel-identity h3 { line-height: 1.2; }
+.duel-caption span { min-width: 0; text-align: center; line-height: 1.2; }
+.duel-caption b { flex: 0 0 auto; }
+.duel-arena-bottom { height: auto; min-height: 37px; }
+.duel-arena-bottom strong { min-width: 0; text-align: center; line-height: 1.2; }
+.duel-arena-bottom > span { flex: 0 1 auto; overflow: hidden; }
+.duel-mini-stats > div { min-width: 0; }
+.duel-mini-stats dt, .duel-mini-stats dd, .duel-ability b, .duel-ability p { overflow-wrap: anywhere; }
+.duel-event { flex: 1 1 auto; }
+.duel-event time { flex: 0 0 auto; }
+.duel-event > span { min-width: 0; line-height: 1.2; }
+
+@media (max-width: 760px) {
+  .roster-grid-panel { gap: 10px; padding: 38px 15px 12px; }
+  .roster-grid-heading { align-items: start; flex-direction: column; gap: 10px; padding-bottom: 9px; }
+  .roster-grid-actions { justify-content: flex-start; }
+  .roster-grid-sides button, .roster-grid-filters button { padding: 6px 9px; font-size: 10px; }
+  .roster-grid-cards { grid-template-columns: repeat(auto-fill, minmax(82px, 1fr)); gap: 10px; }
+  .roster-grid-cards .character .name { font-size: 13px; letter-spacing: 0; }
+  .settings-actions { justify-content: flex-start; }
+  .settings-toolbar { gap: 8px; padding-bottom: 8px; }
+  .duel-caption { gap: 8px; }
+  .duel-arena-bottom > span { display: none; }
+}
+@media (max-width: 400px) {
+  .page > header { gap: 8px; }
+  .page > header h1 { font-size: 16px; letter-spacing: 0; }
+  .header-controls { gap: 5px; }
+  .preference-control select { min-width: 68px; max-width: 78px; }
+  .roster-grid-cards { grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); }
+  .roster-grid-heading h2 { font-size: 17px; }
+  .settings-toolbar button, .settings-actions label, .data-menu summary { font-size: 9px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0s !important; animation: none !important; }
+  .arena-view[data-result] .field-center { opacity: 1; transform: translate(-50%, -50%); }
+  .global-settings-popover { opacity: 1; transform: none; }
+}

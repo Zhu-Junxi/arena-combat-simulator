@@ -528,3 +528,15 @@ data.replace_confirm,Replace saved character defaults and personal presets with 
 data.reload_confirm,Discard unsaved edits and reload project files?,是否放弃未保存的更改并重新加载项目文件？
 data.conflict,Saved files changed elsewhere. Export a backup or reload saved files.,已保存文件在其他位置发生更改。请导出备份或重新加载已保存文件。
 data.manage,Data files,数据文件
+selection.grid_open,Open character grid,展开角色网格
+selection.grid_close,Close character grid,关闭角色网格
+selection.grid_eyebrow,CHARACTER ROSTER,角色阵容
+selection.grid_heading,Choose your fighters,选择对战角色
+selection.grid_side_label,Choose a side to customize,选择要设置的一方
+selection.grid_side,Set {side},设置{side}
+selection.grid_filter_label,Filter characters by category,按类别筛选角色
+selection.grid_all,All characters,全部角色
+global_settings.open,Open settings,打开设置
+global_settings.close,Close settings,关闭设置
+global_settings.heading,Settings,设置
+global_settings.placeholder,More settings coming soon.,更多设置即将推出。

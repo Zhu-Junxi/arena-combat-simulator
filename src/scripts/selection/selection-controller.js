@@ -27,8 +27,25 @@ export function createSelectionController({ state, characterById, elements, view
     elements.stage.addEventListener('click', event => {
       if (state.phase !== 'select') return;
       const side = event.target.closest('[data-side]');
+      const gridSide = event.target.closest('[data-grid-side]');
+      const gridCategory = event.target.closest('[data-grid-category]');
       const category = event.target.closest('[data-category]');
       const character = event.target.closest('[data-character]');
+      if (gridSide) {
+        state.side = gridSide.dataset.gridSide;
+        view.renderPanel('left');
+        view.renderPanel('right');
+        view.syncSelection();
+        onSelectionChange(state.side);
+        elements['roster-grid-sides'].querySelector(`[data-grid-side="${state.side}"]`)?.focus({ preventScroll: true });
+        elements.status.textContent = i18n.t('status.selecting', { side: view.sideName(state.side) });
+        return;
+      }
+      if (gridCategory) {
+        view.setGridCategory(gridCategory.dataset.gridCategory);
+        elements['roster-grid-filters'].querySelector(`[data-grid-category="${gridCategory.dataset.gridCategory}"]`)?.focus({ preventScroll: true });
+        return;
+      }
       if (side) {
         state.side = side.dataset.side;
         view.renderPanel('left');
@@ -56,7 +73,7 @@ export function createSelectionController({ state, characterById, elements, view
         onSelectionChange(state.side);
         feedback.show({ key: 'status.selected', parameters: {
           side: view.sideName(state.side), name: view.characterName(state[state.side])
-        }, anchor: elements.roster.querySelector(`[data-character="${nextCharacter.id}"]`) });
+        }, anchor: character });
       }
     });
   }

@@ -22,6 +22,7 @@ import { bindDataTransfer } from './data/data-transfer-controller.js';
 import { projectCatalog, readProjectJson } from './data/project-files.js';
 import { parseCharacterDefault } from './data/character-default-codec.js';
 import { createTransitions } from './ui/transitions.js';
+import { createGlobalSettings } from './ui/global-settings.js';
 
 const bootstrapElements = requireElements(['bootstrap-error', 'bootstrap-retry', 'bootstrap-status']);
 bootstrapElements['bootstrap-retry'].addEventListener('click', () => location.reload());
@@ -36,6 +37,8 @@ async function initialize() {
   const elements = requireElements([
     'arena', 'back', 'battlefield', 'battle-note', 'categories', 'categories-down', 'categories-up', 'combat-effects',
     'countdown', 'dock', 'fighter-left', 'fighter-right', 'language-select', 'panel-left', 'panel-right',
+    'roster-grid-toggle', 'roster-grid-panel', 'roster-grid-sides', 'roster-grid-filters', 'roster-grid-cards', 'roster-grid-start',
+    'global-settings-toggle', 'global-settings-popover', 'global-settings-close',
     'projectile-effects', 'roster', 'selection-label', 'settings-content', 'settings-presets', 'settings-panel', 'settings-reset-all', 'advanced-tuning', 'adjustment-step',
     'settings-tabs', 'settings-toggle', 'stage', 'start', 'start-control', 'status', 'theme-select', 'view-label',
     'character-export', 'character-import', 'character-import-file', 'backup-export', 'backup-import', 'backup-import-file', 'data-reload',
@@ -70,6 +73,7 @@ async function initialize() {
   const renderer = createCombatRenderer(elements, i18n);
   const audio = createCombatAudio();
   elements.start.addEventListener('click', () => { void audio.unlock(); });
+  elements['roster-grid-start'].addEventListener('click', () => { void audio.unlock(); });
   const engine = createCombatEngine({ onEvent: event => {
     renderer.handleEvent(event);
     audio.handleEvent(event);
@@ -99,6 +103,7 @@ async function initialize() {
     feedback,
     i18n,
     storage: projectStorage,
+    onGridOpen: () => selectionView.setGridCategory('all'),
     onActiveSideChange: () => {
       selectionView.renderPanel('left');
       selectionView.renderPanel('right');
@@ -124,6 +129,7 @@ async function initialize() {
       else settingsView.render();
     }
   });
+  const globalSettings = createGlobalSettings({ elements });
   const transitions = createTransitions({
     state,
     elements,
@@ -134,7 +140,8 @@ async function initialize() {
       runtime.stop();
       engine.reset(selected(), matchSetup());
     },
-    collapseCustomization: () => settingsController.setExpanded(false)
+    collapseCustomization: () => settingsController.setExpanded(false),
+    closeGlobalSettings: globalSettings.close
   });
   const duelPresets = createDuelPresetController({
     elements,
@@ -165,6 +172,8 @@ async function initialize() {
   selectionController.bind();
   settingsView.render();
   settingsController.bind();
+  globalSettings.bind();
+  elements['settings-presets'].addEventListener('click', globalSettings.close);
   duelPresets.bind();
   transitions.bind();
   engine.reset(selected(), matchSetup());
@@ -176,6 +185,7 @@ async function initialize() {
     populateThemeSelector(elements['theme-select'], theme, i18n);
     settingsView.render();
     selectionView.refresh();
+    settingsController.refreshLocalization();
     transitions.refreshLocalization();
     renderer.refreshLocalization(engine.state);
     duelPresets.render();

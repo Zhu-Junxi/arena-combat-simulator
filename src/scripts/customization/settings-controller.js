@@ -15,8 +15,36 @@ export function adjustmentStepFor(input, selectedStep) {
     ADJUSTMENT_STEPS.includes(selected) ? selected : ADJUSTMENT_STEPS[0]);
 }
 
-export function createSettingsController({ state, settings, view, elements, panels, feedback, i18n, storage, onSettingsChange = () => {}, onActiveSideChange = () => {} }) {
+export function createSettingsController({ state, settings, view, elements, panels, feedback, i18n, storage, onSettingsChange = () => {}, onActiveSideChange = () => {}, onGridOpen = () => {} }) {
   let expanded = false;
+  let gridOpen = false;
+
+  function updateGridVisibility() {
+    const grid = elements['roster-grid-panel'];
+    const settingsPanel = elements['settings-panel'];
+    grid.inert = !expanded || !gridOpen;
+    grid.setAttribute('aria-hidden', String(!expanded || !gridOpen));
+    settingsPanel.inert = !expanded || gridOpen;
+    settingsPanel.setAttribute('aria-hidden', String(!expanded || gridOpen));
+    elements.dock.dataset.gridOpen = String(gridOpen);
+    const gridToggle = elements['roster-grid-toggle'];
+    gridToggle.hidden = !expanded;
+    gridToggle.setAttribute('aria-hidden', String(!expanded));
+    gridToggle.setAttribute('aria-expanded', String(gridOpen));
+    const label = i18n.t(gridOpen ? 'selection.grid_close' : 'selection.grid_open');
+    gridToggle.setAttribute('aria-label', label);
+    gridToggle.dataset.tooltip = label;
+  }
+
+  function setGridOpen(nextOpen, { restoreFocus = false } = {}) {
+    if (!expanded || state.phase !== 'select') nextOpen = false;
+    if (gridOpen === Boolean(nextOpen)) return;
+    gridOpen = Boolean(nextOpen);
+    if (gridOpen) onGridOpen();
+    updateGridVisibility();
+    if (gridOpen) elements['roster-grid-sides'].querySelector('[aria-pressed="true"]')?.focus({ preventScroll: true });
+    else if (restoreFocus) elements['roster-grid-toggle'].focus({ preventScroll: true });
+  }
 
   async function confirm(key, parameters = {}, anchor = null) {
     const persisted = await settings.whenPersisted();
@@ -27,10 +55,10 @@ export function createSettingsController({ state, settings, view, elements, pane
   function setExpanded(nextExpanded, { restoreFocus = false } = {}) {
     if (state.phase !== 'select' && nextExpanded) return;
     expanded = Boolean(nextExpanded);
+    if (!expanded) gridOpen = false;
     elements.dock.dataset.expanded = String(expanded);
     elements['settings-toggle'].setAttribute('aria-expanded', String(expanded));
-    elements['settings-panel'].setAttribute('aria-hidden', String(!expanded));
-    elements['settings-panel'].inert = !expanded;
+    updateGridVisibility();
     panels.forEach(panel => { panel.inert = expanded; });
     elements['start-control'].inert = expanded;
     if (expanded) {
@@ -103,6 +131,7 @@ export function createSettingsController({ state, settings, view, elements, pane
 
   function bind() {
     elements['settings-toggle'].addEventListener('click', toggle);
+    elements['roster-grid-toggle'].addEventListener('click', () => setGridOpen(!gridOpen, { restoreFocus: gridOpen }));
     elements['settings-tabs'].addEventListener('click', event => {
       const tab = event.target.closest('[data-settings-tab]');
       if (tab) selectTab(tab.dataset.settingsTab);
@@ -199,10 +228,11 @@ export function createSettingsController({ state, settings, view, elements, pane
       if (event.target.matches?.('input, textarea, select')) return;
       if (event.key === 'Escape' && expanded) {
         event.preventDefault();
-        setExpanded(false, { restoreFocus: true });
+        if (gridOpen) setGridOpen(false, { restoreFocus: true });
+        else setExpanded(false, { restoreFocus: true });
       }
     });
   }
 
-  return Object.freeze({ bind, setExpanded, toggle, selectTab, isExpanded: () => expanded });
+  return Object.freeze({ bind, setExpanded, setGridOpen, toggle, selectTab, refreshLocalization: updateGridVisibility, isExpanded: () => expanded, isGridOpen: () => gridOpen });
 }
