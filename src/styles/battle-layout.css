@@ -24,6 +24,8 @@
 .duel-portrait-lines { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .22; }
 .duel-portrait { position: absolute; width: 116%; left: -8%; height: auto; top: 0; object-fit: contain; }
 .duel-side[data-fighter-kind="archer"] .duel-portrait { width: 118%; left: -9%; }
+/* Keep the restored cloak and horse outline inside War's portrait frame. */
+.duel-side[data-fighter-kind="war"] .duel-portrait { width: 100%; left: 0; }
 .duel-side[data-defeated="true"] .duel-portrait { opacity: .4; filter: grayscale(1); }
 .duel-identity { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; min-height: 45px; }
 .duel-avatar { width: 42px; height: 42px; object-fit: cover; border: 1px solid var(--color-border); padding: 2px; flex-shrink: 0; }

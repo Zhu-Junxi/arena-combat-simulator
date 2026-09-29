@@ -1,0 +1,23 @@
+/* Character-specific colors belong to War's art, independently of the UI theme. */
+.fighter[data-fighter-character="war"][data-arrived="false"], .fighter[data-intro-hidden="true"] { visibility: hidden; }
+.war-body { position: absolute; inset: 0; pointer-events: none; }
+.war-body img { position: absolute; object-fit: contain; pointer-events: none; }
+.war-rider { width: calc(100% - 32% * var(--war-seat, 0)); height: calc(100% - 32% * var(--war-seat, 0)); left: calc(var(--war-rider-x, 14%) * var(--war-seat, 0)); top: calc(4% * var(--war-seat, 0)); z-index: 2; }
+.war-horse { left: 12%; top: 25%; width: 90%; height: 90%; opacity: var(--war-seat, 0); transform: scaleX(var(--war-facing, 1)); }
+.fighter[data-fighter-character="war"] .fighter-status { bottom: calc(100% + 4px); }
+.fighter[data-fighter-character="war"][data-hit="true"] .war-body { filter: brightness(1.4); }
+.war-entrance { position: absolute; inset: 0; z-index: 8; pointer-events: none; overflow: hidden; isolation: isolate; }
+.war-entrance-effects { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; }
+.war-rift { fill: rgb(2 1 4); stroke: #8f102d; stroke-width: 5; stroke-linejoin: bevel; filter: drop-shadow(0 0 5px #a81932) drop-shadow(0 0 15px #540a20); }
+.war-puncture { fill: none; stroke: #a11b33; stroke-width: 5; stroke-linecap: square; filter: drop-shadow(0 0 5px #d13743); }
+.war-puncture-lip { fill: rgb(26 10 17); stroke: #a11b33; stroke-width: 2; stroke-linejoin: bevel; }
+.war-puncture-flaps { fill: var(--color-surface); stroke: #791c31; stroke-width: 1.5; stroke-linejoin: bevel; filter: drop-shadow(1px 3px 2px rgb(25 1 9 / .45)); }
+.war-piercing-sword { filter: drop-shadow(2px 3px 6px rgb(25 1 9 / .75)); }
+.war-pressure-wave { fill: none; stroke: #b98780; pointer-events: none; }
+.war-entrance-actor, .war-arriving-horse { position: absolute; transform: translate(-50%, -50%); opacity: 0; pointer-events: none; }
+.war-entrance-actor { z-index: 3; }
+.war-arriving-horse { z-index: 2; }
+.war-arriving-horse img { width: 100%; height: 100%; object-fit: contain; }
+.war-sword-trail { color: #b92a40; }
+.war-combat-weapon { pointer-events: none; }
+.war-cleave-trail { fill: none; stroke: #c5374b; stroke-width: 3; stroke-linecap: round; }
