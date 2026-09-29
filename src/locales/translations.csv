@@ -1,4 +1,23 @@
 key,en,zh-CN
+battle.war_entrance,War approaches,战争降临
+trait.war_charge.name,Tyrant's charge,暴君冲锋
+trait.war_charge.description,"Moves normally during a 5-second attack cooldown. When ready, locks the enemy's current position and immediately charges in that direction without stepping back. Impact causes no damage. Slowly winds up then completes a rapid 180-degree sweep when an enemy enters range or the charge ends. Deals 10 damage with heavy knockback.","攻击冷却5秒，冷却期间正常移动。冷却结束后锁定敌人当前位置，直接向该方向直线冲锋，不再后撤，冲撞不造成伤害。冲锋中缓慢起剑，敌人进入剑刃范围或冲锋结束时，瞬间完成180°横扫，造成10点伤害和强力击退。"
+battle.war_moving,Moving normally,正常移动
+battle.war_rushing,Charging in the locked direction,锁定方向冲锋
+battle.war_sweeping,180-degree greatsword sweep,巨剑180°横扫
+battle.war_recovering,Recovering the greatsword,横扫收势
+battle.war_cooldown_remaining,Charge ready in {seconds}s,冲锋冷却 {seconds} 秒
+battle.war_locked_direction,Direction locked · No impact damage,方向已锁定 · 冲撞无伤害
+battle.war_knockback,Greatsword hit · Heavy knockback,巨剑命中 · 强力击退
+battle.war_pierce,The blade pierces the veil,巨剑刺穿帷幕
+battle.war_hold,The blade holds the breach,巨剑停驻裂痕
+battle.war_slash,The blade cuts downward,巨剑下划拉长裂痕
+battle.war_withdraw,The blade vanishes behind the screen,巨剑隐入裂痕
+battle.war_open,The seam opens into darkness,裂痕张开露出黑暗
+battle.war_emerge,War emerges from the darkness,战争踏出黑暗
+battle.war_roar,War roars,战争咆哮
+battle.war_horse,The warhorse charges in,战马奔入战场
+battle.war_mount,War takes the saddle,战争与战马合体
 customization.fighter_count,Fighter count,参战人数
 battle.companion_name,Companion Wolf,伙伴狼
 meta.language_name,English,简体中文
@@ -129,6 +148,7 @@ category.healing,Healing,治疗
 category.summon,Summon,召唤
 category.control,Control,控制
 category.mobility,Mobility,机动
+category.apocalypse,Apocalypse,天启
 character.warrior.name,Warrior,战士
 character.archer.name,Archer,弓箭手
 character.guardian.name,Guardian,盾卫士
@@ -139,6 +159,7 @@ character.necromancer.name,Necromancer,死灵法师
 character.necromancer.role,Skeleton commander,骷髅统帅
 character.artificer.name,Artificer,工匠
 character.artificer.role,Turret engineer,炮塔工程师
+character.war.name,War,战争
 character.placeholder.portrait,Portrait pending,立绘预留
 character.placeholder.avatar,Avatar pending,头像预留
 trait.label,Trait,特性

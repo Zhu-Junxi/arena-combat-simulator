@@ -2,6 +2,7 @@ import { frameCorner } from '../ui/decorations.js';
 import { cooldownProgress, modeValue, movementFactor, priestMarkAttackCooldownFactor } from './combat-engine.js';
 import { activeStarPassives, starAttackSpeed } from './star-passive.js';
 import { GUARDIAN_RULES } from './guardian.js';
+import { WAR_COMBAT } from './war-combat.js';
 import { fighterTraitDescription } from '../customization/trait-description.js';
 import { formatCombat } from './combat-precision.js';
 
@@ -27,7 +28,13 @@ export function fighterHudState(fighter, battle, t) {
   let extraValue = formatCombat(fighter.trait?.reduction ?? 0);
   let extraRatio = null;
   let status = t('hud.melee');
-  if (fighter.guardian) {
+  if (fighter.war) {
+    const w = fighter.war;
+    extraLabel = t('trait.war_charge.name');
+    extraValue = t(w.swing && !w.swing.finished ? 'battle.war_sweeping' : w.phase === 'move' ? 'battle.war_moving' : w.charge ? 'battle.war_rushing' : 'battle.war_recovering');
+    extraRatio = w.phase === 'move' ? progress : w.charge ? clamp(1 - w.charge.remaining / WAR_COMBAT.chargeDistance) : 1;
+    status = extraValue;
+  } else if (fighter.guardian) {
     const g = fighter.guardian;
     extraLabel = t(g.shield > 0 ? 'battle.guardian_shield' : 'hud.flail');
     extraValue = g.shield > 0 ? `${formatCombat(g.shield)} / ${formatCombat(g.maxShield)}` :
@@ -69,14 +76,14 @@ export function fighterHudState(fighter, battle, t) {
   if (fighter.health <= 0) status = t('hud.defeated');
   else if (fighter.rootUntil > now) status = t('battle.rooted', { seconds: (fighter.rootUntil - now).toFixed(1) });
   const attackState = battle.phase === 'finished' || fighter.health <= 0 ? t('hud.duel_over') :
-    battle.phase !== 'running' ? t('hud.preparing') : fighter.attack ? t('hud.attacking') :
+    battle.phase !== 'running' ? t('hud.preparing') : fighter.war ? fighter.war.phase === 'move' ? t('battle.war_cooldown_remaining', { seconds: Math.max(0, cooldown - fighter.cooldownElapsed).toFixed(1) }) : t('battle.war_locked_direction') : fighter.attack ? t('hud.attacking') :
     progress >= 1 ? t('battle.cooldown_ready') : t('hud.next_attack', { seconds: ((cooldown - fighter.cooldownElapsed) / haste).toFixed(1) });
   return {
     health: formatCombat(fighter.health), maximum: formatCombat(fighter.maxHealth), healthRatio: clamp(fighter.health / fighter.maxHealth),
     extraLabel, extraValue, extraRatio, status, attackState, progress,
     attack: formatCombat(fighter.attack?.damage ?? (fighter.priestAbilities ? 0 : fighter.mageCycle ? fighter.mageAbilities.cycles[fighter.mageCycle][fighter.mageSpellIndex].damage : guardianDamage)),
     cooldown: `${(cooldown / haste).toFixed(1)} s`,
-    speed: number(fighter.movementSpeed * movementFactor(fighter, now, battle.zones)),
+    speed: number((fighter.war?.charge?.speed ?? fighter.movementSpeed) * movementFactor(fighter, now, battle.zones)),
     defeated: fighter.health <= 0
   };
 }
@@ -90,7 +97,8 @@ export function battleEventText(event, t) {
     damage: 'hud.event_damage', 'damage-over-time': 'hud.event_dot', healed: 'hud.event_heal',
     'flail-landed': 'hud.event_land', 'flail-returning': 'hud.event_return',
     'vines-applied': 'hud.event_vines', 'prayer-started': 'hud.event_prayer',
-    'prayer-completed': 'hud.event_judgment', 'prayer-interrupted': 'hud.event_interrupt'
+    'prayer-completed': 'hud.event_judgment', 'prayer-interrupted': 'hud.event_interrupt',
+    'war-charge-started': 'battle.war_rushing', 'war-swing': 'battle.war_sweeping', 'war-sweep-hit': 'battle.war_knockback'
   };
   if (event.type === 'finished') return event.winner ? t('battle.winner', { name: name(event.winner) }) : t('battle.draw');
   if (event.type === 'launched') return t('hud.event_start');

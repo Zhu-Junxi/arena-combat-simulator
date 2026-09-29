@@ -51,6 +51,7 @@ Damage, healing, shields, and HP resolve to 0.001 HP. The tuning panel accepts s
 - **Priest** — applies marks and uses prayer to heal or damage.
 - **Dong Fang Chang Fan** — blue-white twinkling stars launch from behind, curve around the sides and accelerate toward enemies. Myriad Star Fireflies grants up to three independent 2-second stacks, each adding 200% attack speed; every attack creates one star.
 - **Beastmaster** — fights alongside a summon and can unleash a pack attack.
+- **War** — the Apocalypse rider tears open the screen, emerges, roars for two seconds, and mounts before combat begins. Moves normally between five-second locked straight charges, then cleaves 180° in 0.025 seconds for 10 damage with strong knockback. Charge contact itself deals no damage. Damage, cooldown and sword reach can be tuned.
 
 Guardian and Dong Fang Chang Fan have detailed ability controls in their tuning tabs, including combat values, visual scale, and battle-rule switches. The values above are their defaults.
 

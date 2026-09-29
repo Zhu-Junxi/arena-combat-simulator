@@ -174,6 +174,11 @@ function isLegacyMageDefaults(fighter) {
 function migrateMageDefaults(source) {
   const savedCharacters = [source?.characterDefaults, ...SIDES.map(side => source?.fighters?.[side])];
   for (const characters of savedCharacters) {
+    const war = characters?.war;
+    if (!source.warCombatVersion && war?.attack?.join(',') === '5' && war?.attackCD?.join(',') === '1' && war.attackRange === 134) {
+      war.attack = [10]; war.attackCD = [2]; war.attackRange = 220;
+    }
+    if ((source.warCombatVersion ?? 0) < 2 && war?.attackCD?.join(',') === '2') war.attackCD = [5];
     if (characters?.archer?.projectileSpeed === 620) characters.archer.projectileSpeed = 1240;
     const guardian = characters?.guardian;
     if (guardian?.attack?.length === 1 && guardian.attack[0] === 8) guardian.attack = [10];
@@ -239,6 +244,7 @@ export function createMatchSettingsStore({ characters, storage = globalThis.loca
   function exportData() {
     return {
       version: MATCH_SETTINGS_VERSION,
+      warCombatVersion: 2,
       advanced,
       characterDefaults: clone(characterDefaults),
       fighters: clone(fighters),

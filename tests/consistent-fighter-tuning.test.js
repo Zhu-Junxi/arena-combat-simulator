@@ -21,6 +21,7 @@ test('every playable fighter shows five primary controls and a closed detailed s
   const view = createSettingsView({ state, settings, elements: { 'settings-content': content }, i18n: { t: key => key } });
   const signatureRows = {
     warrior: ['left-attack-0', 'left-cooldown-0', 'left-trait-reduction'],
+    war: ['left-attack-0', 'left-cooldown-0', 'left-attackRange'],
     archer: ['left-attack-0', 'left-cooldown-0', 'left-trait-every'],
     guardian: ['left-attack-0', 'left-cooldown-0', 'left-guardian-durability'],
     mage: ['left-mage-markDuration', 'left-mage-maxMarks', 'left-mage-damagePerMark'],

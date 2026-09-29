@@ -6,6 +6,7 @@ import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { once } from 'node:events';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 async function freePort() {
@@ -21,7 +22,16 @@ async function freePort() {
 
 test('local data API blocks private static paths and stale writes', async t => {
   const directory = await mkdtemp(join(tmpdir(), 'arena-duel-server-'));
-  t.after(() => rm(directory, { recursive: true, force: true }));
+  let child;
+  t.after(async () => {
+    // Windows locks a running child's working directory until the process exits.
+    if (child && child.exitCode === null && child.signalCode === null) {
+      const stopped = once(child, 'exit');
+      child.kill();
+      await stopped;
+    }
+    await rm(directory, { recursive: true, force: true });
+  });
   await mkdir(join(directory, 'src'), { recursive: true });
   await cp(join(root, 'src/scripts'), join(directory, 'src/scripts'), { recursive: true });
   await mkdir(join(directory, 'data/characters'), { recursive: true });
@@ -34,8 +44,7 @@ test('local data API blocks private static paths and stale writes', async t => {
   await cp(join(root, 'serve.cjs'), join(directory, 'serve.cjs'));
   await writeFile(join(directory, 'package.json'), '{"type":"module"}\n');
   const port = await freePort();
-  const child = spawn(process.execPath, ['serve.cjs'], { cwd: directory, env: { ...process.env, PORT: String(port) }, stdio: 'ignore' });
-  t.after(() => child.kill());
+  child = spawn(process.execPath, ['serve.cjs'], { cwd: directory, env: { ...process.env, PORT: String(port) }, stdio: 'ignore' });
   const base = `http://127.0.0.1:${port}`;
   let ready = false;
   for (let attempt = 0; attempt < 60; attempt += 1) {

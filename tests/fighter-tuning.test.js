@@ -58,6 +58,7 @@ test('Guardian settings change battle state and disabled modes use melee', () =>
   const selected = { left: CHARACTER_BY_ID.guardian, right: CHARACTER_BY_ID.archer };
   const engine = createCombatEngine();
   engine.reset(selected, settings.snapshot(selected));
+  engine.launch();
   const [guardian, target] = engine.state.fighters;
   assert.equal(guardian.guardian.shield, 75);
   target.x = guardian.x + 100;
@@ -80,6 +81,7 @@ test('Guardian charge and flail use tuned movement, damage and hitboxes', () => 
   const selected = { left: CHARACTER_BY_ID.guardian, right: CHARACTER_BY_ID.archer };
   const engine = createCombatEngine();
   engine.reset(selected, settings.snapshot(selected));
+  engine.launch();
   const [guardian, target] = engine.state.fighters;
   const charge = engine.startAttack(guardian, target);
   assert.equal(charge.damage, 20);
@@ -88,6 +90,7 @@ test('Guardian charge and flail use tuned movement, damage and hitboxes', () => 
   assert.equal(guardian.guardian.dash.speed, 800);
   assert.equal(guardian.guardian.dash.remaining, 120);
   engine.reset(selected, settings.snapshot(selected));
+  engine.launch();
   const [flailGuardian, flailTarget] = engine.state.fighters;
   flailGuardian.guardian.shield = 0;
   engine.startAttack(flailGuardian, flailTarget);
@@ -105,6 +108,7 @@ test('manual flail mode works while the shield is intact', () => {
   const selected = { left: CHARACTER_BY_ID.guardian, right: CHARACTER_BY_ID.archer };
   const engine = createCombatEngine();
   engine.reset(selected, settings.snapshot(selected));
+  engine.launch();
   const [guardian, target] = engine.state.fighters;
   const attack = engine.startAttack(guardian, target);
   assert.equal(attack.guardianMode, 'flail');
@@ -122,6 +126,7 @@ test('Guardian can disable each flail damage phase', () => {
   const selected = { left: CHARACTER_BY_ID.guardian, right: CHARACTER_BY_ID.archer };
   const engine = createCombatEngine();
   engine.reset(selected, settings.snapshot(selected));
+  engine.launch();
   const [guardian, target] = engine.state.fighters;
   const flail = createFlail(guardian, target, 10);
   const hits = [];
@@ -140,6 +145,7 @@ test('star settings change trigger, haste and count of independent projectiles',
   const selected = { left: CHARACTER_BY_ID['dongfang-changfan'], right: CHARACTER_BY_ID.archer };
   const engine = createCombatEngine({ random: () => 0.5 });
   engine.reset(selected, settings.snapshot(selected));
+  engine.launch();
   const [star, opponent] = engine.state.fighters;
   assert.equal(grantStarPassive(star, 'enemy-hit', 0), false);
   assert.equal(grantStarPassive(star, 'enemy-attack', 0), true);

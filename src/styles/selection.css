@@ -311,6 +311,9 @@
 
 .trait:hover .trait-tooltip, .trait:focus-within .trait-tooltip { visibility: visible; opacity: 1; }
 @media (min-width: 601px) {
+  /* The completed cloak is wider: keep its right edge clear of the statistics. */
+  .panel[data-portrait-character="war"] .portrait.has-art { inset: 4% 32% -40% 0; }
+  .panel.right[data-portrait-character="war"] .portrait.has-art { inset: 4% 0 -40% 32%; }
   .panel[data-portrait-character="dongfang-changfan"] .portrait.has-art { inset: 4% 32% -40% 0; }
   .panel.right[data-portrait-character="dongfang-changfan"] .portrait.has-art { inset: 4% 0 -40% 32%; }
   .panel[data-portrait-character="dongfang-changfan"] .info h2 { font-size: clamp(12px, 1.5vw, 20px); letter-spacing: 0; }

@@ -176,8 +176,12 @@ test('real burn and bleed damage play hurt audio for every class on either side'
     context.currentTime = 0.1;
     engine.step(0.1);
     assert.equal(voices.length, 1, `${receiver.id} ${side} ${effect}: missing hurt sound`);
-    assert.equal(damageEvents[0].damageType, effect);
-    assert.equal(damageEvents[0].amount, 0.2);
+    assert.ok(damageEvents.every(event => event.damageType === effect));
+    // Fast combat subdivides the public step and rounds each application to
+    // 0.001 HP. Events must report actual HP loss while audio stays throttled.
+    const total = damageEvents.reduce((sum, event) => sum + event.amount, 0);
+    assert.ok(Math.abs(total - (target.maxHealth - target.health)) < 1e-9);
+    assert.ok(Math.abs(total - .2) <= .006 + 1e-9);
     audio.stop();
   }
 });

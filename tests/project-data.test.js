@@ -52,6 +52,26 @@ test('factory JSON is the runtime character source and built-in recipes stay imp
   }
 });
 
+test('pre-War match files and backups add War defaults without replacing existing fighter settings', async t => {
+  const { directory, service, characters, settings } = await isolated(t);
+  const store = settings.createMatchSettingsStore({ characters: characters.CHARACTERS, storage: { getItem: () => null, setItem() {} } });
+  store.setFighterValue('left', 'guardian', 'health', 177);
+  const legacy = store.exportData();
+  delete legacy.warCombatVersion;
+  delete legacy.characterDefaults.war;
+  for (const seat of Object.values(legacy.fighters)) delete seat.war;
+  const match = { ...legacy }; delete match.characterDefaults;
+  await writeFile(join(directory, 'data/settings/match.json'), JSON.stringify(match));
+  const before = await service.bootstrapData();
+  assert.equal(before.settings.fighters.left.guardian.health, 177);
+  assert.deepEqual(before.settings.fighters.left.war.attackCD, [5]);
+  const imported = await service.importBackup({ format: 'arena-duel.backup', version: 1, settings: legacy, presets: null }, before.revisions);
+  assert.equal(imported.settings.fighters.left.guardian.health, 177);
+  assert.equal(imported.settings.characterDefaults.war.attackRange, 220);
+  const malformed = structuredClone(legacy); malformed.fighters.left.war = null;
+  await assert.rejects(service.saveSettings(malformed, imported.revisions.settings));
+});
+
 test('settings and presets write atomically with stale-revision rejection and backup round trip', async t => {
   const { directory, service, characters, settings } = await isolated(t);
   const initial = await service.bootstrapData();

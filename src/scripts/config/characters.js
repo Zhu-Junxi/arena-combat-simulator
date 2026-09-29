@@ -10,7 +10,7 @@ const deepFreeze = value => {
 
 const withBaseKind = character => deepFreeze({ ...character, category: character.category ?? 'base' });
 
-export const CHARACTER_KINDS = Object.freeze(['melee', 'ranged', 'special', 'defense', 'healing', 'summon', 'control', 'mobility']);
+export const CHARACTER_KINDS = Object.freeze(['melee', 'ranged', 'special', 'defense', 'healing', 'summon', 'control', 'mobility', 'apocalypse']);
 export const CHARACTER_CATEGORIES = Object.freeze(['base', ...CHARACTER_KINDS]);
 
 const CHARACTER_METADATA = [
@@ -89,6 +89,17 @@ const CHARACTER_METADATA = [
   {
     id: 'artificer', category: 'summon', locked: true, nameKey: 'character.artificer.name', roleKey: 'character.artificer.role',
     stats: { attack: 0, attackCD: 1, speed: 0, health: 0 }
+  },
+  {
+    id: 'war', category: 'apocalypse', nameKey: 'character.war.name',
+    trait: { id: 'war-charge', nameKey: 'trait.war_charge.name', descriptionKey: 'trait.war_charge.description' },
+    art: {
+      portrait: 'assets/characters/war/portrait.png',
+      avatar: 'assets/characters/war/avatar.png',
+      battle: 'assets/characters/war/battle.png',
+      horse: 'assets/characters/war/horse.png',
+      weapon: 'assets/weapons/war-greatsword.png'
+    }
   }
 ];
 
