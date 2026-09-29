@@ -85,6 +85,15 @@
             <label class="advanced-toggle" for="advanced-tuning" data-i18n-tooltip="tooltip.advanced_tuning"><input id="advanced-tuning" type="checkbox"><span data-i18n="customization.advanced_tuning"></span></label>
             <label class="adjustment-step" for="adjustment-step" data-i18n-tooltip="tooltip.adjustment_step"><span data-i18n="customization.adjustment_step"></span><select id="adjustment-step" data-i18n-aria-label="customization.adjustment_step"><option value="0.001">0.001</option><option value="0.01">0.01</option><option value="0.1">0.1</option><option value="1">1</option><option value="5">5</option><option value="10">10</option></select></label>
             <button type="button" id="settings-presets" data-i18n="preset.open" data-i18n-tooltip="preset.open"></button>
+            <details class="data-menu"><summary data-i18n="data.manage"></summary><div class="data-menu-actions">
+              <button type="button" id="character-export" data-i18n="data.character_export"></button>
+              <button type="button" id="character-import" data-i18n="data.character_import"></button>
+              <input id="character-import-file" type="file" accept="application/json,.json" hidden>
+              <button type="button" id="backup-export" data-i18n="data.backup_export"></button>
+              <button type="button" id="backup-import" data-i18n="data.backup_import"></button>
+              <input id="backup-import-file" type="file" accept="application/json,.json" hidden>
+              <button type="button" id="data-reload" data-i18n="data.reload"></button>
+            </div></details>
             <button type="button" id="settings-reset-all" data-i18n-tooltip="tooltip.reset_all"></button>
           </div>
         </header>

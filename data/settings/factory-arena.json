@@ -1,0 +1,17 @@
+{
+  "format": "arena-duel.arena-default",
+  "version": 1,
+  "arena": {
+    "fighterCount": 2,
+    "size": 1000,
+    "fighterSize": 100,
+    "timeScale": 1,
+    "startingDistance": 500,
+    "projectileSpeedScale": 1,
+    "launchDelay": 2,
+    "controlDurationScale": 1,
+    "contactStopDuration": 0.5,
+    "collisionMode": "bounce",
+    "targetStrategy": "nearest"
+  }
+}

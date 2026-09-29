@@ -131,6 +131,33 @@ test('trait settings are configurable and a saved character default is reused on
   assert.equal(restored.getFighter('right', 'archer').trait.every, 3);
 });
 
+test('saving a character default applies its full settings to every seat and survives reload', () => {
+  const storage = createStorage();
+  const store = createMatchSettingsStore({ characters: CHARACTERS, storage });
+  const changes = [];
+  store.subscribe(change => changes.push(change));
+  store.setFighterValue('left', 'mage', 'health', 175);
+  store.setMageAbilityValue('left', 'mage', 'effects.iceSlowDuration', 3.5);
+  store.setFighterValue('right', 'mage', 'health', 40);
+  store.setCharacterDefault('left', 'mage');
+
+  const expected = store.getFighter('left', 'mage');
+  for (const side of ['right', 'third', 'fourth']) {
+    assert.deepEqual(store.getFighter(side, 'mage'), expected);
+  }
+  assert.deepEqual(changes.at(-1), { scope: 'all', characterId: 'mage', defaultSaved: true });
+
+  store.setFighterValue('right', 'mage', 'health', 90);
+  assert.equal(store.getFighter('left', 'mage').health, 175);
+  store.resetFighter('right', 'mage');
+  assert.deepEqual(store.getFighter('right', 'mage'), expected);
+
+  const restored = createMatchSettingsStore({ characters: CHARACTERS, storage });
+  for (const side of ['left', 'right', 'third', 'fourth']) {
+    assert.deepEqual(restored.getFighter(side, 'mage'), expected);
+  }
+});
+
 test('saved character defaults include mage ability settings', () => {
   const store = createMatchSettingsStore({ characters: CHARACTERS, storage: createStorage() });
   store.setMageAbilityValue('left', 'mage', 'effects.iceSlowDuration', 3.5);

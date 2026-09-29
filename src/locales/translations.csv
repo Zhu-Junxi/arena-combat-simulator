@@ -34,6 +34,13 @@ customization.match_rules,Match Rules,对战规则
 customization.reset_tab,Reset Section,重置此项
 customization.reset_all,Reset All,全部重置
 customization.advanced_tuning,Advanced Tuning,高级调节
+customization.detailed_tuning,Detailed Tuning,详细调节
+customization.visual_tuning,Visual Settings,视觉设置
+customization.weapon_tuning,Weapon Mechanics,武器机制
+customization.sword_width,Sword Hitbox Width,剑的命中宽度
+customization.sword_active,Sword Hit Window,剑的命中时间
+customization.arrow_radius,Arrow Hitbox Radius,箭矢命中半径
+customization.arrow_windup,Arrow Shot Windup,箭矢发射前摇
 customization.adjustment_step,Button step,按钮步进
 customization.health,Health,生命值
 customization.attack,Attack,攻击力
@@ -222,13 +229,17 @@ tooltip.collision,Choose whether fighters bounce briefly stop or pass through on
 tooltip.start,Begin the configured duel.,开始当前配置的对决。
 tooltip.back,Leave the battlefield and return to character selection.,离开战场并返回角色选择。
 tooltip.settings,Open or close match settings.,打开或关闭对战设置。
-tooltip.advanced_tuning,Allow any finite value. Turning this off clamps values back to standard limits.,允许任意有限数值。关闭后会将数值限制回标准范围。
+tooltip.advanced_tuning,Allow values beyond standard limits where safe. Turning this off clamps values back to standard limits.,在安全范围内允许超出标准限制的数值。关闭后会将数值限制回标准范围。
+tooltip.sword_width,Changes the sword's collision width when checking a hit.,改变剑命中判定时的碰撞宽度。
+tooltip.sword_active,Changes how long the sword can hit after the swing begins.,改变挥剑开始后可以命中的时间。
+tooltip.arrow_radius,Changes the arrow's collision radius when checking a hit.,改变箭矢命中判定时的碰撞半径。
+tooltip.arrow_windup,Changes the time before the arrow is released.,改变箭矢发射前的准备时间。
 tooltip.adjust_down,Decrease by one fine step.,减少一个精细步长。
 tooltip.adjust_up,Increase by one fine step.,增加一个精细步长。
 tooltip.expand_slider,Double this slider's active range around the current value.,将此滑块围绕当前数值的活动范围扩大一倍。
 tooltip.reset_all,Restore every fighter and arena setting to its defaults.,将全部角色和场地设置恢复为默认值。
 tooltip.reset_section,Restore this section to its saved character or arena defaults.,将此部分恢复为已保存的角色或场地默认值。
-tooltip.save_default,Save the current values as this character's reset defaults.,将当前数值保存为该角色的重置默认值。
+tooltip.save_default,Apply these values to this character on every side and save them as its defaults.,将这些数值应用于所有位置的该角色，并保存为默认值。
 tooltip.theme,Choose the interface color theme.,选择界面颜色主题。
 tooltip.language,Choose the interface language.,选择界面语言。
 tooltip.category,Show characters in this category.,显示此类别中的角色。
@@ -431,9 +442,9 @@ preset.deleted,Deleted {name}.,已删除 {name}。
 preset.exported,Exported {name}.,已导出 {name}。
 preset.loaded,Loaded {name}.,已加载 {name}。
 preset.error,Unable to complete that preset action. Check the file or browser storage and try again.,无法完成预设操作。请检查文件或浏览器存储后重试。
-feedback.session_only,Applied for this session only. Browser storage is unavailable.,仅在本次使用期间生效。浏览器存储不可用。
-feedback.character_default,Saved {name} values as the default for future resets.,已将 {name} 的数值设为默认值，供以后重置使用。
-feedback.character_default_session,{name} values will be used for resets this session only. Browser storage is unavailable.,浏览器存储不可用。{name} 的数值仅在本次使用期间作为重置默认值。
+feedback.session_only,Project file not saved. Export a backup or reload saved files.,项目文件未保存。请导出备份或重新加载已保存文件。
+feedback.character_default,Applied {name} values on every side and saved them for future resets.,已将 {name} 的数值应用于所有位置并保存，供以后重置使用。
+feedback.character_default_session,Applied {name} values on every side but the project file was not saved. Export a backup or reload saved files.,已将 {name} 的数值应用于所有位置，但项目文件尚未保存。请导出备份或重新加载已保存文件。
 feedback.reset_fighter,Reset {name} to its saved defaults.,已将 {name} 重置为保存的默认值。
 feedback.reset_arena,Reset arena settings.,已重置竞技场设置。
 feedback.reset_all,Reset all fighter and arena settings.,已重置所有角色和竞技场设置。
@@ -504,3 +515,16 @@ customization.guardian_presentation,Timing and Appearance,时间与外观
 customization.star_passive,Star Fireflies,万星飞莹
 customization.star_flight,Star Flight,星星飞行
 customization.star_presentation,Timing and Appearance,时间与外观
+data.character_export,Export character default,导出角色默认值
+data.character_import,Import character default,导入角色默认值
+data.backup_export,Export all data,导出全部数据
+data.backup_import,Import all data,导入全部数据
+data.reload,Reload saved files,重新加载已保存文件
+data.exported,JSON exported.,JSON 已导出。
+data.imported,Character default saved.,角色默认值已保存。
+data.save_failed,Changes remain available here. Export a backup or reload saved files.,更改仍保留在此处。请导出备份或重新加载已保存文件。
+data.error,Unable to read or save that JSON file.,无法读取或保存该 JSON 文件。
+data.replace_confirm,Replace saved character defaults and personal presets with this backup?,是否用此备份替换已保存的角色默认值和个人预设？
+data.reload_confirm,Discard unsaved edits and reload project files?,是否放弃未保存的更改并重新加载项目文件？
+data.conflict,Saved files changed elsewhere. Export a backup or reload saved files.,已保存文件在其他位置发生更改。请导出备份或重新加载已保存文件。
+data.manage,Data files,数据文件

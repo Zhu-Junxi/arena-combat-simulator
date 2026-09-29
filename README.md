@@ -21,13 +21,13 @@ The interface includes English and Simplified Chinese, light and dark themes, sa
 Requires **Node.js 18 or newer**.
 
 ```sh
-cd arena-combat-simulator
+cd arena-duel
 npm start
 ```
 
-Open **<http://127.0.0.1:4173/>** in your browser. If you are already in the `arena-combat-simulator` directory, run `npm start` directly.
+Open **<http://127.0.0.1:4173/>** in your browser. If you are already in the `arena-duel` directory, run `npm start` directly.
 
-The included server serves the app locally. Open the URL above rather than opening `index.html` as a file: the browser needs to load JavaScript modules and fetch the translation catalog over HTTP.
+The included server serves the app locally and saves gameplay data as JSON under `data/`. Open the URL above rather than opening `index.html` as a file: the browser needs to load JavaScript modules and fetch the translation catalog over HTTP.
 
 ## Features
 
@@ -35,7 +35,7 @@ The included server serves the app locally. Open the URL above rather than openi
 | --- | --- |
 | **Character selection** | Choose a fighter for each side from the category roster. Both sides can use the same character with separate settings. |
 | **Automatic combat** | Watch movement, weapon attacks, projectiles, abilities, status effects, health, and the final result play out in the arena. |
-| **Match customization** | Tune fighter stats, character abilities, and arena rules. Changes are saved locally and applied to the next match. |
+| **Match customization** | Tune fighter stats, character abilities, and arena rules. Changes are saved in project JSON files and applied to the next match. |
 | **Duel presets** | Browse built-in matchups, save personal duels, and import or export JSON presets. |
 | **Languages** | Switch between English and Simplified Chinese from the header. The choice is remembered in your browser. |
 | **Themes** | Follow your system appearance or choose light or dark mode without resetting the match. |
@@ -73,6 +73,12 @@ Open the settings panel and choose **Duel Presets**. The browser contains built-
 
 Three- and four-fighter files can also be stored and exported. Their tiles show a muted icon because the visible arena currently supports two fighters. Open a tile's **More** menu, or right-click it, to choose **Load First Two Fighters**; the full file remains saved.
 
+### Character defaults and data backups
+
+Use **Export Character Default** or **Import Character Default** in the settings toolbar to share one fighter's reset baseline. Use **Export All Data** to back up match settings, character defaults, and personal presets. **Import All Data** asks before replacing that saved data. If another tab has changed the project files, export your edits as a backup or choose **Reload Saved Files**.
+
+The server stores player files in `data/characters/overrides/`, `data/settings/match.json`, and `data/presets/personal/`. These files are excluded from Git. Tracked factory character files and built-in presets live under `data/characters/factory/` and `data/presets/builtin/`. A saved character override becomes that fighter's default on every side and for future resets. If the file API is unavailable, the browser keeps a local copy and retries synchronization when it reconnects. Language and theme stay in the browser.
+
 ### Change language or theme
 
 Both controls are in the page header. Language selection uses a saved preference when available, then your browser language, then English. Theme selection offers **System**, **Light**, and **Dark**; System follows operating system changes.
@@ -90,9 +96,10 @@ Tests use Node.js's built-in test runner and require no package installation.
 The app is organized around a small browser entry point and separate modules for configuration, selection, customization, combat, sharing, localization, themes, and UI transitions:
 
 ```text
-arena-combat-simulator/
+arena-duel/
 ├── index.html              Page shell and application entry point
-├── serve.cjs               Local static server
+├── serve.cjs               Local server and JSON file API
+├── data/                   Factory gameplay JSON and ignored player files
 ├── assets/                 Runtime character and weapon images
 ├── src/
 │   ├── locales/            CSV translation catalog

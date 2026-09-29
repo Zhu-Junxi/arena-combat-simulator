@@ -1,9 +1,9 @@
-import { ARENA_CONTROLS, COLLISION_MODES, FIGHTER_CONTROLS, PRIEST_ABILITY_CONTROLS, SUMMON_ABILITY_CONTROLS, TRAIT_CONTROLS, GUARDIAN_ABILITY_CONTROLS, GUARDIAN_ABILITY_SWITCHES, STAR_ABILITY_CONTROLS, STAR_ABILITY_SWITCHES, defaultFighterSettings } from '../config/customization.js';
+import { ARENA_CONTROLS, COLLISION_MODES, FIGHTER_CONTROLS, PRIEST_ABILITY_CONTROLS, SUMMON_ABILITY_CONTROLS, TRAIT_CONTROLS, WEAPON_TUNING_CONTROLS, GUARDIAN_ABILITY_CONTROLS, GUARDIAN_ABILITY_SWITCHES, STAR_ABILITY_CONTROLS, STAR_ABILITY_SWITCHES, defaultFighterSettings } from '../config/customization.js';
 import { normalizeMageAbilities, normalizePriestAbilities, normalizeSummonAbilities, normalizeGuardianAbilities, normalizeStarAbilities } from '../customization/settings-store.js';
 import { TARGET_STRATEGIES, activeSlots } from '../config/match.js';
 
 export const DUEL_SHARE_FORMAT = 'arena-duel.duel';
-export const DUEL_SHARE_VERSION = 12;
+export const DUEL_SHARE_VERSION = 13;
 
 const FIGHTER_KEYS = Object.freeze(['health', 'attack', 'attackCD', 'movementSpeed']);
 const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
@@ -37,10 +37,11 @@ function readFighter(source, character, side, version, advanced = false) {
   const isGuardian = character.id === 'guardian';
   const isStar = character.id === 'dongfang-changfan';
   const traitControls = TRAIT_CONTROLS[character.trait?.id];
+  const weaponControls = WEAPON_TUNING_CONTROLS[character.id];
   const isRanged = defaults => defaults.projectileSpeed != null;
   const isMelee = defaults => defaults.attackRange != null;
   const defaults = defaultFighterSettings(character);
-  const statKeys = [...FIGHTER_KEYS, ...(isRanged(defaults) && version >= 5 ? ['projectileSpeed'] : []), ...(isMelee(defaults) && version >= 6 ? ['attackRange'] : []), ...((isMage && version >= 2) || (isPriest && version >= 7) || (isBeastmaster && version >= 11) || ((isGuardian || isStar) && version >= 12) ? ['abilities'] : []), ...(traitControls && version >= 4 ? ['trait'] : [])];
+  const statKeys = [...FIGHTER_KEYS, ...(isRanged(defaults) && version >= 5 ? ['projectileSpeed'] : []), ...(isMelee(defaults) && version >= 6 ? ['attackRange'] : []), ...((isMage && version >= 2) || (isPriest && version >= 7) || (isBeastmaster && version >= 11) || ((isGuardian || isStar) && version >= 12) ? ['abilities'] : []), ...(traitControls && version >= 4 ? ['trait'] : []), ...(weaponControls && version >= 13 ? ['weapon'] : [])];
   exactKeys(source.stats, statKeys, `${side} fighter stats`);
   const stats = {};
   for (const key of FIGHTER_KEYS) {
@@ -72,6 +73,15 @@ function readFighter(source, character, side, version, advanced = false) {
       if (!isControlValue(value, control, advanced)) fail(`${side} fighter trait ${key} is invalid`);
       stats.trait[key] = value;
     }
+  }
+  if (weaponControls) {
+    if (version >= 13) {
+      exactKeys(source.stats.weapon, Object.keys(weaponControls), `${side} fighter weapon`);
+      for (const [key, control] of Object.entries(weaponControls)) {
+        if (source.stats.weapon[key] < control.min || !isControlValue(source.stats.weapon[key], control, advanced && !['active', 'windup'].includes(key))) fail(`${side} fighter weapon ${key} is invalid`);
+      }
+    }
+    stats.weapon = version >= 13 ? { ...source.stats.weapon } : { ...defaults.weapon };
   }
   if (isMage) stats.abilities = version >= 2 ? normalizeMageAbilities(source.stats.abilities, undefined, advanced) : normalizeMageAbilities();
   if (isPriest) {

@@ -252,7 +252,8 @@ export function createFighter(side, character, weapon, index, settings = null, r
   const guardianAbilities = character.id === 'guardian' ? { ...defaultGuardianAbilities(), ...settings?.abilities } : null;
   const starAbilities = character.id === 'dongfang-changfan' ? { ...defaultStarAbilities(), ...settings?.abilities } : null;
   const tunedWeapon = guardianAbilities ? { ...weapon, windup: Math.max(0.001, guardianAbilities.windup), active: Math.max(0.001, guardianAbilities.active), duration: Math.max(0.002, guardianAbilities.duration) } :
-    starAbilities ? { ...weapon, windup: Math.max(0.001, starAbilities.windup), duration: Math.max(0.002, starAbilities.duration), radius: Math.max(0.1, Math.min(10000, starAbilities.radius)) } : weapon;
+    starAbilities ? { ...weapon, windup: Math.max(0.001, starAbilities.windup), duration: Math.max(0.002, starAbilities.duration), radius: Math.max(0.1, Math.min(10000, starAbilities.radius)) } :
+      settings?.weapon ? { ...weapon, ...settings.weapon } : weapon;
   const x = rules.size / 2 + (index === 0 ? -1 : 1) * rules.startingDistance / 2;
   return {
     side,

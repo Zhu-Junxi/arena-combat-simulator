@@ -26,6 +26,12 @@
 .settings-toolbar h2 { font-size: clamp(18px, 2vw, 26px); }
 .settings-toolbar button, .settings-sheet-heading button { padding: 7px 11px; font-size: 10px; letter-spacing: 1px; }
 .settings-actions { display: flex; flex-wrap: wrap; justify-content: end; gap: 8px; }
+.data-menu { position: relative; }
+.data-menu summary { display: grid; place-items: center; min-height: 30px; padding: 7px 11px; border: 1px solid var(--color-border); cursor: pointer; font-size: 10px; letter-spacing: 1px; list-style: none; }
+.data-menu summary::-webkit-details-marker { display: none; }
+.data-menu-actions { position: absolute; z-index: 5; right: 0; top: calc(100% + 4px); display: grid; width: min(225px, calc(100vw - 40px)); padding: 5px; border: 1px solid var(--color-border); background: var(--color-surface); box-shadow: 3px 3px 0 var(--color-tooltip-shadow); }
+.data-menu-actions button { border: 0; text-align: left; }
+.data-menu-actions button:hover, .data-menu-actions button:focus-visible { color: var(--color-selected-fg); background: var(--color-selected-bg); }
 .advanced-toggle { display: inline-flex; align-items: center; gap: 5px; padding: 6px 8px; border: 1px solid var(--color-border); font-size: 10px; letter-spacing: .5px; cursor: pointer; }
 .advanced-toggle input { margin: 0; }
 .adjustment-step { display: inline-flex; align-items: center; gap: 5px; padding: 4px 6px 4px 8px; border: 1px solid var(--color-border); font-size: 10px; letter-spacing: .5px; cursor: pointer; }
@@ -43,6 +49,10 @@
 .settings-sheet-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 20px; }
 .settings-sheet-heading h3 { font-size: 18px; }
 .settings-grid { display: grid; grid-template-columns: repeat(2, minmax(220px, 1fr)); gap: 14px clamp(24px, 4vw, 64px); }
+.fighter-details { margin-top: 24px; border-top: 1px solid var(--color-border); }
+.fighter-details summary { padding: 16px 4px; cursor: pointer; font-size: 12px; letter-spacing: .5px; }
+.fighter-details summary:focus-visible { outline: 2px solid var(--color-ink); outline-offset: -2px; }
+.fighter-details-content { padding-bottom: 16px; }
 
 .setting-row { min-width: 0; padding-bottom: 11px; border-bottom: 1px solid var(--color-border); }
 .setting-label { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 11px; letter-spacing: .5px; }

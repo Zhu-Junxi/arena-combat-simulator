@@ -1,4 +1,4 @@
-import { ARENA_CONTROLS, COLLISION_MODES, FIGHTER_CONTROLS, MAGE_ABILITY_CONTROLS, MAGE_CYCLES, MAGE_SPELL_SLOTS, PRIEST_ABILITY_CONTROLS, SUMMON_ABILITY_CONTROLS, TRAIT_CONTROLS, GUARDIAN_ABILITY_CONTROLS, GUARDIAN_ABILITY_SWITCHES, STAR_ABILITY_CONTROLS, STAR_ABILITY_SWITCHES } from '../config/customization.js';
+import { ARENA_CONTROLS, COLLISION_MODES, FIGHTER_CONTROLS, MAGE_ABILITY_CONTROLS, MAGE_CYCLES, MAGE_SPELL_SLOTS, PRIEST_ABILITY_CONTROLS, SUMMON_ABILITY_CONTROLS, TRAIT_CONTROLS, WEAPON_TUNING_CONTROLS, GUARDIAN_ABILITY_CONTROLS, GUARDIAN_ABILITY_SWITCHES, STAR_ABILITY_CONTROLS, STAR_ABILITY_SWITCHES } from '../config/customization.js';
 import { displayControl, presentationFor, settingTooltip, toDisplayValue } from './setting-presentation.js';
 
 const SIDES = Object.freeze(['left', 'right']);
@@ -6,6 +6,7 @@ const SIDES = Object.freeze(['left', 'right']);
 export function createSettingsView({ state, settings, elements, i18n }) {
   let activeTab = 'left';
   const sliderExpansions = new Map();
+  const openDetails = new Map();
   const t = (key, parameters) => i18n.t(key, parameters);
 
   function sliderBounds(id, control, value, presentation) {
@@ -39,6 +40,29 @@ export function createSettingsView({ state, settings, elements, i18n }) {
   function renderFighter(side) {
     const character = state[side];
     const values = settings.getFighter(side, character.id);
+    const detailKey = `${side}:${character.id}`;
+    const basic = (key, mode = null) => valueControl({
+      id: key === 'attack' ? `${side}-attack-${mode}` : key === 'attackCD' ? `${side}-cooldown-${mode}` : `${side}-${key === 'movementSpeed' ? 'speed' : key}`,
+      label: t(FIGHTER_CONTROLS[key].labelKey), value: mode == null ? values[key] : values[key][mode],
+      ...FIGHTER_CONTROLS[key], scope: side, key, mode
+    });
+    const trait = key => valueControl({ id: `${side}-trait-${key}`, label: t(TRAIT_CONTROLS[character.trait.id][key].labelKey),
+      value: values.trait[key], ...TRAIT_CONTROLS[character.trait.id][key], scope: side, key: 'trait', magePath: key, presentationKey: key });
+    const ability = (kind, key, controls, path = key) => valueControl({
+      id: `${side}-${kind === 'special' ? character.id === 'guardian' ? 'guardian' : 'star' : kind}-${key}`,
+      label: t(controls[key].labelKey ?? `customization.${kind === 'special' ? character.id === 'guardian' ? 'guardian' : 'star' : kind}_${key}`),
+      value: values.abilities[key] ?? values.abilities.effects?.[key],
+      ...controls[key], scope: side, key: kind, magePath: path, presentationKey: kind === 'special' ? `${character.id === 'guardian' ? 'guardian' : 'star'}_${key}` : key
+    });
+    const signature = ({
+      warrior: () => [basic('attack', 0), basic('attackCD', 0), trait('reduction')],
+      archer: () => [basic('attack', 0), basic('attackCD', 0), trait('every')],
+      guardian: () => [basic('attack', 0), basic('attackCD', 0), ability('special', 'durability', GUARDIAN_ABILITY_CONTROLS)],
+      mage: () => ['markDuration', 'maxMarks', 'damagePerMark'].map(key => ability('mage', key, MAGE_ABILITY_CONTROLS, `effects.${key}`)),
+      priest: () => ['markCooldown', 'baseHeal', 'baseDamage'].map(key => ability('priest', key, PRIEST_ABILITY_CONTROLS)),
+      'dongfang-changfan': () => [basic('attack', 0), basic('attackCD', 0), ability('special', 'starsPerAttack', STAR_ABILITY_CONTROLS)],
+      beastmaster: () => ['companionHealth', 'biteDamage', 'packSize'].map(key => ability('summon', key, SUMMON_ABILITY_CONTROLS))
+    }[character.id] ?? (() => []))();
     const attackRows = values.attack.map((value, mode) => valueControl({
       id: `${side}-attack-${mode}`,
       label: values.attack.length > 1 ? t('customization.attack_mode', { mode: mode + 1 }) : t(FIGHTER_CONTROLS.attack.labelKey),
@@ -57,23 +81,26 @@ export function createSettingsView({ state, settings, elements, i18n }) {
       key: 'attackCD',
       mode
     })).join('');
-    const mageRows = character.trait?.id === 'elemental-cycles' ? renderMageAbilities(side, values.abilities) : '';
-    const priestRows = character.trait?.id === 'prayer' ? renderPriestAbilities(side, values.abilities) : '';
-    const summonRows = character.trait?.id === 'beastmaster' ? renderSummonAbilities(side, values.abilities) : '';
+    const mageRows = character.id === 'mage' ? renderMageAbilities(side, values.abilities) : '';
+    const priestRows = character.id === 'priest' ? renderPriestAbilities(side, values.abilities) : '';
+    const summonRows = character.id === 'beastmaster' ? renderSummonAbilities(side, values.abilities) : '';
     const specialRows = character.id === 'guardian' ? renderSpecialAbilities(side, 'guardian', values.abilities, GUARDIAN_ABILITY_CONTROLS, GUARDIAN_ABILITY_SWITCHES) :
       character.id === 'dongfang-changfan' ? renderSpecialAbilities(side, 'star', values.abilities, STAR_ABILITY_CONTROLS, STAR_ABILITY_SWITCHES) : '';
-    // Mage and Priest replace their primary attack with spell/mark actions. Beastmaster
-    // keeps its ordinary ranged hunter attack in addition to its summon controls.
-    const replacesPrimaryAttack = mageRows || priestRows;
-    const traitRows = renderTraitSettings(side, character, values.trait);
+    const traitRows = renderTraitSettings(side, character, values.trait, character.id === 'warrior' ? ['reduction'] : character.id === 'archer' ? ['every'] : []);
+    const weaponRows = values.weapon ? `<section class="mage-abilities"><h4>${t('customization.weapon_tuning')}</h4><div class="settings-grid">${Object.entries(WEAPON_TUNING_CONTROLS[character.id]).map(([key, control]) =>
+      valueControl({ id: `${side}-weapon-${key}`, label: t(control.labelKey), value: values.weapon[key], ...control,
+        scope: side, key: 'weapon', magePath: key, presentationKey: `weapon_${key}` })).join('')}</div></section>` : '';
+    const detailedBasics = (character.id === 'beastmaster' ? attackRows + cooldownRows : '') +
+      (values.projectileSpeed == null ? '' : basic('projectileSpeed')) +
+      (values.attackRange == null ? '' : basic('attackRange'));
+    const detailed = (detailedBasics ? `<div class="settings-grid">${detailedBasics}</div>` : '') +
+      traitRows + weaponRows + mageRows + priestRows + summonRows + specialRows;
     return `<section class="settings-sheet" role="tabpanel" id="settings-panel-${side}" aria-labelledby="settings-tab-${side}">` +
       `<div class="settings-sheet-heading"><div><span>${t(`side.${side}`)}</span><h3>${t(character.nameKey)}</h3></div>` +
       `<div><button type="button" data-set-character-default="${side}" data-tooltip="${t('tooltip.save_default')}">${t('customization.set_character_default')}</button><button type="button" data-reset-scope="${side}" data-tooltip="${t('tooltip.reset_section')}">${t('customization.reset_tab')}</button></div></div>` +
-      `<div class="settings-grid">${valueControl({ id: `${side}-health`, label: t(FIGHTER_CONTROLS.health.labelKey), value: values.health, ...FIGHTER_CONTROLS.health, scope: side, key: 'health' })}` +
-      (replacesPrimaryAttack ? '' : attackRows + cooldownRows) + valueControl({ id: `${side}-speed`, label: t(FIGHTER_CONTROLS.movementSpeed.labelKey), value: values.movementSpeed, ...FIGHTER_CONTROLS.movementSpeed, scope: side, key: 'movementSpeed' }) +
-      (values.projectileSpeed == null ? '' : valueControl({ id: `${side}-projectile-speed`, label: t(FIGHTER_CONTROLS.projectileSpeed.labelKey), value: values.projectileSpeed, ...FIGHTER_CONTROLS.projectileSpeed, scope: side, key: 'projectileSpeed' })) +
-      (values.attackRange == null ? '' : valueControl({ id: `${side}-attack-range`, label: t(FIGHTER_CONTROLS.attackRange.labelKey), value: values.attackRange, ...FIGHTER_CONTROLS.attackRange, scope: side, key: 'attackRange' })) +
-      `</div>${traitRows}${mageRows}${priestRows}${summonRows}${specialRows}</section>`;
+      `<div class="settings-grid" data-primary-controls>${basic('health')}${basic('movementSpeed')}${signature.join('')}</div>` +
+      `<details class="fighter-details" data-detail-key="${detailKey}"${openDetails.get(detailKey) ? ' open' : ''}>` +
+      `<summary>${t('customization.detailed_tuning')}</summary><div class="fighter-details-content">${detailed}</div></details></section>`;
   }
 
   function renderSpecialAbilities(side, kind, abilities, controls, switches) {
@@ -84,17 +111,19 @@ export function createSettingsView({ state, settings, elements, i18n }) {
     const flag = key => `<label class="setting-row setting-select" data-tooltip="${t('tooltip.special_switch')}"><span>${t(`customization.${kind}_${key}`)}</span><input type="checkbox" data-special-switch="${key}" data-setting-scope="${side}" ${abilities[key] ? 'checked' : ''}></label>`;
     const mode = `<label class="setting-row setting-select" data-tooltip="${t('tooltip.guardian_starting_mode')}"><span>${t('customization.guardian_startingMode')}</span><select data-special-mode data-setting-scope="${side}"><option value="charge" ${abilities.startingMode === 'charge' ? 'selected' : ''}>${t('customization.guardian_mode_charge')}</option><option value="flail" ${abilities.startingMode === 'flail' ? 'selected' : ''}>${t('customization.guardian_mode_flail')}</option></select></label>`;
     const groups = kind === 'guardian' ? [
-      ['shield', ['durability', 'shieldFlashDuration'], []],
+      ['shield', [], []],
       ['charge', ['chargeSpeed', 'chargeDistance', 'chargeDamageFactor'], ['chargeEnabled', 'autoSwitch']],
       ['flail', ['throwSpeed', 'returnSpeed', 'headRadius', 'impactRadius', 'groundDuration', 'outboundDamageFactor', 'landingDamageFactor', 'returnDamageFactor', 'contactDamage', 'chainWidth'], ['flailEnabled', 'outboundEnabled', 'landingEnabled', 'returnEnabled', 'contactEnabled', 'chainBlocking']],
-      ['presentation', ['windup', 'active', 'duration', 'equipmentScale'], []]
+      ['presentation', ['windup', 'active', 'duration'], []]
     ] : [
       ['passive', ['stackDuration', 'hastePerStack'], ['enemyAttack', 'enemyHurt', 'enemyHit']],
-      ['flight', ['starsPerAttack', 'rearSpreadDegrees', 'orbitRadiusMin', 'orbitRadiusMax', 'initialSpeedFactor', 'accelerationFactor', 'lifetime', 'radius'], []],
-      ['presentation', ['windup', 'duration', 'visualScale'], []]
+      ['flight', ['rearSpreadDegrees', 'orbitRadiusMin', 'orbitRadiusMax', 'initialSpeedFactor', 'accelerationFactor', 'lifetime', 'radius'], []],
+      ['presentation', ['windup', 'duration'], []]
     ];
     return `<section class="mage-abilities"><h4>${t(`customization.${kind}_heading`)}</h4>${groups.map(([group, fields, flags]) =>
-      `<h4>${t(`customization.${kind}_${group}`)}</h4><div class="settings-grid">${fields.map(numeric).join('')}${flags.map(flag).join('')}${kind === 'guardian' && group === 'charge' ? mode : ''}</div>`).join('')}</section>`;
+      fields.length || flags.length || kind === 'guardian' && group === 'charge' ?
+        `<h4>${t(`customization.${kind}_${group}`)}</h4><div class="settings-grid">${fields.map(numeric).join('')}${flags.map(flag).join('')}${kind === 'guardian' && group === 'charge' ? mode : ''}</div>` : '').join('')}</section>` +
+      `<section class="mage-abilities"><h4>${t('customization.visual_tuning')}</h4><div class="settings-grid">${(kind === 'guardian' ? ['shieldFlashDuration', 'equipmentScale'] : ['visualScale']).map(numeric).join('')}</div></section>`;
   }
 
   function renderPriestAbilities(side, abilities) {
@@ -102,9 +131,9 @@ export function createSettingsView({ state, settings, elements, i18n }) {
       id: `${side}-priest-${key}`, label: t(PRIEST_ABILITY_CONTROLS[key].labelKey), value: abilities[key], ...PRIEST_ABILITY_CONTROLS[key],
       scope: side, key: 'priest', magePath: key, presentationKey: key
     });
-    const timing = ['markCooldown', 'prayerCooldown', 'prayerDuration', 'prayerMoveFactor', 'interruptLockout'];
+    const timing = ['prayerCooldown', 'prayerDuration', 'prayerMoveFactor', 'interruptLockout'];
     const decay = ['decayFloor', 'decayInterval', 'decayAmount'];
-    const scaling = ['markMoveSlowPerMark', 'markAttackSlowPerMark', 'baseHeal', 'healPerMark', 'baseDamage', 'damagePerMark'];
+    const scaling = ['markMoveSlowPerMark', 'markAttackSlowPerMark', 'healPerMark', 'damagePerMark'];
     return `<section class="mage-abilities"><h4>${t('customization.priest_prayer')}</h4><div class="settings-grid">${timing.map(control).join('')}</div><h4>${t('customization.priest_mark_decay')}</h4><div class="settings-grid">${decay.map(control).join('')}</div><h4>${t('customization.priest_scaling')}</h4><div class="settings-grid">${scaling.map(control).join('')}</div></section>`;
   }
 
@@ -113,19 +142,19 @@ export function createSettingsView({ state, settings, elements, i18n }) {
       id: `${side}-summon-${key}`, label: t(SUMMON_ABILITY_CONTROLS[key].labelKey), value: abilities[key], ...SUMMON_ABILITY_CONTROLS[key],
       scope: side, key: 'summon', magePath: key, presentationKey: key
     });
-    const companion = ['companionHealth', 'companionSpeed', 'biteDamage', 'biteRange', 'biteCooldown', 'respawnDelay'];
-    const command = ['meterThreshold', 'meterPerBite', 'packCooldown', 'packSize', 'chargeDamage', 'chargeSpeed', 'chargeLifetime'];
+    const companion = ['companionSpeed', 'biteRange', 'biteCooldown', 'respawnDelay'];
+    const command = ['meterThreshold', 'meterPerBite', 'packCooldown', 'chargeDamage', 'chargeSpeed', 'chargeLifetime'];
     return `<section class="mage-abilities"><h4>${t('customization.summon_companion')}</h4><div class="settings-grid">${companion.map(control).join('')}</div><h4>${t('customization.summon_pack')}</h4><div class="settings-grid">${command.map(control).join('')}</div></section>`;
   }
 
-  function renderTraitSettings(side, character, values) {
+  function renderTraitSettings(side, character, values, excluded = []) {
     const controls = TRAIT_CONTROLS[character.trait?.id];
     if (!controls || !values) return '';
-    const rows = Object.entries(controls).map(([key, control]) => valueControl({
+    const rows = Object.entries(controls).filter(([key]) => !excluded.includes(key)).map(([key, control]) => valueControl({
       id: `${side}-trait-${key}`, label: t(control.labelKey), value: values[key], ...control,
       scope: side, key: 'trait', magePath: key, presentationKey: key
     })).join('');
-    return `<section class="mage-abilities"><h4>${t(character.trait.nameKey)}</h4><div class="settings-grid">${rows}</div></section>`;
+    return rows ? `<section class="mage-abilities"><h4>${t(character.trait.nameKey)}</h4><div class="settings-grid">${rows}</div></section>` : '';
   }
 
   function renderMageAbilities(side, abilities) {
@@ -146,7 +175,7 @@ export function createSettingsView({ state, settings, elements, i18n }) {
           : ['leechBleedDamage', 'leechBleedDuration', 'leechHealBase', 'leechHealPerMark', 'leechMaxBleedDamage', 'leechMaxBleedDuration'];
       return `<section class="mage-cycle"><h4>${t(`customization.mage_${cycle}`)}</h4><div class="settings-grid">${spells}${effects.map(effectControl).join('')}</div></section>`;
     }).join('');
-    return `<section class="mage-abilities"><h4>${t('customization.mage_cycles')}</h4><div class="settings-grid">${effectControl('markDuration')}${effectControl('maxMarks')}${effectControl('damagePerMark')}</div>${cycleSections}</section>`;
+    return `<section class="mage-abilities"><h4>${t('customization.mage_cycles')}</h4>${cycleSections}</section>`;
   }
 
   function arenaDisplayValue(key, value) {
@@ -185,6 +214,8 @@ export function createSettingsView({ state, settings, elements, i18n }) {
   }
 
   function renderContent() {
+    const previous = elements['settings-content'].querySelector?.('[data-detail-key]');
+    if (previous) openDetails.set(previous.dataset.detailKey, previous.open);
     elements['settings-content'].innerHTML = activeTab === 'arena' ? renderArena() : renderFighter(activeTab);
   }
 

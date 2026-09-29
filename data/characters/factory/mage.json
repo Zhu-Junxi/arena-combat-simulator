@@ -1,0 +1,88 @@
+{
+  "format": "arena-duel.character-default",
+  "version": 1,
+  "characterId": "mage",
+  "stats": {
+    "health": 80,
+    "attack": [
+      3,
+      2,
+      5
+    ],
+    "attackCD": [
+      1.6,
+      1.9,
+      2.5
+    ],
+    "movementSpeed": 132,
+    "projectileSpeed": 560,
+    "abilities": {
+      "cycles": {
+        "ice": [
+          {
+            "damage": 3,
+            "cooldown": 1.6
+          },
+          {
+            "damage": 2,
+            "cooldown": 1.9
+          },
+          {
+            "damage": 5,
+            "cooldown": 2.5
+          }
+        ],
+        "fire": [
+          {
+            "damage": 3,
+            "cooldown": 1.6
+          },
+          {
+            "damage": 2,
+            "cooldown": 1.9
+          },
+          {
+            "damage": 5,
+            "cooldown": 2.5
+          }
+        ],
+        "leech": [
+          {
+            "damage": 3,
+            "cooldown": 1.6
+          },
+          {
+            "damage": 2,
+            "cooldown": 1.9
+          },
+          {
+            "damage": 5,
+            "cooldown": 2.5
+          }
+        ]
+      },
+      "effects": {
+        "markDuration": 5,
+        "maxMarks": 2,
+        "damagePerMark": 1,
+        "iceSlowFactor": 0.75,
+        "iceSlowDuration": 1.5,
+        "iceFreezeBase": 0.25,
+        "iceFreezePerMark": 0.4,
+        "iceBurstDamage": 3,
+        "iceBurstRadius": 100,
+        "fireBurnDamage": 0.5,
+        "fireBurnDuration": 2,
+        "fireExplosionRadius": 100,
+        "fireMaxBurnDamage": 1,
+        "fireMaxBurnDuration": 2,
+        "leechBleedDamage": 0.5,
+        "leechBleedDuration": 2,
+        "leechHealBase": 1,
+        "leechHealPerMark": 1,
+        "leechMaxBleedDamage": 1,
+        "leechMaxBleedDuration": 2
+      }
+    }
+  }
+}

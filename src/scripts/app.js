@@ -17,12 +17,19 @@ import { populateThemeSelector } from './theme/theme-view.js';
 import { requireElements } from './ui/dom.js';
 import { createFloatingTooltip } from './ui/floating-tooltip.js';
 import { createFeedback } from './ui/feedback.js';
+import { createProjectStorage } from './data/project-storage.js';
+import { bindDataTransfer } from './data/data-transfer-controller.js';
+import { projectCatalog, readProjectJson } from './data/project-files.js';
+import { parseCharacterDefault } from './data/character-default-codec.js';
 import { createTransitions } from './ui/transitions.js';
 
 const bootstrapElements = requireElements(['bootstrap-error', 'bootstrap-retry', 'bootstrap-status']);
 bootstrapElements['bootstrap-retry'].addEventListener('click', () => location.reload());
 
 async function initialize() {
+  await Promise.all(projectCatalog.characters.map(async id => {
+    parseCharacterDefault(await readProjectJson(`characters/factory/${id}.json`));
+  }));
   let storage = null;
   try { storage = globalThis.localStorage; } catch { /* The app remains usable without browser storage. */ }
   const i18n = await loadI18n(new URL('../locales/translations.csv', import.meta.url), { storage });
@@ -31,6 +38,7 @@ async function initialize() {
     'countdown', 'dock', 'fighter-left', 'fighter-right', 'language-select', 'panel-left', 'panel-right',
     'projectile-effects', 'roster', 'selection-label', 'settings-content', 'settings-presets', 'settings-panel', 'settings-reset-all', 'advanced-tuning', 'adjustment-step',
     'settings-tabs', 'settings-toggle', 'stage', 'start', 'start-control', 'status', 'theme-select', 'view-label',
+    'character-export', 'character-import', 'character-import-file', 'backup-export', 'backup-import', 'backup-import-file', 'data-reload',
     'weapon-effects', 'zone-effects', 'duel-corners', 'duel-left', 'duel-right', 'duel-name-left', 'duel-name-right',
     'duel-clock', 'duel-speed', 'duel-phase', 'duel-result', 'duel-event-time', 'duel-event',
     'preset-dialog', 'preset-heading', 'preset-close', 'preset-search', 'preset-filters',
@@ -40,15 +48,17 @@ async function initialize() {
   ]);
 
   const theme = createThemeController({ storage });
+  const projectStorage = await createProjectStorage(storage);
   localizeDocument(i18n);
   createFloatingTooltip();
   populateLanguageSelector(elements['language-select'], i18n);
   populateThemeSelector(elements['theme-select'], theme, i18n);
 
   const state = createGameState(CHARACTERS);
-  const settings = createMatchSettingsStore({ characters: CHARACTERS, storage });
+  const settings = createMatchSettingsStore({ characters: CHARACTERS, storage: projectStorage });
   const feedback = createFeedback({ i18n, mainStatus: elements.status, dialogStatus: elements['preset-status'],
     mainToast: elements['feedback-toast'], dialogToast: elements['preset-feedback-toast'], dialog: elements['preset-dialog'] });
+  if (projectStorage.hasConflict()) feedback.show({ key: 'data.conflict', tone: 'warning', anchor: elements['data-reload'] });
   const selected = () => ({ left: state.left, right: state.right });
   const panels = [elements['panel-left'], elements['panel-right']];
   // The UI is temporarily duel-only.  The store and engine retain FFA data,
@@ -88,6 +98,7 @@ async function initialize() {
     panels,
     feedback,
     i18n,
+    storage: projectStorage,
     onActiveSideChange: () => {
       selectionView.renderPanel('left');
       selectionView.renderPanel('right');
@@ -131,7 +142,7 @@ async function initialize() {
     settings,
     i18n,
     feedback,
-    storage,
+    storage: projectStorage,
     characters: CHARACTERS,
     characterById: CHARACTER_BY_ID,
     getSetup: matchSetup,
@@ -143,6 +154,12 @@ async function initialize() {
       settingsView.render();
     }
   });
+  bindDataTransfer({ elements, state, settings, storage: projectStorage, i18n, feedback,
+    onCharacterImported: () => {
+      settingsView.render();
+      selectionView.renderPanel('left');
+      selectionView.renderPanel('right');
+    } });
 
   selectionView.render();
   selectionController.bind();

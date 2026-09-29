@@ -1,0 +1,46 @@
+{
+  "format": "arena-duel.character-default",
+  "version": 1,
+  "characterId": "guardian",
+  "stats": {
+    "health": 100,
+    "attack": [
+      10
+    ],
+    "attackCD": [
+      4
+    ],
+    "movementSpeed": 66,
+    "attackRange": 72,
+    "abilities": {
+      "durability": 40,
+      "shieldFlashDuration": 0.15,
+      "chargeSpeed": 1150,
+      "chargeDistance": 270,
+      "chargeDamageFactor": 1,
+      "throwSpeed": 380,
+      "returnSpeed": 500,
+      "headRadius": 24,
+      "impactRadius": 44,
+      "groundDuration": 5,
+      "outboundDamageFactor": 1,
+      "landingDamageFactor": 1,
+      "returnDamageFactor": 1,
+      "contactDamage": 5,
+      "chainWidth": 8,
+      "windup": 0.22,
+      "active": 0.18,
+      "duration": 0.68,
+      "equipmentScale": 1.5,
+      "chargeEnabled": true,
+      "flailEnabled": true,
+      "autoSwitch": true,
+      "outboundEnabled": true,
+      "landingEnabled": true,
+      "returnEnabled": true,
+      "contactEnabled": true,
+      "chainBlocking": true,
+      "startingMode": "charge"
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "format": "arena-duel.character-default",
+  "version": 1,
+  "characterId": "beastmaster",
+  "stats": {
+    "health": 75,
+    "attack": [
+      3
+    ],
+    "attackCD": [
+      1.6
+    ],
+    "movementSpeed": 132,
+    "projectileSpeed": 580,
+    "abilities": {
+      "companionHealth": 45,
+      "companionSpeed": 285,
+      "biteDamage": 4,
+      "biteRange": 54,
+      "biteCooldown": 1.1,
+      "respawnDelay": 4,
+      "meterThreshold": 4,
+      "meterPerBite": 1,
+      "packCooldown": 8,
+      "packSize": 3,
+      "chargeDamage": 5,
+      "chargeSpeed": 720,
+      "chargeLifetime": 0.9
+    }
+  }
+}

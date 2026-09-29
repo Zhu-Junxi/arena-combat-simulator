@@ -1,15 +1,13 @@
-import { defaultArenaSettings, defaultFighterSettings } from '../config/customization.js';
-import { createDuelRecipe, parseDuelRecipe } from './duel-share-codec.js';
+import { projectCatalog, readProjectJson } from '../data/project-files.js';
+import { parseDuelRecipe } from './duel-share-codec.js';
 
 export const PRESET_LIBRARY_KEY = 'arena-duel.presets.v1';
 export const PRESET_LIBRARY_VERSION = 1;
 
 const clone = value => JSON.parse(JSON.stringify(value));
-const MATCHUPS = Object.freeze([
-  ['warrior-archer', 'warrior', 'archer'],
-  ['guardian-mage', 'guardian', 'mage'],
-  ['priest-beastmaster', 'priest', 'beastmaster']
-]);
+const BUILTIN_RECIPES = Object.fromEntries(await Promise.all(projectCatalog.builtinPresets.map(async id => [
+  id, await readProjectJson(`presets/builtin/${id}.json`)
+])));
 
 export function normalizePresetName(value) {
   const name = String(value ?? '').trim().replace(/\s+/g, ' ');
@@ -28,20 +26,10 @@ export function uniquePresetName(name, occupied) {
 }
 
 export function createBuiltinPresets(characters) {
-  const byId = Object.fromEntries(characters.map(character => [character.id, character]));
-  return MATCHUPS.map(([id, leftId, rightId]) => {
-    const left = byId[leftId];
-    const right = byId[rightId];
-    const arena = defaultArenaSettings();
-    const recipe = createDuelRecipe({
-      selectedCharacters: { left, right },
-      setup: {
-        advanced: false,
-        fighters: { left: defaultFighterSettings(left), right: defaultFighterSettings(right) },
-        arena: { ...arena, collisionMode: 'bounce', targetStrategy: 'nearest', launchDelay: arena.launchDelay * 1000 }
-      }
-    });
-    return Object.freeze({ id: `builtin:${id}`, nameKey: `preset.builtin.${id.replace('-', '_')}`, builtIn: true, recipe });
+  return projectCatalog.builtinPresets.map(id => {
+    const recipe = clone(BUILTIN_RECIPES[id]);
+    parseDuelRecipe(JSON.stringify(recipe), { characters });
+    return Object.freeze({ id: `builtin:${id}`, nameKey: `preset.builtin.${id.replaceAll('-', '_')}`, builtIn: true, recipe });
   });
 }
 
@@ -56,6 +44,7 @@ export function firstTwoFighterRecipe(recipe, characters) {
 
 export function createDuelPresetLibrary({ characters, storage = globalThis.localStorage, idFactory = () => globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`, logger = console } = {}) {
   let entries = [];
+  let lastPersistencePromise = Promise.resolve(true);
   try {
     const source = JSON.parse(storage?.getItem(PRESET_LIBRARY_KEY) ?? 'null');
     if (source?.version === PRESET_LIBRARY_VERSION && Array.isArray(source.entries)) {
@@ -77,7 +66,8 @@ export function createDuelPresetLibrary({ characters, storage = globalThis.local
   function commit(next) {
     // Do not claim a save succeeded if storage is unavailable or full.
     if (!storage) throw new Error('Preset storage is unavailable');
-    storage.setItem(PRESET_LIBRARY_KEY, JSON.stringify({ version: PRESET_LIBRARY_VERSION, entries: next }));
+    const write = storage.setItem(PRESET_LIBRARY_KEY, JSON.stringify({ version: PRESET_LIBRARY_VERSION, entries: next }));
+    lastPersistencePromise = Promise.resolve(write);
     entries = next;
   }
 
@@ -116,5 +106,5 @@ export function createDuelPresetLibrary({ characters, storage = globalThis.local
     commit(entries.filter(entry => entry.id !== id));
   }
 
-  return Object.freeze({ list, get, collision, save, rename, remove });
+  return Object.freeze({ list, get, collision, save, rename, remove, whenPersisted: () => lastPersistencePromise });
 }

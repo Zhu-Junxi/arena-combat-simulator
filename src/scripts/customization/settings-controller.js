@@ -15,12 +15,12 @@ export function adjustmentStepFor(input, selectedStep) {
     ADJUSTMENT_STEPS.includes(selected) ? selected : ADJUSTMENT_STEPS[0]);
 }
 
-export function createSettingsController({ state, settings, view, elements, panels, feedback, i18n, onSettingsChange = () => {}, onActiveSideChange = () => {} }) {
+export function createSettingsController({ state, settings, view, elements, panels, feedback, i18n, storage, onSettingsChange = () => {}, onActiveSideChange = () => {} }) {
   let expanded = false;
 
-  function confirm(key, parameters = {}, anchor = null) {
-    const persisted = settings.getLastPersistenceStatus();
-    feedback.show({ key: persisted ? key : key === 'feedback.character_default' ? 'feedback.character_default_session' : 'feedback.session_only', parameters, anchor,
+  async function confirm(key, parameters = {}, anchor = null) {
+    const persisted = await settings.whenPersisted();
+    feedback.show({ key: persisted ? key : storage?.hasConflict() ? 'data.conflict' : key === 'feedback.character_default' ? 'feedback.character_default_session' : 'feedback.session_only', parameters, anchor,
       tone: persisted ? 'success' : 'warning' });
   }
 
@@ -65,6 +65,9 @@ export function createSettingsController({ state, settings, view, elements, pane
     if (key === 'priest') {
       settings.setPriestAbilityValue(scope, state[scope].id, input.dataset.magePath, value);
       view.renderContent();
+    } else if (key === 'weapon') {
+      settings.setWeaponValue(scope, state[scope].id, input.dataset.magePath, value);
+      view.renderContent();
     } else if (key === 'summon') {
       settings.setSummonAbilityValue(scope, state[scope].id, input.dataset.magePath, value);
       view.renderContent();
@@ -92,9 +95,9 @@ export function createSettingsController({ state, settings, view, elements, pane
     onSettingsChange(scope);
   }
 
-  function warnIfSessionOnly(anchor) {
-    if (!settings.getLastPersistenceStatus()) {
-      feedback.show({ key: 'feedback.session_only', tone: 'warning', anchor });
+  async function warnIfSessionOnly(anchor) {
+    if (!await settings.whenPersisted()) {
+      feedback.show({ key: storage?.hasConflict() ? 'data.conflict' : 'feedback.session_only', tone: 'warning', anchor });
     }
   }
 
@@ -163,7 +166,7 @@ export function createSettingsController({ state, settings, view, elements, pane
         const side = saveDefault.dataset.setCharacterDefault;
         settings.setCharacterDefault(side, state[side].id);
         view.renderContent();
-        onSettingsChange(side);
+        onSettingsChange('all');
         confirm('feedback.character_default', { name: i18n.t(state[side].nameKey) },
           elements['settings-content'].querySelector(`[data-set-character-default="${side}"]`));
         return;

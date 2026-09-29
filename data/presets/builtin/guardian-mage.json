@@ -1,0 +1,150 @@
+{
+  "format": "arena-duel.duel",
+  "version": 13,
+  "advanced": false,
+  "fighters": {
+    "left": {
+      "characterId": "guardian",
+      "stats": {
+        "health": 100,
+        "attack": [
+          10
+        ],
+        "attackCD": [
+          4
+        ],
+        "movementSpeed": 66,
+        "attackRange": 72,
+        "abilities": {
+          "durability": 40,
+          "shieldFlashDuration": 0.15,
+          "chargeSpeed": 1150,
+          "chargeDistance": 270,
+          "chargeDamageFactor": 1,
+          "throwSpeed": 380,
+          "returnSpeed": 500,
+          "headRadius": 24,
+          "impactRadius": 44,
+          "groundDuration": 5,
+          "outboundDamageFactor": 1,
+          "landingDamageFactor": 1,
+          "returnDamageFactor": 1,
+          "contactDamage": 5,
+          "chainWidth": 8,
+          "windup": 0.22,
+          "active": 0.18,
+          "duration": 0.68,
+          "equipmentScale": 1.5,
+          "chargeEnabled": true,
+          "flailEnabled": true,
+          "autoSwitch": true,
+          "outboundEnabled": true,
+          "landingEnabled": true,
+          "returnEnabled": true,
+          "contactEnabled": true,
+          "chainBlocking": true,
+          "startingMode": "charge"
+        }
+      }
+    },
+    "right": {
+      "characterId": "mage",
+      "stats": {
+        "health": 80,
+        "attack": [
+          3,
+          2,
+          5
+        ],
+        "attackCD": [
+          1.6,
+          1.9,
+          2.5
+        ],
+        "movementSpeed": 132,
+        "projectileSpeed": 560,
+        "abilities": {
+          "cycles": {
+            "ice": [
+              {
+                "damage": 3,
+                "cooldown": 1.6
+              },
+              {
+                "damage": 2,
+                "cooldown": 1.9
+              },
+              {
+                "damage": 5,
+                "cooldown": 2.5
+              }
+            ],
+            "fire": [
+              {
+                "damage": 3,
+                "cooldown": 1.6
+              },
+              {
+                "damage": 2,
+                "cooldown": 1.9
+              },
+              {
+                "damage": 5,
+                "cooldown": 2.5
+              }
+            ],
+            "leech": [
+              {
+                "damage": 3,
+                "cooldown": 1.6
+              },
+              {
+                "damage": 2,
+                "cooldown": 1.9
+              },
+              {
+                "damage": 5,
+                "cooldown": 2.5
+              }
+            ]
+          },
+          "effects": {
+            "markDuration": 5,
+            "maxMarks": 2,
+            "damagePerMark": 1,
+            "iceSlowFactor": 0.75,
+            "iceSlowDuration": 1.5,
+            "iceFreezeBase": 0.25,
+            "iceFreezePerMark": 0.4,
+            "iceBurstDamage": 3,
+            "iceBurstRadius": 100,
+            "fireBurnDamage": 0.5,
+            "fireBurnDuration": 2,
+            "fireExplosionRadius": 100,
+            "fireMaxBurnDamage": 1,
+            "fireMaxBurnDuration": 2,
+            "leechBleedDamage": 0.5,
+            "leechBleedDuration": 2,
+            "leechHealBase": 1,
+            "leechHealPerMark": 1,
+            "leechMaxBleedDamage": 1,
+            "leechMaxBleedDuration": 2
+          }
+        }
+      }
+    }
+  },
+  "arena": {
+    "fighterCount": 2,
+    "size": 1000,
+    "fighterSize": 100,
+    "timeScale": 1,
+    "startingDistance": 500,
+    "projectileSpeedScale": 1,
+    "launchDelay": 2,
+    "controlDurationScale": 1,
+    "contactStopDuration": 0.5,
+    "collisionMode": "bounce",
+    "targetStrategy": "nearest"
+  }
+}

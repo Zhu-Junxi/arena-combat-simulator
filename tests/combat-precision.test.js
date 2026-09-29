@@ -99,6 +99,8 @@ test('previous saved stats and duel recipes retain their original values', () =>
   const selected = { left: CHARACTER_BY_ID.warrior, right: CHARACTER_BY_ID.archer };
   const recipe = createDuelRecipe({ selectedCharacters: selected, setup: settings.snapshot(selected) });
   recipe.version = 11;
+  delete recipe.fighters.left.stats.weapon;
+  delete recipe.fighters.right.stats.weapon;
   const parsed = parseDuelRecipe(JSON.stringify(recipe), { characters: CHARACTERS });
   assert.equal(parsed.fighters.left.stats.health, 25);
   assert.deepEqual(parsed.fighters.left.stats.attack, [1]);

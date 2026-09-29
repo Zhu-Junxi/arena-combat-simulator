@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "characters": [
+    "warrior",
+    "archer",
+    "guardian",
+    "mage",
+    "priest",
+    "dongfang-changfan",
+    "beastmaster"
+  ],
+  "builtinPresets": [
+    "warrior-archer",
+    "guardian-mage",
+    "priest-beastmaster"
+  ]
+}

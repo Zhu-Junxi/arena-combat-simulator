@@ -1,0 +1,23 @@
+{
+  "format": "arena-duel.character-default",
+  "version": 1,
+  "characterId": "warrior",
+  "stats": {
+    "health": 100,
+    "attack": [
+      5
+    ],
+    "attackCD": [
+      1
+    ],
+    "movementSpeed": 220,
+    "attackRange": 134,
+    "trait": {
+      "reduction": 1
+    },
+    "weapon": {
+      "width": 12,
+      "active": 0.2
+    }
+  }
+}

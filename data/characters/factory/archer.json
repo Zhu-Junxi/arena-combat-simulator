@@ -1,0 +1,26 @@
+{
+  "format": "arena-duel.character-default",
+  "version": 1,
+  "characterId": "archer",
+  "stats": {
+    "health": 80,
+    "attack": [
+      5
+    ],
+    "attackCD": [
+      2.5
+    ],
+    "movementSpeed": 132,
+    "projectileSpeed": 1240,
+    "trait": {
+      "every": 4,
+      "rootDuration": 2,
+      "slowDuration": 3,
+      "slowFactor": 0.5
+    },
+    "weapon": {
+      "radius": 5,
+      "windup": 0.26
+    }
+  }
+}

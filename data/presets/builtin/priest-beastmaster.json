@@ -1,0 +1,79 @@
+{
+  "format": "arena-duel.duel",
+  "version": 13,
+  "advanced": false,
+  "fighters": {
+    "left": {
+      "characterId": "priest",
+      "stats": {
+        "health": 50,
+        "attack": [
+          5
+        ],
+        "attackCD": [
+          3
+        ],
+        "movementSpeed": 132,
+        "projectileSpeed": 540,
+        "abilities": {
+          "markCooldown": 1,
+          "prayerCooldown": 6,
+          "prayerDuration": 2,
+          "prayerMoveFactor": 0.55,
+          "interruptLockout": 1.5,
+          "decayFloor": 3,
+          "decayInterval": 2,
+          "decayAmount": 1,
+          "markMoveSlowPerMark": 0.05,
+          "markAttackSlowPerMark": 0.05,
+          "baseHeal": 4,
+          "healPerMark": 2,
+          "baseDamage": 3,
+          "damagePerMark": 2
+        }
+      }
+    },
+    "right": {
+      "characterId": "beastmaster",
+      "stats": {
+        "health": 75,
+        "attack": [
+          3
+        ],
+        "attackCD": [
+          1.6
+        ],
+        "movementSpeed": 132,
+        "projectileSpeed": 580,
+        "abilities": {
+          "companionHealth": 45,
+          "companionSpeed": 285,
+          "biteDamage": 4,
+          "biteRange": 54,
+          "biteCooldown": 1.1,
+          "respawnDelay": 4,
+          "meterThreshold": 4,
+          "meterPerBite": 1,
+          "packCooldown": 8,
+          "packSize": 3,
+          "chargeDamage": 5,
+          "chargeSpeed": 720,
+          "chargeLifetime": 0.9
+        }
+      }
+    }
+  },
+  "arena": {
+    "fighterCount": 2,
+    "size": 1000,
+    "fighterSize": 100,
+    "timeScale": 1,
+    "startingDistance": 500,
+    "projectileSpeedScale": 1,
+    "launchDelay": 2,
+    "controlDurationScale": 1,
+    "contactStopDuration": 0.5,
+    "collisionMode": "bounce",
+    "targetStrategy": "nearest"
+  }
+}

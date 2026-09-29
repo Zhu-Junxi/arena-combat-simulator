@@ -1,3 +1,7 @@
+import { CHARACTER_BY_ID } from './characters.js';
+
+const factory = id => CHARACTER_BY_ID[id].defaultSettings;
+
 const deepFreeze = value => {
   if (value && typeof value === 'object' && !Object.isFrozen(value)) {
     Object.values(value).forEach(deepFreeze);
@@ -17,11 +21,11 @@ export const WEAPON_SPRITES = deepFreeze({
 export const ARROW_SPRITE = deepFreeze({ file: 'archer-forest-arrow.png', source: [2172, 724], crop: [52, 252, 2070, 205] });
 
 export const WEAPON_DEFINITIONS = deepFreeze({
-  'dongfang-changfan': { type: 'ranged', art: 'star-thought', muzzle: 64, windup: 0.28, duration: 0.76, projectileSpeed: 560, radius: 7 },
-  warrior: { type: 'melee', art: 'sword', mount: 50, length: 134, width: 12, windup: 0.2, active: 0.2, duration: 0.7 },
-  guardian: { type: 'melee', art: 'shield', mount: 50, length: 72, width: 111.32631578947368, windup: 0.22, active: 0.18, duration: 0.68 },
-  archer: { type: 'ranged', art: 'bow', muzzle: WEAPON_SPRITES.bow.x + WEAPON_SPRITES.bow.width + 8, windup: 0.26, duration: 0.68, projectileSpeed: 1240, radius: 5 },
-  mage: { type: 'ranged', art: 'staff', muzzle: 144, windup: 0.28, duration: 0.76, projectileSpeed: 560, radius: 9 },
-  priest: { type: 'ranged', art: 'scepter', muzzle: 144, windup: 0.32, duration: 0.82, projectileSpeed: 540, radius: 8 },
-  beastmaster: { type: 'ranged', art: 'bow', muzzle: WEAPON_SPRITES.bow.x + WEAPON_SPRITES.bow.width + 8, windup: 0.24, duration: 0.64, projectileSpeed: 580, radius: 5 }
+  'dongfang-changfan': { type: 'ranged', art: 'star-thought', muzzle: 64, windup: 0.28, duration: 0.76, projectileSpeed: factory('dongfang-changfan').projectileSpeed, radius: 7 },
+  warrior: { type: 'melee', art: 'sword', mount: 50, length: factory('warrior').attackRange, width: factory('warrior').weapon.width, windup: 0.2, active: factory('warrior').weapon.active, duration: 0.7 },
+  guardian: { type: 'melee', art: 'shield', mount: 50, length: factory('guardian').attackRange, width: 111.32631578947368, windup: 0.22, active: 0.18, duration: 0.68 },
+  archer: { type: 'ranged', art: 'bow', muzzle: WEAPON_SPRITES.bow.x + WEAPON_SPRITES.bow.width + 8, windup: factory('archer').weapon.windup, duration: 0.68, projectileSpeed: factory('archer').projectileSpeed, radius: factory('archer').weapon.radius },
+  mage: { type: 'ranged', art: 'staff', muzzle: 144, windup: 0.28, duration: 0.76, projectileSpeed: factory('mage').projectileSpeed, radius: 9 },
+  priest: { type: 'ranged', art: 'scepter', muzzle: 144, windup: 0.32, duration: 0.82, projectileSpeed: factory('priest').projectileSpeed, radius: 8 },
+  beastmaster: { type: 'ranged', art: 'bow', muzzle: WEAPON_SPRITES.bow.x + WEAPON_SPRITES.bow.width + 8, windup: 0.24, duration: 0.64, projectileSpeed: factory('beastmaster').projectileSpeed, radius: 5 }
 });

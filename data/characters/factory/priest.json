@@ -1,0 +1,32 @@
+{
+  "format": "arena-duel.character-default",
+  "version": 1,
+  "characterId": "priest",
+  "stats": {
+    "health": 50,
+    "attack": [
+      5
+    ],
+    "attackCD": [
+      3
+    ],
+    "movementSpeed": 132,
+    "projectileSpeed": 540,
+    "abilities": {
+      "markCooldown": 1,
+      "prayerCooldown": 6,
+      "prayerDuration": 2,
+      "prayerMoveFactor": 0.55,
+      "interruptLockout": 1.5,
+      "decayFloor": 3,
+      "decayInterval": 2,
+      "decayAmount": 1,
+      "markMoveSlowPerMark": 0.05,
+      "markAttackSlowPerMark": 0.05,
+      "baseHeal": 4,
+      "healPerMark": 2,
+      "baseDamage": 3,
+      "damagePerMark": 2
+    }
+  }
+}

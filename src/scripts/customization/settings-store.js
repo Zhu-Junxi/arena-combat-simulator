@@ -9,6 +9,7 @@ import {
   SUMMON_ABILITY_CONTROLS,
   GUARDIAN_ABILITY_CONTROLS, GUARDIAN_ABILITY_SWITCHES, STAR_ABILITY_CONTROLS, STAR_ABILITY_SWITCHES,
   TRAIT_CONTROLS,
+  WEAPON_TUNING_CONTROLS,
   MATCH_SETTINGS_STORAGE_KEY,
   MATCH_SETTINGS_VERSION,
   defaultArenaSettings,
@@ -62,12 +63,24 @@ function normalizeFighter(value, character, fallback = defaultFighterSettings(ch
   if (defaults.attackRange != null) fighter.attackRange = Number.isFinite(Number(value?.attackRange))
     ? clampSetting(value.attackRange, FIGHTER_CONTROLS.attackRange, advanced) : defaults.attackRange;
   if (TRAIT_CONTROLS[character.trait?.id]) fighter.trait = normalizeTraitSettings(value?.trait, character, defaults.trait, advanced);
+  if (WEAPON_TUNING_CONTROLS[character.id]) fighter.weapon = normalizeWeapon(value?.weapon, character, defaults.weapon, advanced);
   if (character.trait?.id === 'elemental-cycles') fighter.abilities = normalizeMageAbilities(value?.abilities, defaults.abilities, advanced);
   if (character.trait?.id === 'prayer') fighter.abilities = normalizePriestAbilities(value?.abilities, defaults.abilities, advanced);
   if (character.trait?.id === 'beastmaster') fighter.abilities = normalizeSummonAbilities(value?.abilities, defaults.abilities, advanced);
   if (character.id === 'guardian') fighter.abilities = normalizeGuardianAbilities(value?.abilities, defaults.abilities, advanced);
   if (character.id === 'dongfang-changfan') fighter.abilities = normalizeStarAbilities(value?.abilities, defaults.abilities, advanced);
   return fighter;
+}
+
+function normalizeWeapon(value, character, fallback, advanced = false) {
+  return Object.fromEntries(Object.entries(WEAPON_TUNING_CONTROLS[character.id]).map(([key, control]) => [key,
+    Number.isFinite(Number(value?.[key])) ? clampWeaponSetting(value[key], control, key, advanced) : fallback[key]
+  ]));
+}
+
+function clampWeaponSetting(value, control, key, advanced) {
+  const timing = key === 'active' || key === 'windup';
+  return Math.max(control.min, clampSetting(value, control, advanced && !timing));
 }
 
 export function normalizeTraitSettings(value, character, fallback, advanced = false) {
@@ -140,11 +153,11 @@ function normalizeArena(value = {}, advanced = false) {
     // Match size is structural rather than a combat stat: four stable seats is
     // the supported maximum even while Advanced Tuning is enabled.
     const allowAdvanced = key === 'fighterCount' ? false : advanced;
-    arena[key] = Number.isFinite(Number(value[key])) ? clampSetting(value[key], control, allowAdvanced) : control.default;
+    arena[key] = Number.isFinite(Number(value[key])) ? clampSetting(value[key], control, allowAdvanced) : arena[key];
   }
   arena.startingDistance = constrainStartingDistance(arena, advanced);
-  arena.collisionMode = COLLISION_MODES.includes(value.collisionMode) ? value.collisionMode : 'bounce';
-  arena.targetStrategy = TARGET_STRATEGIES.includes(value.targetStrategy) ? value.targetStrategy : 'nearest';
+  arena.collisionMode = COLLISION_MODES.includes(value.collisionMode) ? value.collisionMode : arena.collisionMode;
+  arena.targetStrategy = TARGET_STRATEGIES.includes(value.targetStrategy) ? value.targetStrategy : arena.targetStrategy;
   arena.launchDelay *= 1000;
   return arena;
 }
@@ -185,6 +198,7 @@ export function createMatchSettingsStore({ characters, storage = globalThis.loca
   // Versions before free-for-all only had left/right data.  Missing seats are
   // initialized from character defaults, preserving the old match exactly.
   if ([1, 2].includes(source?.version)) source = { ...source, version: MATCH_SETTINGS_VERSION, advanced: Boolean(source.advanced), arena: { ...source.arena, fighterCount: 2, targetStrategy: 'nearest' } };
+  if (source?.version === 3) source = { ...source, version: MATCH_SETTINGS_VERSION };
   if (source?.version !== MATCH_SETTINGS_VERSION) source = null;
   if (source) source = migrateMageDefaults(source);
   let advanced = Boolean(source?.advanced);
@@ -198,28 +212,42 @@ export function createMatchSettingsStore({ characters, storage = globalThis.loca
   let arena = normalizeArena(source?.arena, advanced);
   const listeners = new Set();
   let lastPersistenceSucceeded = false;
+  let lastPersistencePromise = Promise.resolve(false);
 
-  function persist() {
-    const value = {
+  function persist(detail) {
+    const value = exportData();
+    try {
+      if (!storage?.setItem) throw new Error('Storage is unavailable');
+      const continuous = Boolean(detail && !detail.reset && !detail.defaultSaved && !detail.imported &&
+        (detail.scope === 'arena' || detail.key || detail.trait || detail.weapon || detail.path || detail.priestAbility || detail.summonAbility || detail.specialAbility));
+      const write = storage.setItem(MATCH_SETTINGS_STORAGE_KEY, JSON.stringify(value), { debounce: continuous });
+      if (write && typeof write.then === 'function') {
+        lastPersistenceSucceeded = false;
+        lastPersistencePromise = write.then(() => { lastPersistenceSucceeded = true; return true; }, () => { lastPersistenceSucceeded = false; return false; });
+      } else {
+        lastPersistenceSucceeded = true;
+        lastPersistencePromise = Promise.resolve(true);
+      }
+    } catch {
+      // Customization remains usable when persistence is unavailable.
+      lastPersistenceSucceeded = false;
+      lastPersistencePromise = Promise.resolve(false);
+    }
+    return lastPersistenceSucceeded;
+  }
+
+  function exportData() {
+    return {
       version: MATCH_SETTINGS_VERSION,
       advanced,
       characterDefaults: clone(characterDefaults),
       fighters: clone(fighters),
       arena: serializeArena(arena)
     };
-    try {
-      if (!storage?.setItem) throw new Error('Storage is unavailable');
-      storage.setItem(MATCH_SETTINGS_STORAGE_KEY, JSON.stringify(value));
-      lastPersistenceSucceeded = true;
-    } catch {
-      // Customization remains usable when persistence is unavailable.
-      lastPersistenceSucceeded = false;
-    }
-    return lastPersistenceSucceeded;
   }
 
   function notify(detail) {
-    persist();
+    persist(detail);
     listeners.forEach(listener => listener(detail));
   }
 
@@ -249,6 +277,15 @@ export function createMatchSettingsStore({ characters, storage = globalThis.loca
     target.trait[key] = clampSetting(value, control, advanced);
     notify({ scope: side, characterId, trait: key });
     return getFighter(side, characterId);
+  }
+
+  function setWeaponValue(side, characterId, key, value) {
+    const target = fighters[side]?.[characterId];
+    const control = WEAPON_TUNING_CONTROLS[characterId]?.[key];
+    if (!target?.weapon || !control) throw new Error('Unknown weapon setting');
+    target.weapon[key] = clampWeaponSetting(value, control, key, advanced);
+    notify({ scope: side, characterId, weapon: key });
+    return getFighter(side, characterId).weapon;
   }
 
   function getArena() {
@@ -342,8 +379,25 @@ export function createMatchSettingsStore({ characters, storage = globalThis.loca
   function setCharacterDefault(side, characterId) {
     if (!fighters[side]?.[characterId]) throw new Error('Unknown fighter settings target');
     characterDefaults[characterId] = clone(fighters[side][characterId]);
-    notify({ scope: side, characterId, defaultSaved: true });
+    SIDES.forEach(seat => {
+      fighters[seat][characterId] = clone(characterDefaults[characterId]);
+    });
+    notify({ scope: 'all', characterId, defaultSaved: true });
     return getFighter(side, characterId);
+  }
+
+  function importCharacterDefault(characterId, stats, importedAdvanced = false) {
+    const character = characterById[characterId];
+    if (!character || character.locked) throw new Error('Unknown character default');
+    if (importedAdvanced) advanced = true;
+    characterDefaults[characterId] = normalizeFighter(stats, character, defaultFighterSettings(character), advanced);
+    SIDES.forEach(side => { fighters[side][characterId] = clone(characterDefaults[characterId]); });
+    notify({ scope: 'all', characterId, defaultSaved: true });
+  }
+
+  function getCharacterDefault(characterId) {
+    if (!characterById[characterId]) throw new Error('Unknown character default');
+    return deepFreeze(clone(characterDefaults[characterId]));
   }
 
   function resetArena() {
@@ -407,5 +461,5 @@ export function createMatchSettingsStore({ characters, storage = globalThis.loca
     return () => listeners.delete(listener);
   }
 
-  return Object.freeze({ getFighter, setFighterValue, setTraitValue, getMageAbilities, setMageAbilityValue, setPriestAbilityValue, setSummonAbilityValue, setSpecialAbilityValue, getArena, setArenaValue, getAdvanced: () => advanced, getLastPersistenceStatus: () => lastPersistenceSucceeded, setAdvanced, resetFighter, setCharacterDefault, resetArena, resetAll, snapshot, applyDuel, subscribe });
+  return Object.freeze({ getFighter, getCharacterDefault, setFighterValue, setTraitValue, setWeaponValue, getMageAbilities, setMageAbilityValue, setPriestAbilityValue, setSummonAbilityValue, setSpecialAbilityValue, getArena, setArenaValue, getAdvanced: () => advanced, getLastPersistenceStatus: () => lastPersistenceSucceeded, whenPersisted: () => lastPersistencePromise, exportData, setAdvanced, resetFighter, setCharacterDefault, importCharacterDefault, resetArena, resetAll, snapshot, applyDuel, subscribe });
 }

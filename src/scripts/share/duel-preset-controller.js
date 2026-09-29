@@ -170,13 +170,14 @@ export function createDuelPresetController({ elements, state, settings, i18n, fe
     elements['preset-confirm-primary'].focus();
   }
 
-  function persistName(mode, id, name, recipe = null, replaceId = null) {
+  async function persistName(mode, id, name, recipe = null, replaceId = null) {
     const item = mode === 'rename'
       ? library.rename(id, name, { replaceId, reservedNames: reservedNames() })
       : library.save(name, recipe, { replaceId, reservedNames: reservedNames() });
     hidePanels();
     render();
     elements['preset-search'].focus();
+    await library.whenPersisted();
     setStatus(mode === 'rename' ? 'preset.renamed' : 'preset.saved', { name: item.name }, 'success', elements['preset-search']);
   }
 
@@ -188,19 +189,19 @@ export function createDuelPresetController({ elements, state, settings, i18n, fe
       hidePanels();
       if (existing) {
         showConfirmation('preset.replace_question', 'preset.replace', 'preset.keep_both',
-          () => { try { persistName(mode, id, name, recipe, existing.id); } catch (error) { handleError(error); } },
-          () => { try { persistName(mode, id, name, recipe); } catch (error) { handleError(error); } },
+          () => { void persistName(mode, id, name, recipe, existing.id).catch(handleError); },
+          () => { void persistName(mode, id, name, recipe).catch(handleError); },
           { name });
-      } else persistName(mode, id, name, recipe);
+      } else void persistName(mode, id, name, recipe).catch(handleError);
     } catch (error) { handleError(error); }
   }
 
   function handleError(error) {
     console.warn('Duel preset operation failed', error);
-    setStatus('preset.error', {}, 'error', elements['preset-search']);
+    setStatus(storage?.hasConflict() ? 'data.conflict' : 'preset.error', {}, 'error', elements['preset-search']);
   }
 
-  function load(item, firstTwo = false) {
+  async function load(item, firstTwo = false) {
     try {
       const recipe = firstTwo ? firstTwoFighterRecipe(item.recipe, characters) : item.recipe;
       if (!firstTwo && recipe.arena.fighterCount > 2) return;
@@ -208,8 +209,9 @@ export function createDuelPresetController({ elements, state, settings, i18n, fe
       applyImportedDuel({ recipe: parsed, settings, state, characterById });
       onLoaded(parsed);
       close();
-      feedback.show({ key: settings.getLastPersistenceStatus() ? 'preset.loaded' : 'feedback.session_only',
-        parameters: { name: item.name }, tone: settings.getLastPersistenceStatus() ? 'success' : 'warning',
+      const persisted = await settings.whenPersisted();
+      feedback.show({ key: persisted ? 'preset.loaded' : storage?.hasConflict() ? 'data.conflict' : 'feedback.session_only',
+        parameters: { name: item.name }, tone: persisted ? 'success' : 'warning',
         anchor: elements['settings-presets'] });
     } catch (error) { handleError(error); }
   }
@@ -238,19 +240,20 @@ export function createDuelPresetController({ elements, state, settings, i18n, fe
   }
 
   function handleAction(item, action, anchor) {
-    if (action === 'load') load(item);
-    else if (action === 'first-two') load(item, true);
+    if (action === 'load') void load(item);
+    else if (action === 'first-two') void load(item, true);
     else if (action === 'export') exportItem(item, anchor);
     else if (action === 'rename' && !item.builtIn) showEditor('rename', item);
     else if (action === 'delete' && !item.builtIn) {
       hidePanels();
       showConfirmation('preset.delete_question', 'preset.delete', 'preset.cancel',
-        () => {
+        async () => {
           try {
             library.remove(item.id);
             hidePanels();
             render();
             elements['preset-search'].focus();
+            await library.whenPersisted();
             setStatus('preset.deleted', { name: item.name }, 'success', elements['preset-search']);
           } catch (error) { handleError(error); }
         }, hidePanels, { name: item.name });
