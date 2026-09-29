@@ -4,9 +4,10 @@ import { CHARACTERS, CHARACTER_BY_ID, CHARACTER_CATEGORIES } from '../src/script
 import { createCombatEngine } from '../src/scripts/battle/combat-engine.js';
 import { weaponMarkup, projectileMarkup } from '../src/scripts/battle/weapon-effects.js';
 
-test('Dong Fang Chang Fan belongs to the last category and can land his star attack', () => {
+test('Dong Fang Chang Fan remains in mobility and can land his star attack', () => {
   const character = CHARACTER_BY_ID['dongfang-changfan'];
-  assert.equal(character.category, CHARACTER_CATEGORIES.at(-1));
+  assert.equal(character.category, 'mobility');
+  assert.ok(CHARACTER_CATEGORIES.includes(character.category));
   assert.equal(CHARACTERS.filter(item => item.category === 'base').length, 5);
   const engine = createCombatEngine({ random: () => 0.5 });
   engine.reset({ left: character, right: CHARACTER_BY_ID.archer });
