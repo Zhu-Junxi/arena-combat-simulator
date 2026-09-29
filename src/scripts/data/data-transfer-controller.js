@@ -26,8 +26,7 @@ export function bindDataTransfer({ elements, state, settings, storage, i18n, fee
       const parsed = parseCharacterDefault(await file.text());
       settings.importCharacterDefault(parsed.characterId, parsed.stats, parsed.advanced);
       onCharacterImported();
-      show(await settings.whenPersisted() ? 'data.imported' : 'data.save_failed',
-        settings.getLastPersistenceStatus() ? 'success' : 'warning', elements['character-import']);
+      if (await settings.whenPersisted()) show('data.imported', 'success', elements['character-import']);
     } catch (error) { console.warn(error); show('data.error', 'error', elements['character-import']); }
     finally { elements['character-import-file'].value = ''; }
   });

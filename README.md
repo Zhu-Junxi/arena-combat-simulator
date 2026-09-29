@@ -18,16 +18,18 @@ The interface includes English and Simplified Chinese, light and dark themes, sa
 
 ## Quick start
 
-Requires **Node.js 18 or newer**.
+In VS Code, run **Terminal → Run Task → Arena Duel: Open & Save**. The task uses VS Code's bundled Node runtime, starts the project server, and opens the app at **<http://127.0.0.1:4173/>**. Running it again opens the existing server for this project. If another app owns port 4173, the task reports the conflict.
+
+With a standalone Node.js 18 or newer installation, this also works:
 
 ```sh
 cd arena-duel
 npm start
 ```
 
-Open **<http://127.0.0.1:4173/>** in your browser. If you are already in the `arena-duel` directory, run `npm start` directly.
+Open **<http://127.0.0.1:4173/>** in your browser after `npm start`. If you are already in the `arena-duel` directory, run `npm start` directly.
 
-The included server serves the app locally and saves gameplay data as JSON under `data/`. Open the URL above rather than opening `index.html` as a file: the browser needs to load JavaScript modules and fetch the translation catalog over HTTP.
+The included server serves the app locally and saves gameplay data as JSON under `data/`. VS Code Live Server only serves static files. If you already edited through Live Server, the app keeps those changes in that browser tab and offers **Move edits to project server**. Start the task first, then use that button. The old tab keeps its edits until the project server confirms the transfer. Independent changes are merged; for overlapping values, you choose which copy to keep.
 
 ## Features
 
@@ -78,7 +80,7 @@ Three- and four-fighter files can also be stored and exported. Their tiles show 
 
 Use **Export Character Default** or **Import Character Default** in the settings toolbar to share one fighter's reset baseline. Use **Export All Data** to back up match settings, character defaults, and personal presets. **Import All Data** asks before replacing that saved data. If another tab has changed the project files, export your edits as a backup or choose **Reload Saved Files**.
 
-The server stores player files in `data/characters/overrides/`, `data/settings/match.json`, and `data/presets/personal/`. These files are excluded from Git. Tracked factory character files and built-in presets live under `data/characters/factory/` and `data/presets/builtin/`. A saved character override becomes that fighter's default on every side and for future resets. If the file API is unavailable, the browser keeps a local copy and retries synchronization when it reconnects. Language and theme stay in the browser.
+The server stores player files in `data/characters/overrides/`, `data/settings/match.json`, and `data/presets/personal/`. These files are excluded from Git. Tracked factory character files and built-in presets live under `data/characters/factory/` and `data/presets/builtin/`. A saved character override becomes that fighter's default on every side and for future resets. The save indicator shows when a file write is in progress, acknowledged, waiting for the server, retrying, or blocked by a conflict or file error. The browser keeps unsaved edits and retries transient failures. Independent edits in another tab are merged by setting value or preset ID; overlapping edits require your choice. Language and theme stay in the browser.
 
 ### Change language or theme
 

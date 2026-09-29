@@ -463,9 +463,7 @@ preset.deleted,Deleted {name}.,已删除 {name}。
 preset.exported,Exported {name}.,已导出 {name}。
 preset.loaded,Loaded {name}.,已加载 {name}。
 preset.error,Unable to complete that preset action. Check the file or browser storage and try again.,无法完成预设操作。请检查文件或浏览器存储后重试。
-feedback.session_only,Project file not saved. Export a backup or reload saved files.,项目文件未保存。请导出备份或重新加载已保存文件。
 feedback.character_default,Applied {name} values on every side and saved them for future resets.,已将 {name} 的数值应用于所有位置并保存，供以后重置使用。
-feedback.character_default_session,Applied {name} values on every side but the project file was not saved. Export a backup or reload saved files.,已将 {name} 的数值应用于所有位置，但项目文件尚未保存。请导出备份或重新加载已保存文件。
 feedback.reset_fighter,Reset {name} to its saved defaults.,已将 {name} 重置为保存的默认值。
 feedback.reset_arena,Reset arena settings.,已重置竞技场设置。
 feedback.reset_all,Reset all fighter and arena settings.,已重置所有角色和竞技场设置。
@@ -543,14 +541,11 @@ data.backup_import,Import all data,导入全部数据
 data.reload,Reload saved files,重新加载已保存文件
 data.exported,JSON exported.,JSON 已导出。
 data.imported,Character default saved.,角色默认值已保存。
-data.save_failed,Changes remain available here. Export a backup or reload saved files.,更改仍保留在此处。请导出备份或重新加载已保存文件。
 data.error,Unable to read or save that JSON file.,无法读取或保存该 JSON 文件。
 data.replace_confirm,Replace saved character defaults and personal presets with this backup?,是否用此备份替换已保存的角色默认值和个人预设？
 data.reload_confirm,Discard unsaved edits and reload project files?,是否放弃未保存的更改并重新加载项目文件？
-data.conflict,Saved files changed elsewhere. Export a backup or reload saved files.,已保存文件在其他位置发生更改。请导出备份或重新加载已保存文件。
 data.manage,Data files,数据文件
 selection.grid_open,Open character grid,展开角色网格
-selection.grid_close,Close character grid,关闭角色网格
 selection.grid_eyebrow,CHARACTER ROSTER,角色阵容
 selection.grid_heading,Choose your fighters,选择对战角色
 selection.grid_side_label,Choose a side to customize,选择要设置的一方
@@ -561,3 +556,20 @@ global_settings.open,Open settings,打开设置
 global_settings.close,Close settings,关闭设置
 global_settings.heading,Settings,设置
 global_settings.placeholder,More settings coming soon.,更多设置即将推出。
+customization.open_properties,Open properties,打开属性面板
+customization.close_properties,Close character panel,关闭角色面板
+selection.grid_back_properties,Back to properties,返回属性面板
+save.saving,Saving to project files…,正在保存到项目文件…
+save.saved,Saved to project files,已保存到项目文件
+save.waiting_for_server,Edits are kept in this browser. Start Arena Duel: Open & Save in VS Code to save project files.,更改已保留在此浏览器中。请在 VS Code 中运行 Arena Duel: Open & Save 以保存项目文件。
+save.live_server,Live Server cannot write project files. Run Arena Duel: Open & Save in VS Code then move these edits.,Live Server 无法写入项目文件。请在 VS Code 中运行 Arena Duel: Open & Save 然后转移这些更改。
+save.retrying,Project file save interrupted. Retrying automatically; your edits remain here.,项目文件保存中断。正在自动重试；更改仍保留在此处。
+save.conflict,Some project values changed in another tab. Choose which values to keep for overlapping edits.,部分项目数值已在其他标签页更改。请选择重叠更改要保留的数值。
+save.file_error,Project file save was refused. Check file permissions then retry; your edits remain here.,项目文件保存被拒绝。请检查文件权限后重试；更改仍保留在此处。
+save.move,Move edits to project server,转移更改到项目服务器
+save.keep_browser,Keep browser edits,保留浏览器更改
+save.keep_project,Keep project values,保留项目数值
+save.retry,Retry save,重试保存
+save.allow_popup,Allow the project server tab to open then try again.,请允许打开项目服务器标签页后重试。
+save.handoff_failed,Transfer did not finish. Your edits are still in this browser.,转移未完成。更改仍保留在此浏览器中。
+save.overlap_confirm,There are {count} overlapping changes. OK keeps browser values; Cancel keeps project values. Other changes are merged.,有 {count} 处重叠更改。确定保留浏览器数值；取消保留项目数值。其他更改将合并。

@@ -198,7 +198,8 @@ export function createDuelPresetController({ elements, state, settings, i18n, fe
 
   function handleError(error) {
     console.warn('Duel preset operation failed', error);
-    setStatus(storage?.hasConflict() ? 'data.conflict' : 'preset.error', {}, 'error', elements['preset-search']);
+    if (storage?.getSaveState?.().state !== 'saved') return;
+    setStatus('preset.error', {}, 'error', elements['preset-search']);
   }
 
   async function load(item, firstTwo = false) {
@@ -210,9 +211,7 @@ export function createDuelPresetController({ elements, state, settings, i18n, fe
       onLoaded(parsed);
       close();
       const persisted = await settings.whenPersisted();
-      feedback.show({ key: persisted ? 'preset.loaded' : storage?.hasConflict() ? 'data.conflict' : 'feedback.session_only',
-        parameters: { name: item.name }, tone: persisted ? 'success' : 'warning',
-        anchor: elements['settings-presets'] });
+      if (persisted) feedback.show({ key: 'preset.loaded', parameters: { name: item.name }, tone: 'success', anchor: elements['settings-presets'] });
     } catch (error) { handleError(error); }
   }
 

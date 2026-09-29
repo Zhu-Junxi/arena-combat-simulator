@@ -61,3 +61,30 @@ test('local data API blocks private static paths and stale writes', async t => {
   assert.equal((await fetch(`${base}/api/data/backup`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: 'not json' })).status, 400);
   assert.equal((await fetch(`${base}/api/data/bootstrap`, { headers: { Origin: 'http://example.com' } })).status, 403);
 });
+
+test('open task reuses this project server and rejects a different project on the port', async t => {
+  const port = await freePort();
+  const env = { ...process.env, PORT: String(port), ARENA_DUEL_NO_OPEN: '1' };
+  const first = spawn(process.execPath, ['serve.cjs'], { cwd: root, env, stdio: 'ignore' });
+  const other = await mkdtemp(join(tmpdir(), 'arena-duel-other-'));
+  t.after(async () => {
+    if (first.exitCode === null && first.signalCode === null) {
+      const stopped = once(first, 'exit'); first.kill(); await stopped;
+    }
+    await rm(other, { recursive: true, force: true });
+  });
+  let healthy = false;
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    try { healthy = (await fetch(`http://127.0.0.1:${port}/api/data/health`)).ok; if (healthy) break; }
+    catch { /* Starting. */ }
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
+  assert.equal(healthy, true);
+  const duplicate = spawn(process.execPath, ['serve.cjs', '--open'], { cwd: root, env, stdio: 'pipe' });
+  const [duplicateCode] = await once(duplicate, 'exit');
+  assert.equal(duplicateCode, 0);
+  await cp(join(root, 'serve.cjs'), join(other, 'serve.cjs'));
+  const occupied = spawn(process.execPath, ['serve.cjs', '--open'], { cwd: other, env, stdio: 'pipe' });
+  const [occupiedCode] = await once(occupied, 'exit');
+  assert.equal(occupiedCode, 1);
+});

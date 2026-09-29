@@ -1,19 +1,15 @@
 :root { --ui-ease: cubic-bezier(.22, .75, .2, 1); --ui-fast: 180ms; --ui-medium: 320ms; }
 
 .dock { transition: height 420ms var(--ui-ease); }
-.settings-toggle, .settings-toggle span, .category, .character, .avatar, .start-control button, .roster-grid-toggle, .roster-grid-toggle span { transition-timing-function: var(--ui-ease); }
+.settings-toggle, .settings-toggle span, .category, .character, .avatar, .start-control button { transition-timing-function: var(--ui-ease); }
+.dock[data-step="properties"] .settings-toggle span { transform: none; }
+.dock[data-step="grid"] .settings-toggle span, .dock[data-step="properties-return"] .settings-toggle span { transform: rotate(180deg); }
 .feedback-toast, .settings-sheet-reveal, .preset-dialog[open], .preset-dialog[open]::backdrop, .preset-dialog[open] .preset-tile, .preset-inline-panel:not([hidden]) { animation-timing-function: var(--ui-ease); }
 .settings-panel { transition: opacity var(--ui-fast) var(--ui-ease), transform var(--ui-medium) var(--ui-ease), visibility 0s linear var(--ui-medium); }
 .dock[data-expanded="true"][data-grid-open="true"] .settings-panel { opacity: 0; visibility: hidden; transform: translateY(-10px); pointer-events: none; transition-delay: 0s, 0s, var(--ui-medium); }
-.roster-grid-toggle { position: absolute; z-index: 9; left: 50%; top: calc(100% - var(--dock-height) + 3px); width: 54px; height: 28px; padding: 0; transform: translate(-50%, -50%); display: grid; place-items: center; border: 1px solid var(--color-border); background: var(--color-surface); }
-.roster-grid-toggle::before, .roster-grid-toggle::after { content: ""; position: absolute; top: 5px; bottom: 5px; width: 1px; background: var(--color-border); opacity: .35; }
-.roster-grid-toggle::before { left: 8px; }
-.roster-grid-toggle::after { right: 8px; }
-.roster-grid-toggle span { font-size: 11px; transition: transform var(--ui-fast) var(--ui-ease); }
-.dock[data-grid-open="true"] .roster-grid-toggle span { transform: rotate(180deg); }
-.dock:not([data-expanded="true"]) .roster-grid-toggle { display: none; }
 .roster-grid-panel { position: absolute; z-index: 2; inset: 0 0 calc(var(--dock-height) - 6px); min-width: 0; display: flex; flex-direction: column; gap: 16px; padding: clamp(42px, 4vw, 54px) clamp(20px, 4vw, 58px) 20px; background: var(--color-surface); opacity: 0; visibility: hidden; transform: translateY(16px); pointer-events: none; transition: opacity var(--ui-fast) var(--ui-ease), transform var(--ui-medium) var(--ui-ease), visibility 0s linear var(--ui-medium); }
-.dock[data-expanded="true"][data-grid-open="true"] .roster-grid-panel { opacity: 1; visibility: visible; transform: none; pointer-events: auto; transition-delay: 0s, 0s, 0s; }
+.dock[data-step="grid"] .roster-grid-panel { bottom: 0; opacity: 1; visibility: visible; transform: none; pointer-events: auto; transition-delay: 0s, 0s, 0s; }
+.dock[data-step="grid"] .dock-main { visibility: hidden; opacity: 0; pointer-events: none; }
 .roster-grid-heading { display: flex; justify-content: space-between; align-items: end; gap: 16px; border-bottom: 1px solid var(--color-border); padding-bottom: 14px; min-width: 0; }
 .roster-grid-heading > div:first-child { min-width: 0; }
 .roster-grid-heading span { color: var(--color-text-muted); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; }
@@ -23,7 +19,7 @@
 .roster-grid-sides button, .roster-grid-filters button { padding: 8px 12px; font-size: 11px; line-height: 1.25; }
 .roster-grid-actions #roster-grid-start { padding: 8px 17px; font-size: 11px; line-height: 1.25; font-weight: bold; color: var(--color-selected-fg); background: var(--color-selected-bg); }
 .roster-grid-sides button[aria-pressed="true"], .roster-grid-filters button[aria-pressed="true"] { color: var(--color-selected-fg); background: var(--color-selected-bg); }
-.roster-grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); align-content: start; gap: 16px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 5px 6px 12px; scrollbar-width: thin; }
+.roster-grid-cards { display: grid; flex: 1 1 auto; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); align-content: start; gap: 16px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 5px 6px 12px; scrollbar-width: thin; }
 .roster-grid-cards .character { min-width: 0; max-width: 220px; justify-self: stretch; }
 .roster-grid-cards .character .mini-avatar { width: 100%; }
 .roster-grid-cards .character .name { text-align: center; }
@@ -90,7 +86,7 @@ footer #status { min-width: 0; overflow-wrap: anywhere; }
   .roster-grid-heading { align-items: start; flex-direction: column; gap: 10px; padding-bottom: 9px; }
   .roster-grid-actions { justify-content: flex-start; }
   .roster-grid-sides button, .roster-grid-filters button { padding: 6px 9px; font-size: 10px; }
-  .roster-grid-cards { grid-template-columns: repeat(auto-fill, minmax(82px, 1fr)); gap: 10px; }
+  .roster-grid-cards { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
   .roster-grid-cards .character .name { font-size: 13px; letter-spacing: 0; }
   .settings-actions { justify-content: flex-start; }
   .settings-toolbar { gap: 8px; padding-bottom: 8px; }
@@ -102,7 +98,7 @@ footer #status { min-width: 0; overflow-wrap: anywhere; }
   .page > header h1 { font-size: 16px; letter-spacing: 0; }
   .header-controls { gap: 5px; }
   .preference-control select { min-width: 68px; max-width: 78px; }
-  .roster-grid-cards { grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); }
+  .roster-grid-cards { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); }
   .roster-grid-heading h2 { font-size: 17px; }
   .settings-toolbar button, .settings-actions label, .data-menu summary { font-size: 9px; }
 }
@@ -111,3 +107,10 @@ footer #status { min-width: 0; overflow-wrap: anywhere; }
   .arena-view[data-result] .field-center { opacity: 1; transform: translate(-50%, -50%); }
   .global-settings-popover { opacity: 1; transform: none; }
 }
+.save-banner { position: fixed; z-index: 80; top: 68px; right: 10px; max-width: min(420px, calc(100vw - 20px)); padding: 10px 13px; border: 1px solid currentColor; background: var(--color-surface); color: var(--color-ink); box-shadow: 0 6px 22px #0005; font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
+.save-banner[data-save-state="saved"] { padding: 5px 9px; opacity: .76; font-size: 10px; }
+.save-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.save-actions:empty { display: none; }
+.save-actions button { font: inherit; padding: 4px 8px; border: 1px solid currentColor; background: transparent; color: inherit; cursor: pointer; }
+.save-actions button[hidden] { display: none; }
+@media (max-width: 600px) { .save-banner { top: auto; right: 8px; bottom: 48px; max-width: calc(100vw - 16px); } }

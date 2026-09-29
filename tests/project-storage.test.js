@@ -55,7 +55,7 @@ test('file data wins over legacy browser data and stale writes retain edits', as
   const storage = await createProjectStorage(browser, fetcher);
   assert.equal(storage.getItem(PRESET_LIBRARY_KEY), JSON.stringify(files.presets));
   await assert.rejects(storage.setItem(PRESET_LIBRARY_KEY, JSON.stringify({ version: 1, entries: [] })));
-  assert.equal(writes, 1);
+  assert.equal(writes, 3);
   assert.equal(storage.hasConflict(), true);
   assert.ok(storage.getItem(PRESET_LIBRARY_KEY));
   storage.discardLocalEdits();
@@ -168,4 +168,108 @@ test('legacy character defaults migrate only for fighters without override files
   assert.equal(merged.characterDefaults.warrior.health, 123);
   assert.equal(merged.characterDefaults.mage.health, 166);
   assert.equal(JSON.parse(storage.getItem(MATCH_SETTINGS_STORAGE_KEY)).characterDefaults.mage.health, 166);
+});
+
+test('stale settings revisions merge independent edits and acknowledge the new file', async () => {
+  const browser = memory();
+  const base = createMatchSettingsStore({ characters: CHARACTERS,
+    storage: { getItem: () => null, setItem() {} } }).exportData();
+  const remote = structuredClone(base);
+  let version = 'first';
+  let saved;
+  let readCount = 0;
+  const fetcher = async (url, options = {}) => {
+    if (url.endsWith('/bootstrap')) {
+      readCount += 1;
+      return response(200, { ...empty(), settings: readCount === 1 ? base : remote,
+        revisions: { settings: readCount === 1 ? 'first' : 'second', presets: 'initial-presets' },
+        exists: { settings: true, presets: false } });
+    }
+    if (url.endsWith('/settings') && options.method === 'PUT') {
+      if (options.headers['If-Match'] === 'first') return response(409, { error: 'stale' });
+      saved = JSON.parse(options.body);
+      version = 'third';
+      return response(200, { revision: version });
+    }
+    throw new Error('Unexpected request');
+  };
+  const storage = await createProjectStorage(browser, fetcher);
+  const store = createMatchSettingsStore({ characters: CHARACTERS, storage });
+  remote.fighters.right.archer.health = 140;
+  store.setFighterValue('left', 'warrior', 'health', 130);
+  assert.equal(await store.whenPersisted(), true);
+  assert.equal(saved.fighters.left.warrior.health, 130);
+  assert.equal(saved.fighters.right.archer.health, 140);
+  assert.equal(storage.getSaveState().state, 'saved');
+  assert.equal(storage.getSaveState().remoteMerge, true);
+});
+
+test('Live Server 404 keeps edits locally and reports one persistent waiting state', async () => {
+  const browser = memory();
+  const storage = await createProjectStorage(browser, async () => response(404, { error: 'Not found' }));
+  const states = [];
+  storage.subscribeSaveState(status => states.push(status));
+  const store = createMatchSettingsStore({ characters: CHARACTERS, storage });
+  store.setFighterValue('left', 'warrior', 'health', 131);
+  assert.equal(await store.whenPersisted(), false);
+  assert.equal(storage.getSaveState().state, 'waiting-for-server');
+  assert.equal(storage.getSaveState().liveServer, true);
+  assert.ok(browser.getItem('arena-duel.project-pending.settings'));
+  assert.equal(states.at(-1).state, 'waiting-for-server');
+  assert.ok(!states.some(status => status.state === 'saved'));
+});
+
+test('permission refusal retains browser edits and retry saves only after acknowledgment', async () => {
+  const browser = memory();
+  let writable = false;
+  const fetcher = async (url, options = {}) => {
+    if (url.endsWith('/bootstrap')) return response(200, empty());
+    if (url.endsWith('/settings') && options.method === 'PUT') return writable
+      ? response(200, { revision: 'saved' }) : response(403, { error: 'Permission denied' });
+    throw new Error('Unexpected request');
+  };
+  const storage = await createProjectStorage(browser, fetcher);
+  const store = createMatchSettingsStore({ characters: CHARACTERS, storage });
+  store.setFighterValue('left', 'warrior', 'health', 131);
+  assert.equal(await store.whenPersisted(), false);
+  assert.equal(storage.getSaveState().state, 'file-error');
+  assert.ok(browser.getItem('arena-duel.project-pending.settings'));
+  writable = true;
+  assert.equal(await storage.syncPending(), true);
+  assert.equal(storage.getSaveState().state, 'saved');
+  assert.equal(browser.getItem('arena-duel.project-pending.settings'), null);
+});
+
+test('overlapping stale edits stay local until the player chooses browser values', async () => {
+  const browser = memory();
+  const base = createMatchSettingsStore({ characters: CHARACTERS,
+    storage: { getItem: () => null, setItem() {} } }).exportData();
+  const remote = structuredClone(base);
+  remote.fighters.left.warrior.health = 150;
+  let reads = 0;
+  let saved;
+  const fetcher = async (url, options = {}) => {
+    if (url.endsWith('/bootstrap')) {
+      reads += 1;
+      return response(200, { ...empty(), settings: reads === 1 ? base : remote,
+        revisions: { settings: reads === 1 ? 'first' : 'second', presets: 'initial-presets' },
+        exists: { settings: true, presets: false } });
+    }
+    if (url.endsWith('/settings') && options.method === 'PUT') {
+      if (options.headers['If-Match'] === 'first') return response(409, { error: 'stale' });
+      saved = JSON.parse(options.body);
+      return response(200, { revision: 'third' });
+    }
+    throw new Error('Unexpected request');
+  };
+  const storage = await createProjectStorage(browser, fetcher);
+  const store = createMatchSettingsStore({ characters: CHARACTERS, storage });
+  store.setFighterValue('left', 'warrior', 'health', 130);
+  assert.equal(await store.whenPersisted(), false);
+  assert.equal(storage.getSaveState().state, 'conflict');
+  assert.deepEqual(storage.getSaveState().conflict.paths, ['fighters.left.warrior.health']);
+  assert.ok(browser.getItem('arena-duel.project-pending.settings'));
+  assert.equal(await storage.resolveConflict('browser'), true);
+  assert.equal(saved.fighters.left.warrior.health, 130);
+  assert.equal(storage.getSaveState().state, 'saved');
 });

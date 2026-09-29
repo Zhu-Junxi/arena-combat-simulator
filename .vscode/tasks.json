@@ -1,0 +1,27 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Arena Duel: Open & Save",
+      "type": "process",
+      "command": "${execPath}",
+      "args": ["${workspaceFolder}/serve.cjs", "--open"],
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": { "ELECTRON_RUN_AS_NODE": "1" }
+      },
+      "isBackground": true,
+      "runOptions": { "instanceLimit": 1 },
+      "problemMatcher": {
+        "owner": "arena-duel",
+        "pattern": { "regexp": "^\\[arena-duel-error\\] (.*)$", "message": 1 },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^Local preview:|^Arena Duel is already running",
+          "endsPattern": "^Local preview:|^Arena Duel is already running"
+        }
+      },
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": false }
+    }
+  ]
+}

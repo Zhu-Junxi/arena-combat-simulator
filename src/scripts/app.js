@@ -23,6 +23,7 @@ import { projectCatalog, readProjectJson } from './data/project-files.js';
 import { parseCharacterDefault } from './data/character-default-codec.js';
 import { createTransitions } from './ui/transitions.js';
 import { createGlobalSettings } from './ui/global-settings.js';
+import { bindSaveUI } from './data/save-ui.js';
 
 const bootstrapElements = requireElements(['bootstrap-error', 'bootstrap-retry', 'bootstrap-status']);
 bootstrapElements['bootstrap-retry'].addEventListener('click', () => location.reload());
@@ -36,9 +37,10 @@ async function initialize() {
   const i18n = await loadI18n(new URL('../locales/translations.csv', import.meta.url), { storage });
   const elements = requireElements([
     'arena', 'back', 'battlefield', 'battle-note', 'categories', 'categories-down', 'categories-up', 'combat-effects',
-    'countdown', 'dock', 'fighter-left', 'fighter-right', 'language-select', 'panel-left', 'panel-right',
-    'roster-grid-toggle', 'roster-grid-panel', 'roster-grid-sides', 'roster-grid-filters', 'roster-grid-cards', 'roster-grid-start',
+    'countdown', 'dock', 'dock-main', 'fighter-left', 'fighter-right', 'language-select', 'panel-left', 'panel-right',
+    'roster-grid-panel', 'roster-grid-sides', 'roster-grid-filters', 'roster-grid-cards', 'roster-grid-start',
     'global-settings-toggle', 'global-settings-popover', 'global-settings-close',
+    'save-banner', 'save-message', 'save-move', 'save-browser', 'save-project', 'save-retry',
     'projectile-effects', 'roster', 'selection-label', 'settings-content', 'settings-presets', 'settings-panel', 'settings-reset-all', 'advanced-tuning', 'adjustment-step',
     'settings-tabs', 'settings-toggle', 'stage', 'start', 'start-control', 'status', 'theme-select', 'view-label',
     'character-export', 'character-import', 'character-import-file', 'backup-export', 'backup-import', 'backup-import-file', 'data-reload',
@@ -61,7 +63,8 @@ async function initialize() {
   const settings = createMatchSettingsStore({ characters: CHARACTERS, storage: projectStorage });
   const feedback = createFeedback({ i18n, mainStatus: elements.status, dialogStatus: elements['preset-status'],
     mainToast: elements['feedback-toast'], dialogToast: elements['preset-feedback-toast'], dialog: elements['preset-dialog'] });
-  if (projectStorage.hasConflict()) feedback.show({ key: 'data.conflict', tone: 'warning', anchor: elements['data-reload'] });
+  bindSaveUI({ storage: projectStorage, i18n, banner: elements['save-banner'], message: elements['save-message'],
+    move: elements['save-move'], browser: elements['save-browser'], project: elements['save-project'], retry: elements['save-retry'] });
   const selected = () => ({ left: state.left, right: state.right });
   const panels = [elements['panel-left'], elements['panel-right']];
   // The UI is temporarily duel-only.  The store and engine retain FFA data,

@@ -2,8 +2,12 @@
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
+const { createHash } = require('node:crypto');
+const { spawn } = require('node:child_process');
 const root = __dirname;
 const port = Number(process.env.PORT || 4173);
+const projectId = createHash('sha256').update(root).digest('hex');
+const openOnReady = process.argv.includes('--open');
 const maxBody = 2 * 1024 * 1024;
 const types = {
   '.css': 'text/css; charset=utf-8', '.csv': 'text/csv; charset=utf-8',
@@ -37,6 +41,7 @@ async function body(req) {
 }
 async function api(req, res, route) {
   try {
+    if (req.method === 'GET' && route === '/api/data/health') return json(res, 200, { app: 'arena-duel', projectId });
     service ||= import('./src/scripts/data/project-data-service.js');
     const data = await service;
     if (req.method === 'GET' && route === '/api/data/bootstrap') return json(res, 200, await data.bootstrapData());
@@ -59,7 +64,18 @@ async function api(req, res, route) {
     return json(res, error.status || 500, { error: error.message || 'Data operation failed' });
   }
 }
-http.createServer((req, res) => {
+function openBrowser() {
+  if (process.env.ARENA_DUEL_NO_OPEN === '1') return;
+  const url = `http://127.0.0.1:${port}/`;
+  const platform = process.platform;
+  const command = platform === 'win32' ? 'cmd' : platform === 'darwin' ? 'open' : 'xdg-open';
+  const args = platform === 'win32' ? ['/c', 'start', '""', url] : [url];
+  const child = spawn(command, args, { detached: true, stdio: 'ignore' });
+  child.on('error', error => console.warn(`Open ${url} in your browser (${error.message})`));
+  child.unref();
+}
+
+const server = http.createServer((req, res) => {
   if (!allowed(req)) { res.writeHead(403).end(); return; }
   let route;
   try { route = decodeURIComponent(new URL(req.url, 'http://localhost').pathname); }
@@ -75,4 +91,23 @@ http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': types[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-store' });
     res.end(req.method === 'HEAD' ? undefined : bytes);
   });
-}).listen(port, '127.0.0.1', () => console.log('Local preview: http://127.0.0.1:' + port));
+});
+server.on('error', async error => {
+  if (error.code === 'EADDRINUSE' && openOnReady) {
+    try {
+      const response = await fetch(`http://127.0.0.1:${port}/api/data/health`);
+      const identity = await response.json();
+      if (response.ok && identity.app === 'arena-duel' && identity.projectId === projectId) {
+        console.log(`Arena Duel is already running for this project at http://127.0.0.1:${port}/`);
+        openBrowser();
+        return;
+      }
+    } catch { /* Another process owns the port. */ }
+    console.error(`Port ${port} is in use by another application or Arena Duel project.`);
+  } else console.error(`Unable to start Arena Duel: ${error.message}`);
+  process.exitCode = 1;
+});
+server.listen(port, '127.0.0.1', () => {
+  console.log('Local preview: http://127.0.0.1:' + port);
+  if (openOnReady) openBrowser();
+});

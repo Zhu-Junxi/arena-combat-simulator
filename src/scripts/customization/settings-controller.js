@@ -16,61 +16,79 @@ export function adjustmentStepFor(input, selectedStep) {
 }
 
 export function createSettingsController({ state, settings, view, elements, panels, feedback, i18n, storage, onSettingsChange = () => {}, onActiveSideChange = () => {}, onGridOpen = () => {} }) {
-  let expanded = false;
-  let gridOpen = false;
+  let step = 'compact';
+  const isExpanded = () => step !== 'compact';
+  const isGridOpen = () => step === 'grid';
 
-  function updateGridVisibility() {
+  function syncDock() {
+    const expanded = isExpanded();
+    const gridOpen = isGridOpen();
     const grid = elements['roster-grid-panel'];
     const settingsPanel = elements['settings-panel'];
     grid.inert = !expanded || !gridOpen;
     grid.setAttribute('aria-hidden', String(!expanded || !gridOpen));
     settingsPanel.inert = !expanded || gridOpen;
     settingsPanel.setAttribute('aria-hidden', String(!expanded || gridOpen));
-    elements.dock.dataset.gridOpen = String(gridOpen);
-    const gridToggle = elements['roster-grid-toggle'];
-    gridToggle.hidden = !expanded;
-    gridToggle.setAttribute('aria-hidden', String(!expanded));
-    gridToggle.setAttribute('aria-expanded', String(gridOpen));
-    const label = i18n.t(gridOpen ? 'selection.grid_close' : 'selection.grid_open');
-    gridToggle.setAttribute('aria-label', label);
-    gridToggle.dataset.tooltip = label;
-  }
-
-  function setGridOpen(nextOpen, { restoreFocus = false } = {}) {
-    if (!expanded || state.phase !== 'select') nextOpen = false;
-    if (gridOpen === Boolean(nextOpen)) return;
-    gridOpen = Boolean(nextOpen);
-    if (gridOpen) onGridOpen();
-    updateGridVisibility();
-    if (gridOpen) elements['roster-grid-sides'].querySelector('[aria-pressed="true"]')?.focus({ preventScroll: true });
-    else if (restoreFocus) elements['roster-grid-toggle'].focus({ preventScroll: true });
-  }
-
-  async function confirm(key, parameters = {}, anchor = null) {
-    const persisted = await settings.whenPersisted();
-    feedback.show({ key: persisted ? key : storage?.hasConflict() ? 'data.conflict' : key === 'feedback.character_default' ? 'feedback.character_default_session' : 'feedback.session_only', parameters, anchor,
-      tone: persisted ? 'success' : 'warning' });
-  }
-
-  function setExpanded(nextExpanded, { restoreFocus = false } = {}) {
-    if (state.phase !== 'select' && nextExpanded) return;
-    expanded = Boolean(nextExpanded);
-    if (!expanded) gridOpen = false;
+    elements['dock-main'].inert = gridOpen;
+    elements['dock-main'].setAttribute('aria-hidden', String(gridOpen));
+    elements.dock.dataset.step = step;
     elements.dock.dataset.expanded = String(expanded);
-    elements['settings-toggle'].setAttribute('aria-expanded', String(expanded));
-    updateGridVisibility();
-    panels.forEach(panel => { panel.inert = expanded; });
-    elements['start-control'].inert = expanded;
-    if (expanded) {
+    elements.dock.dataset.gridOpen = String(gridOpen);
+    if (state.phase === 'select') {
+      panels.forEach(panel => { panel.inert = expanded; });
+      elements['start-control'].inert = expanded;
+    }
+    const toggle = elements['settings-toggle'];
+    toggle.setAttribute('aria-expanded', String(expanded));
+    const nextAction = {
+      compact: 'customization.open_properties',
+      properties: 'selection.grid_open',
+      grid: 'selection.grid_back_properties',
+      'properties-return': 'customization.close_properties'
+    }[step];
+    const label = i18n.t(nextAction);
+    toggle.setAttribute('aria-label', label);
+    toggle.dataset.tooltip = label;
+  }
+
+  function setStep(next, { restoreFocus = false } = {}) {
+    if (state.phase !== 'select' && next !== 'compact') return;
+    if (step === next) return;
+    const previous = step;
+    step = next;
+    if (next === 'grid') onGridOpen();
+    syncDock();
+    if (next === 'properties' && previous === 'compact') {
       view.render();
       elements['settings-tabs'].querySelector('[aria-selected="true"]')?.focus({ preventScroll: true });
+    } else if (next === 'grid') {
+      elements['roster-grid-sides'].querySelector('[aria-pressed="true"]')?.focus({ preventScroll: true });
     } else if (restoreFocus) {
       elements['settings-toggle'].focus({ preventScroll: true });
     }
   }
 
+  async function confirm(key, parameters = {}, anchor = null) {
+    const persisted = await settings.whenPersisted();
+    if (persisted) feedback.show({ key, parameters, anchor, tone: 'success' });
+  }
+
+  function setExpanded(nextExpanded, { restoreFocus = false } = {}) {
+    if (nextExpanded) {
+      if (!isExpanded()) setStep('properties');
+    } else setStep('compact', { restoreFocus });
+  }
+
   function toggle() {
-    setExpanded(!expanded, { restoreFocus: expanded });
+    const next = {
+      compact: 'properties', properties: 'grid', grid: 'properties-return', 'properties-return': 'compact'
+    }[step];
+    setStep(next, { restoreFocus: next === 'properties-return' || next === 'compact' });
+  }
+
+  function back() {
+    if (step === 'grid') setStep('properties-return', { restoreFocus: true });
+    else if (isExpanded()) setStep('compact', { restoreFocus: true });
   }
 
   function selectTab(tab, options) {
@@ -79,7 +97,7 @@ export function createSettingsController({ state, settings, view, elements, pane
       onActiveSideChange(tab);
     }
     view.setActiveTab(tab, options);
-    if (expanded) {
+    if (isExpanded()) {
       const sheet = elements['settings-content'].querySelector('.settings-sheet');
       sheet?.classList.add('settings-sheet-reveal');
     }
@@ -124,14 +142,12 @@ export function createSettingsController({ state, settings, view, elements, pane
   }
 
   async function warnIfSessionOnly(anchor) {
-    if (!await settings.whenPersisted()) {
-      feedback.show({ key: storage?.hasConflict() ? 'data.conflict' : 'feedback.session_only', tone: 'warning', anchor });
-    }
+    await settings.whenPersisted();
   }
 
   function bind() {
+    syncDock();
     elements['settings-toggle'].addEventListener('click', toggle);
-    elements['roster-grid-toggle'].addEventListener('click', () => setGridOpen(!gridOpen, { restoreFocus: gridOpen }));
     elements['settings-tabs'].addEventListener('click', event => {
       const tab = event.target.closest('[data-settings-tab]');
       if (tab) selectTab(tab.dataset.settingsTab);
@@ -224,15 +240,12 @@ export function createSettingsController({ state, settings, view, elements, pane
       confirm(event.target.checked ? 'feedback.advanced_on' : 'feedback.advanced_off', {}, elements['advanced-tuning']);
     });
     document.addEventListener('keydown', event => {
+      if (event.key !== 'Escape' || !isExpanded()) return;
       if (event.target.closest?.('dialog[open]')) return;
-      if (event.target.matches?.('input, textarea, select')) return;
-      if (event.key === 'Escape' && expanded) {
-        event.preventDefault();
-        if (gridOpen) setGridOpen(false, { restoreFocus: true });
-        else setExpanded(false, { restoreFocus: true });
-      }
+      event.preventDefault();
+      back();
     });
   }
 
-  return Object.freeze({ bind, setExpanded, setGridOpen, toggle, selectTab, refreshLocalization: updateGridVisibility, isExpanded: () => expanded, isGridOpen: () => gridOpen });
+  return Object.freeze({ bind, setExpanded, toggle, back, selectTab, refreshLocalization: syncDock, isExpanded, isGridOpen, getStep: () => step });
 }
