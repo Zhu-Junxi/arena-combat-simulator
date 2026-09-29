@@ -21,7 +21,7 @@ export const WEAPON_SPRITES = deepFreeze({
 export const ARROW_SPRITE = deepFreeze({ file: 'archer-forest-arrow.png', source: [2172, 724], crop: [52, 252, 2070, 205] });
 
 export const WEAPON_DEFINITIONS = deepFreeze({
-  war: { type: 'melee', art: 'war-sword', mount: 50, length: factory('war').attackRange, width: 32, windup: 0, active: 0.025, duration: 0.205 },
+  war: { type: 'melee', art: 'war-sword', mount: 50, length: factory('war').attackRange, width: factory('war').weapon.width, windup: 0, active: factory('war').abilities.swingDuration, duration: factory('war').abilities.swingDuration + factory('war').abilities.recovery },
   'dongfang-changfan': { type: 'ranged', art: 'star-thought', muzzle: 64, windup: 0.28, duration: 0.76, projectileSpeed: factory('dongfang-changfan').projectileSpeed, radius: 7 },
   warrior: { type: 'melee', art: 'sword', mount: 50, length: factory('warrior').attackRange, width: factory('warrior').weapon.width, windup: 0.2, active: factory('warrior').weapon.active, duration: 0.7 },
   guardian: { type: 'melee', art: 'shield', mount: 50, length: factory('guardian').attackRange, width: 111.32631578947368, windup: 0.22, active: 0.18, duration: 0.68 },

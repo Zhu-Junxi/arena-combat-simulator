@@ -1,10 +1,10 @@
 import { createGuardianState, absorbShieldDamage, beginCharge, createFlail, advanceFlail, resolveChainWalls } from './guardian.js';
-import { WAR_COMBAT, createWarState, warSwordPose, warSweepTouches, beginWarAttack, beginWarSwing, stopWarCharge, resetWarCycle } from './war-combat.js';
+import { createWarState, warSwordPose, warSweepTouches, beginWarAttack, beginWarSwing, stopWarCharge, resetWarCycle } from './war-combat.js';
 import { BATTLE_RULES } from '../config/combat.js';
 import { createStarLaunch, createStarFlight, advanceStarFlight } from './star-flight.js';
 import { grantStarPassive, starCooldownAdvance } from './star-passive.js';
 import { WEAPON_DEFINITIONS } from '../config/weapons.js';
-import { defaultMageAbilities, defaultPriestAbilities, defaultSummonAbilities, defaultGuardianAbilities, defaultStarAbilities } from '../config/customization.js';
+import { defaultMageAbilities, defaultPriestAbilities, defaultSummonAbilities, defaultGuardianAbilities, defaultStarAbilities, defaultWarAbilities } from '../config/customization.js';
 import { COMBAT_RESOLUTION, removeCombatHealth, restoreCombatHealth, roundCombat } from './combat-precision.js';
 
 export const MAGE_CYCLES = Object.freeze(['ice', 'fire', 'leech']);
@@ -254,6 +254,7 @@ export function createFighter(side, character, weapon, index, settings = null, r
   const summonAbilities = character.trait?.id === 'beastmaster' ? settings?.abilities ?? defaultSummonAbilities() : null;
   const guardianAbilities = character.id === 'guardian' ? { ...defaultGuardianAbilities(), ...settings?.abilities } : null;
   const starAbilities = character.id === 'dongfang-changfan' ? { ...defaultStarAbilities(), ...settings?.abilities } : null;
+  const warAbilities = character.id === 'war' ? { ...defaultWarAbilities(), ...settings?.abilities } : null;
   const tunedWeapon = guardianAbilities ? { ...weapon, windup: Math.max(0.001, guardianAbilities.windup), active: Math.max(0.001, guardianAbilities.active), duration: Math.max(0.002, guardianAbilities.duration) } :
     starAbilities ? { ...weapon, windup: Math.max(0.001, starAbilities.windup), duration: Math.max(0.002, starAbilities.duration), radius: Math.max(0.1, Math.min(10000, starAbilities.radius)) } :
       settings?.weapon ? { ...weapon, ...settings.weapon } : weapon;
@@ -279,6 +280,7 @@ export function createFighter(side, character, weapon, index, settings = null, r
     attacksFired: 0,
     starPassive: {},
     war: character.id === 'war' ? createWarState(side) : null,
+    warAbilities,
     knockback: null,
     guardian: guardianAbilities ? createGuardianState(guardianAbilities) : null,
     guardianAbilities,
@@ -742,6 +744,7 @@ export function createCombatEngine({
 
   function updateWarAttack(fighter, target, alive) {
     const w = fighter.war;
+    const combat = fighter.warAbilities;
     if (!alive || fighter.health <= 0 || !target) {
       if (fighter.attack) emit('attack-ended', { fighter, attack: fighter.attack });
       resetWarCycle(fighter);
@@ -771,23 +774,23 @@ export function createCombatEngine({
           const angle = facingAngle(fighter, other);
           stopWarCharge(other);
           endCharge(other);
-          other.knockback = { angle, remaining: WAR_COMBAT.knockbackDistance,
-            speed: WAR_COMBAT.knockbackDistance / WAR_COMBAT.knockbackDuration };
+          other.knockback = combat.knockbackDistance > 0 ? { angle, remaining: combat.knockbackDistance,
+            speed: combat.knockbackDistance / combat.knockbackDuration } : null;
           const speed = other.movementSpeed ?? 0;
           other.vx = Math.cos(angle) * speed; other.vy = Math.sin(angle) * speed;
           if (other.kind) {
             const half = other.bodySize / 2;
-            other.x = Math.max(half, Math.min(battle.rules.size - half, other.x + Math.cos(angle) * WAR_COMBAT.knockbackDistance));
-            other.y = Math.max(half, Math.min(battle.rules.size - half, other.y + Math.sin(angle) * WAR_COMBAT.knockbackDistance));
+            other.x = Math.max(half, Math.min(battle.rules.size - half, other.x + Math.cos(angle) * combat.knockbackDistance));
+            other.y = Math.max(half, Math.min(battle.rules.size - half, other.y + Math.sin(angle) * combat.knockbackDistance));
             other.knockback = null;
           }
         }
         emit('war-sweep-hit', { fighter, target: other, amount });
       }
       w.swing.previousAngle = pose.angle;
-      w.swing.finished = battle.elapsed >= w.swing.startedAt + WAR_COMBAT.swingDuration - 1e-9;
+      w.swing.finished = battle.elapsed >= w.swing.startedAt + combat.swingDuration - 1e-9;
     }
-    if (!w.charge && w.swing?.finished && battle.elapsed >= w.swing.startedAt + WAR_COMBAT.swingDuration + WAR_COMBAT.recovery - 1e-9) {
+    if (!w.charge && w.swing?.finished && battle.elapsed >= w.swing.startedAt + combat.swingDuration + combat.recovery - 1e-9) {
       emit('attack-ended', { fighter, attack: fighter.attack });
       resetWarCycle(fighter, true);
     }

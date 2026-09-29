@@ -57,6 +57,7 @@ test('pre-War match files and backups add War defaults without replacing existin
   const store = settings.createMatchSettingsStore({ characters: characters.CHARACTERS, storage: { getItem: () => null, setItem() {} } });
   store.setFighterValue('left', 'guardian', 'health', 177);
   const legacy = store.exportData();
+  legacy.version = 4;
   delete legacy.warCombatVersion;
   delete legacy.characterDefaults.war;
   for (const seat of Object.values(legacy.fighters)) delete seat.war;
@@ -65,6 +66,8 @@ test('pre-War match files and backups add War defaults without replacing existin
   const before = await service.bootstrapData();
   assert.equal(before.settings.fighters.left.guardian.health, 177);
   assert.deepEqual(before.settings.fighters.left.war.attackCD, [5]);
+  assert.equal(before.settings.version, 5);
+  assert.equal(before.settings.fighters.left.war.abilities.chargeDistance, 600);
   const imported = await service.importBackup({ format: 'arena-duel.backup', version: 1, settings: legacy, presets: null }, before.revisions);
   assert.equal(imported.settings.fighters.left.guardian.health, 177);
   assert.equal(imported.settings.characterDefaults.war.attackRange, 220);

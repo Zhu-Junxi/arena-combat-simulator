@@ -11,6 +11,9 @@
 .settings-toggle span { display: block; font-size: 11px; transition: transform 240ms ease; }
 .dock[data-expanded="true"] .settings-toggle span { transform: rotate(180deg); }
 .dock[data-expanded="true"] .settings-toggle { top: 14px; }
+.roster-grid-toggle { position: absolute; left: 50%; bottom: calc(var(--dock-height) - 8px); width: 54px; height: 28px; padding: 0; transform: translateX(-50%); z-index: 8; border: 1px solid var(--color-border); background: var(--color-surface); display: grid; place-items: center; }
+.roster-grid-toggle[hidden] { display: none; }
+.roster-grid-toggle span { font-size: 11px; }
 
 .dock[data-expanded="true"] { height: 100%; }
 

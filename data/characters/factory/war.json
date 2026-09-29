@@ -7,6 +7,15 @@
     "attack": [10],
     "attackCD": [5],
     "movementSpeed": 220,
-    "attackRange": 220
+    "attackRange": 220,
+    "weapon": { "width": 32 },
+    "abilities": {
+      "chargeDistance": 600,
+      "speedMultiplier": 4,
+      "swingDuration": 0.025,
+      "recovery": 0.18,
+      "knockbackDistance": 260,
+      "knockbackDuration": 0.24
+    }
   }
 }

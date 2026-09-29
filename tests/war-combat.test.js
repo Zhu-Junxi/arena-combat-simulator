@@ -1,11 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CHARACTER_BY_ID, CHARACTERS } from '../src/scripts/config/characters.js';
-import { createCombatEngine } from '../src/scripts/battle/combat-engine.js';
-import { WAR_COMBAT, warSwordPose, warSweepTouches } from '../src/scripts/battle/war-combat.js';
+import { createCombatEngine, createFighter } from '../src/scripts/battle/combat-engine.js';
+import { WAR_COMBAT, warSwordPose, warSweepTouches, beginWarAttack, stopWarCharge } from '../src/scripts/battle/war-combat.js';
+import { WEAPON_DEFINITIONS } from '../src/scripts/config/weapons.js';
 import { createFlail } from '../src/scripts/battle/guardian.js';
 import { createMatchSettingsStore } from '../src/scripts/customization/settings-store.js';
-import { MATCH_SETTINGS_VERSION } from '../src/scripts/config/customization.js';
+import { MATCH_SETTINGS_VERSION, WAR_ABILITY_CONTROLS } from '../src/scripts/config/customization.js';
+import { createSettingsView } from '../src/scripts/customization/settings-view.js';
+import { createCharacterDefault, parseCharacterDefault } from '../src/scripts/data/character-default-codec.js';
 import { createDuelRecipe, parseDuelRecipe } from '../src/scripts/share/duel-share-codec.js';
 
 const near = (actual, expected, epsilon = 1e-5) => assert.ok(Math.abs(actual - expected) < epsilon, `${actual} != ${expected}`);
@@ -275,4 +278,133 @@ test('War tuning persists and shares damage, charge cooldown and sweep reach wit
   reload.resetFighter('left', 'war');
   assert.deepEqual(reload.getFighter('left', 'war').attackCD, [5]);
   assert.equal(reload.getFighter('left', 'war').attackRange, 220);
+});
+
+test('War detailed controls render below five primary controls and survive rerenders', () => {
+  const store = createMatchSettingsStore({ characters: CHARACTERS, storage: { getItem: () => null, setItem() {} } });
+  const content = { innerHTML: '' };
+  const view = createSettingsView({ state: { left: CHARACTER_BY_ID.war, right: CHARACTER_BY_ID.archer }, settings: store,
+    elements: { 'settings-content': content }, i18n: { t: key => key } });
+  view.renderContent();
+  const primary = content.innerHTML.split('<details')[0];
+  assert.equal((primary.match(/data-setting-row=/g) ?? []).length, 5);
+  for (const key of Object.keys(WAR_ABILITY_CONTROLS)) {
+    assert.doesNotMatch(primary, new RegExp(`left-war-${key}`));
+    assert.match(content.innerHTML, new RegExp(`left-war-${key}-range`));
+  }
+  assert.match(content.innerHTML, /left-weapon-width-range/);
+  content.querySelector = () => ({ dataset: { detailKey: 'left:war' }, open: true });
+  view.renderContent();
+  assert.match(content.innerHTML, /data-detail-key="left:war" open>/);
+});
+
+test('War detailed values save, reset, migrate, and validate in recipes and character defaults', () => {
+  let saved = null;
+  const storage = { getItem: () => saved, setItem: (_key, value) => { saved = value; } };
+  const store = createMatchSettingsStore({ characters: CHARACTERS, storage });
+  const changes = { chargeDistance: 700, speedMultiplier: 3, swingDuration: .05,
+    recovery: .4, knockbackDistance: 180, knockbackDuration: .5 };
+  for (const [key, value] of Object.entries(changes)) store.setSpecialAbilityValue('left', 'war', key, value);
+  store.setWeaponValue('left', 'war', 'width', 60);
+  const selected = { left: CHARACTER_BY_ID.war, right: CHARACTER_BY_ID.archer };
+  const reload = createMatchSettingsStore({ characters: CHARACTERS, storage });
+  assert.deepEqual(reload.getFighter('left', 'war').abilities, changes);
+  assert.equal(reload.getFighter('left', 'war').weapon.width, 60);
+  const recipe = createDuelRecipe({ selectedCharacters: selected, setup: reload.snapshot(selected) });
+  assert.equal(recipe.version, 14);
+  assert.deepEqual(parseDuelRecipe(JSON.stringify(recipe), { characters: CHARACTERS }).fighters.left.stats, reload.getFighter('left', 'war'));
+  for (const key of Object.keys(changes)) {
+    const invalid = structuredClone(recipe);
+    invalid.fighters.left.stats.abilities[key] = -1;
+    assert.throws(() => parseDuelRecipe(JSON.stringify(invalid), { characters: CHARACTERS }), key);
+  }
+  const invalidWidth = structuredClone(recipe);
+  invalidWidth.fighters.left.stats.weapon.width = -1;
+  assert.throws(() => parseDuelRecipe(JSON.stringify(invalidWidth), { characters: CHARACTERS }));
+  const oldRecipe = structuredClone(recipe);
+  oldRecipe.version = 13;
+  delete oldRecipe.fighters.left.stats.abilities;
+  delete oldRecipe.fighters.left.stats.weapon;
+  const oldParsed = parseDuelRecipe(JSON.stringify(oldRecipe), { characters: CHARACTERS });
+  assert.deepEqual(oldParsed.fighters.left.stats.abilities, CHARACTER_BY_ID.war.defaultSettings.abilities);
+  assert.deepEqual(oldParsed.fighters.left.stats.weapon, CHARACTER_BY_ID.war.defaultSettings.weapon);
+  const oldDefault = createCharacterDefault('war', reload.getFighter('left', 'war'));
+  oldDefault.version = 1;
+  delete oldDefault.stats.abilities;
+  delete oldDefault.stats.weapon;
+  const migratedDefault = parseCharacterDefault(oldDefault);
+  assert.equal(migratedDefault.version, 2);
+  assert.deepEqual(migratedDefault.stats.abilities, CHARACTER_BY_ID.war.defaultSettings.abilities);
+  assert.equal(migratedDefault.stats.attackRange, 220);
+  reload.resetFighter('left', 'war');
+  assert.deepEqual(reload.getFighter('left', 'war').abilities, CHARACTER_BY_ID.war.defaultSettings.abilities);
+  assert.equal(reload.getFighter('left', 'war').weapon.width, 32);
+  for (const [key, value] of Object.entries(changes)) reload.setSpecialAbilityValue('left', 'war', key, value);
+  reload.setWeaponValue('left', 'war', 'width', 60);
+  reload.setCharacterDefault('left', 'war');
+  reload.resetFighter('right', 'war');
+  assert.deepEqual(reload.getFighter('right', 'war').abilities, changes);
+  reload.resetAll();
+  assert.deepEqual(reload.getFighter('left', 'war').abilities, changes);
+  assert.equal(reload.getFighter('left', 'war').weapon.width, 60);
+  reload.setAdvanced(true);
+  for (const key of ['chargeDistance', 'speedMultiplier', 'swingDuration', 'recovery', 'knockbackDuration']) {
+    reload.setSpecialAbilityValue('left', 'war', key, -100);
+    assert.ok(reload.getFighter('left', 'war').abilities[key] > 0, key);
+  }
+  reload.setWeaponValue('left', 'war', 'width', -100);
+  assert.equal(reload.getFighter('left', 'war').weapon.width, 4);
+  const legacy = structuredClone(store.exportData());
+  legacy.version = 4;
+  delete legacy.characterDefaults.war.abilities;
+  delete legacy.characterDefaults.war.weapon;
+  for (const side of Object.keys(legacy.fighters)) {
+    delete legacy.fighters[side].war.abilities;
+    delete legacy.fighters[side].war.weapon;
+  }
+  const oldStore = createMatchSettingsStore({ characters: CHARACTERS,
+    storage: { getItem: () => JSON.stringify(legacy), setItem() {} } });
+  assert.deepEqual(oldStore.getFighter('left', 'war').abilities, CHARACTER_BY_ID.war.defaultSettings.abilities);
+  assert.equal(oldStore.getFighter('left', 'war').attackRange, 220);
+});
+
+test('each War detailed control changes combat state', () => {
+  const defaults = CHARACTER_BY_ID.war.defaultSettings;
+  const tuned = { ...defaults.abilities, chargeDistance: 300, speedMultiplier: 2, swingDuration: .1,
+    recovery: .6, knockbackDistance: 100, knockbackDuration: .5 };
+  const war = createFighter('left', CHARACTER_BY_ID.war, WEAPON_DEFINITIONS.war, 0,
+    { ...defaults, abilities: tuned, weapon: { width: 60 } });
+  const target = { x: war.x + 400, y: war.y, bodySize: 100 };
+  beginWarAttack(war, target, 0, 10);
+  assert.equal(war.war.charge.remaining, 300);
+  assert.equal(war.war.charge.speed, war.movementSpeed * 2);
+  war.war.swing = { startedAt: 0, from: 0, to: Math.PI };
+  near(warSwordPose(war, .1).angle, Math.PI);
+  const edgeTarget = { x: 170, y: 25, bodySize: 10 };
+  const blade = { ...war, x: 0, y: 0, attackRange: 200, weapon: { mount: 0, width: 60 } };
+  assert.ok(warSweepTouches(blade, edgeTarget, 0, 0));
+  assert.equal(warSweepTouches({ ...blade, weapon: { mount: 0, width: 4 } }, edgeTarget, 0, 0), false);
+  const selected = { left: CHARACTER_BY_ID.war, right: CHARACTER_BY_ID.archer };
+  const store = createMatchSettingsStore({ characters: CHARACTERS, storage: { getItem: () => null, setItem() {} } });
+  for (const [key, value] of Object.entries(tuned)) store.setSpecialAbilityValue('left', 'war', key, value);
+  const engine = createCombatEngine({ random: () => .2 });
+  engine.reset(selected, store.snapshot(selected)); engine.launch();
+  const [attacker, victim] = engine.state.fighters;
+  Object.assign(attacker, { x: 180, y: 500, vx: 0, vy: 0 });
+  Object.assign(victim, { x: 460, y: 500, vx: 0, vy: 0, health: 500, maxHealth: 500, cooldownElapsed: -1000 });
+  engine.step(5.3);
+  assert.equal(victim.knockback?.speed, 200, 'distance and duration determine knockback speed');
+  assert.ok(victim.knockback.remaining <= 100);
+  stopWarCharge(attacker);
+  engine.step(.2);
+  assert.equal(attacker.war.phase, 'recover', 'longer recovery keeps War in recovery');
+  engine.step(.7);
+  assert.equal(attacker.war.phase, 'move');
+  store.setSpecialAbilityValue('left', 'war', 'knockbackDistance', 0);
+  engine.reset(selected, store.snapshot(selected)); engine.launch();
+  const [noPushWar, noPushTarget] = engine.state.fighters;
+  Object.assign(noPushWar, { x: 180, y: 500, vx: 0, vy: 0 });
+  Object.assign(noPushTarget, { x: 460, y: 500, vx: 0, vy: 0, health: 500, maxHealth: 500, cooldownElapsed: -1000 });
+  engine.step(5.3);
+  assert.equal(noPushTarget.knockback, null);
 });

@@ -38,7 +38,7 @@ async function initialize() {
   const elements = requireElements([
     'arena', 'back', 'battlefield', 'battle-note', 'categories', 'categories-down', 'categories-up', 'combat-effects',
     'countdown', 'dock', 'dock-main', 'fighter-left', 'fighter-right', 'language-select', 'panel-left', 'panel-right',
-    'roster-grid-panel', 'roster-grid-sides', 'roster-grid-filters', 'roster-grid-cards', 'roster-grid-start',
+    'roster-grid-panel', 'roster-grid-toggle', 'roster-grid-sides', 'roster-grid-filters', 'roster-grid-cards', 'roster-grid-start',
     'global-settings-toggle', 'global-settings-popover', 'global-settings-close',
     'save-banner', 'save-message', 'save-move', 'save-browser', 'save-project', 'save-retry',
     'projectile-effects', 'roster', 'selection-label', 'settings-content', 'settings-presets', 'settings-panel', 'settings-reset-all', 'advanced-tuning', 'adjustment-step',

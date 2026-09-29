@@ -7,7 +7,7 @@ import {
   MAGE_SPELL_SLOTS,
   PRIEST_ABILITY_CONTROLS,
   SUMMON_ABILITY_CONTROLS,
-  GUARDIAN_ABILITY_CONTROLS, GUARDIAN_ABILITY_SWITCHES, STAR_ABILITY_CONTROLS, STAR_ABILITY_SWITCHES,
+  GUARDIAN_ABILITY_CONTROLS, GUARDIAN_ABILITY_SWITCHES, STAR_ABILITY_CONTROLS, STAR_ABILITY_SWITCHES, WAR_ABILITY_CONTROLS,
   TRAIT_CONTROLS,
   WEAPON_TUNING_CONTROLS,
   MATCH_SETTINGS_STORAGE_KEY,
@@ -18,6 +18,7 @@ import {
   defaultPriestAbilities,
   defaultSummonAbilities,
   defaultGuardianAbilities,
+  defaultWarAbilities,
   defaultStarAbilities
 } from '../config/customization.js';
 import { FIGHTER_SLOTS, TARGET_STRATEGIES, activeSlots } from '../config/match.js';
@@ -69,6 +70,7 @@ function normalizeFighter(value, character, fallback = defaultFighterSettings(ch
   if (character.trait?.id === 'beastmaster') fighter.abilities = normalizeSummonAbilities(value?.abilities, defaults.abilities, advanced);
   if (character.id === 'guardian') fighter.abilities = normalizeGuardianAbilities(value?.abilities, defaults.abilities, advanced);
   if (character.id === 'dongfang-changfan') fighter.abilities = normalizeStarAbilities(value?.abilities, defaults.abilities, advanced);
+  if (character.id === 'war') fighter.abilities = normalizeWarAbilities(value?.abilities, defaults.abilities, advanced);
   return fighter;
 }
 
@@ -81,6 +83,17 @@ function normalizeWeapon(value, character, fallback, advanced = false) {
 function clampWeaponSetting(value, control, key, advanced) {
   const timing = key === 'active' || key === 'windup';
   return Math.max(control.min, clampSetting(value, control, advanced && !timing));
+}
+
+function clampWarSetting(value, control, key, advanced) {
+  const positive = key !== 'knockbackDistance';
+  return Math.max(positive ? control.min : 0, clampSetting(value, control, advanced));
+}
+
+export function normalizeWarAbilities(value, fallback = defaultWarAbilities(), advanced = false) {
+  return Object.fromEntries(Object.entries(WAR_ABILITY_CONTROLS).map(([key, control]) => [key,
+    Number.isFinite(Number(value?.[key])) ? clampWarSetting(value[key], control, key, advanced) : fallback[key]
+  ]));
 }
 
 export function normalizeTraitSettings(value, character, fallback, advanced = false) {
@@ -203,7 +216,7 @@ export function createMatchSettingsStore({ characters, storage = globalThis.loca
   // Versions before free-for-all only had left/right data.  Missing seats are
   // initialized from character defaults, preserving the old match exactly.
   if ([1, 2].includes(source?.version)) source = { ...source, version: MATCH_SETTINGS_VERSION, advanced: Boolean(source.advanced), arena: { ...source.arena, fighterCount: 2, targetStrategy: 'nearest' } };
-  if (source?.version === 3) source = { ...source, version: MATCH_SETTINGS_VERSION };
+  if ([3, 4].includes(source?.version)) source = { ...source, version: MATCH_SETTINGS_VERSION };
   if (source?.version !== MATCH_SETTINGS_VERSION) source = null;
   if (source) source = migrateMageDefaults(source);
   let advanced = Boolean(source?.advanced);
@@ -345,10 +358,11 @@ export function createMatchSettingsStore({ characters, storage = globalThis.loca
     const target = fighters[side]?.[characterId];
     const guardian = characterId === 'guardian';
     const star = characterId === 'dongfang-changfan';
-    if (!target?.abilities || (!guardian && !star)) throw new Error('Unknown special ability target');
-    const controls = guardian ? GUARDIAN_ABILITY_CONTROLS : STAR_ABILITY_CONTROLS;
-    const switches = guardian ? GUARDIAN_ABILITY_SWITCHES : STAR_ABILITY_SWITCHES;
-    if (controls[key]) target.abilities[key] = clampSetting(value, controls[key], advanced);
+    const war = characterId === 'war';
+    if (!target?.abilities || (!guardian && !star && !war)) throw new Error('Unknown special ability target');
+    const controls = guardian ? GUARDIAN_ABILITY_CONTROLS : star ? STAR_ABILITY_CONTROLS : WAR_ABILITY_CONTROLS;
+    const switches = guardian ? GUARDIAN_ABILITY_SWITCHES : star ? STAR_ABILITY_SWITCHES : {};
+    if (controls[key]) target.abilities[key] = war ? clampWarSetting(value, controls[key], key, advanced) : clampSetting(value, controls[key], advanced);
     else if (key in switches && typeof value === 'boolean') target.abilities[key] = value;
     else if (guardian && key === 'startingMode' && ['charge', 'flail'].includes(value)) target.abilities[key] = value;
     else throw new Error('Unknown special ability setting');

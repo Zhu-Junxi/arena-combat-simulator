@@ -40,12 +40,14 @@ export function createSettingsController({ state, settings, view, elements, pane
     }
     const toggle = elements['settings-toggle'];
     toggle.setAttribute('aria-expanded', String(expanded));
-    const nextAction = {
-      compact: 'customization.open_properties',
-      properties: 'selection.grid_open',
-      grid: 'selection.grid_back_properties',
-      'properties-return': 'customization.close_properties'
-    }[step];
+    const gridToggle = elements['roster-grid-toggle'];
+    gridToggle.hidden = step !== 'properties';
+    gridToggle.inert = step !== 'properties';
+    gridToggle.setAttribute('aria-expanded', String(gridOpen));
+    gridToggle.setAttribute('aria-label', i18n.t('selection.grid_open'));
+    gridToggle.dataset.tooltip = i18n.t('selection.grid_open');
+    const nextAction = step === 'compact' ? 'customization.open_properties' :
+      gridOpen ? 'selection.grid_back_properties' : 'customization.close_properties';
     const label = i18n.t(nextAction);
     toggle.setAttribute('aria-label', label);
     toggle.dataset.tooltip = label;
@@ -80,14 +82,12 @@ export function createSettingsController({ state, settings, view, elements, pane
   }
 
   function toggle() {
-    const next = {
-      compact: 'properties', properties: 'grid', grid: 'properties-return', 'properties-return': 'compact'
-    }[step];
-    setStep(next, { restoreFocus: next === 'properties-return' || next === 'compact' });
+    const next = step === 'compact' || step === 'grid' ? 'properties' : 'compact';
+    setStep(next, { restoreFocus: step === 'grid' || next === 'compact' });
   }
 
   function back() {
-    if (step === 'grid') setStep('properties-return', { restoreFocus: true });
+    if (step === 'grid') setStep('properties', { restoreFocus: true });
     else if (isExpanded()) setStep('compact', { restoreFocus: true });
   }
 
@@ -148,6 +148,7 @@ export function createSettingsController({ state, settings, view, elements, pane
   function bind() {
     syncDock();
     elements['settings-toggle'].addEventListener('click', toggle);
+    elements['roster-grid-toggle'].addEventListener('click', () => setStep('grid'));
     elements['settings-tabs'].addEventListener('click', event => {
       const tab = event.target.closest('[data-settings-tab]');
       if (tab) selectTab(tab.dataset.settingsTab);

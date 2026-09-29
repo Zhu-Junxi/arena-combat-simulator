@@ -573,3 +573,18 @@ save.retry,Retry save,重试保存
 save.allow_popup,Allow the project server tab to open then try again.,请允许打开项目服务器标签页后重试。
 save.handoff_failed,Transfer did not finish. Your edits are still in this browser.,转移未完成。更改仍保留在此浏览器中。
 save.overlap_confirm,There are {count} overlapping changes. OK keeps browser values; Cancel keeps project values. Other changes are merged.,有 {count} 处重叠更改。确定保留浏览器数值；取消保留项目数值。其他更改将合并。
+customization.war_combat_tuning,Charge and Sweep,冲锋与横扫
+customization.war_charge_distance,Charge Distance,冲锋距离
+customization.war_speed_multiplier,Charge Speed Multiplier,冲锋速度倍率
+customization.war_swing_duration,Sweep Duration,横扫时长
+customization.war_recovery,Recovery Duration,收势时长
+customization.war_knockback_distance,Knockback Distance,击退距离
+customization.war_knockback_duration,Knockback Duration,击退时长
+customization.war_blade_width,Blade Hitbox Width,剑刃判定宽度
+tooltip.war_charge_distance,Maximum distance War travels during a charge.,战争冲锋时移动的最大距离。
+tooltip.war_speed_multiplier,Multiplies War's movement speed during a charge.,战争冲锋时的移动速度倍率。
+tooltip.war_swing_duration,Time taken to complete the damaging sword sweep.,完成有伤害判定的剑刃横扫所需时间。
+tooltip.war_recovery,Time after the sweep before War resumes normal movement.,横扫结束后战争恢复正常移动前的收势时间。
+tooltip.war_knockback_distance,Distance an enemy is pushed after the sword hits.,剑刃命中后敌人被推开的距离。
+tooltip.war_knockback_duration,Time over which the sword pushes an enemy back.,剑刃将敌人推开的持续时间。
+tooltip.war_blade_width,Width of the sword's damaging collision area.,剑刃造成伤害的碰撞判定宽度。

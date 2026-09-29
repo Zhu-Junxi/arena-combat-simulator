@@ -1,7 +1,6 @@
-export const WAR_COMBAT = Object.freeze({
-  chargeDistance: 600, speedMultiplier: 4, slowArc: Math.PI / 15,
-  swingDuration: .025, recovery: .18, knockbackDistance: 260, knockbackDuration: .24
-});
+import { defaultWarAbilities } from '../config/customization.js';
+
+export const WAR_COMBAT = Object.freeze({ ...defaultWarAbilities(), slowArc: Math.PI / 15 });
 
 const clamp = (n, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, n));
 const ease = n => { n = clamp(n); return n * n * (3 - 2 * n); };
@@ -14,12 +13,13 @@ export function createWarState(side) {
 
 export function warSwordPose(fighter, now) {
   const w = fighter.war;
+  const combat = fighter.warAbilities ?? WAR_COMBAT;
   let angle = w.angle + w.side * Math.PI / 2;
   if (w.swing) {
-    const p = ease((now - w.swing.startedAt) / WAR_COMBAT.swingDuration);
+    const p = ease((now - w.swing.startedAt) / combat.swingDuration);
     angle = w.swing.from + (w.swing.to - w.swing.from) * p;
   } else if (w.phase !== 'move') {
-    angle -= w.side * WAR_COMBAT.slowArc * clamp(w.travelled / WAR_COMBAT.chargeDistance);
+    angle -= w.side * WAR_COMBAT.slowArc * clamp(w.travelled / combat.chargeDistance);
   }
   return { angle, shift: 0, age: fighter.attack ? now - fighter.attack.startedAt : 0 };
 }
@@ -45,13 +45,14 @@ export function warSweepTouches(fighter, target, from, to) {
 
 export function beginWarAttack(fighter, target, now, damage) {
   const w = fighter.war;
+  const combat = fighter.warAbilities ?? WAR_COMBAT;
   w.angle = Math.atan2(target.y - fighter.y, target.x - fighter.x);
   w.targetPoint = { x: target.x, y: target.y };
   w.travelled = 0;
   w.swing = null;
   w.phase = 'charge';
-  w.charge = { angle: w.angle, remaining: WAR_COMBAT.chargeDistance,
-    speed: fighter.movementSpeed * WAR_COMBAT.speedMultiplier };
+  w.charge = { angle: w.angle, remaining: combat.chargeDistance,
+    speed: fighter.movementSpeed * combat.speedMultiplier };
   // Continue along the new heading at ordinary speed once the charge ends;
   // wall/chain collision responses can then reflect that heading normally.
   fighter.vx = Math.cos(w.angle) * fighter.movementSpeed;

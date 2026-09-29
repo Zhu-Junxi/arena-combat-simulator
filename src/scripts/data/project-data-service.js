@@ -33,17 +33,25 @@ function validateStats(id, stats, advanced = false) {
   catch { fail(`Invalid ${id} fighter stats`); }
 }
 function validateSettings(value) {
-  if (!value || value.version !== MATCH_SETTINGS_VERSION || typeof value.advanced !== 'boolean' ||
+  if (!value || ![4, MATCH_SETTINGS_VERSION].includes(value.version) || typeof value.advanced !== 'boolean' ||
       !value.fighters || !value.arena || !value.characterDefaults) fail('Invalid match settings');
   value = clone(value);
+  const legacyWar = value.version === 4;
+  value.version = MATCH_SETTINGS_VERSION;
   // Existing version-4 project files predate War; keep every saved fighter and
   // add only the new roster member's factory defaults when its entry is absent.
   const warDefaults = () => defaultFighterSettings(CHARACTERS.find(character => character.id === 'war'));
   if (!Object.hasOwn(value.characterDefaults, 'war')) value.characterDefaults.war = warDefaults();
+  if (legacyWar) value.characterDefaults.war = { ...value.characterDefaults.war,
+    weapon: { ...warDefaults().weapon, ...value.characterDefaults.war.weapon },
+    abilities: { ...warDefaults().abilities, ...value.characterDefaults.war.abilities } };
   for (const id of ids) validateStats(id, value.characterDefaults[id], value.advanced);
   for (const side of ['left', 'right', 'third', 'fourth']) {
     if (!value.fighters[side]) fail('Missing fighter settings');
     if (!Object.hasOwn(value.fighters[side], 'war')) value.fighters[side].war = clone(value.characterDefaults.war);
+    if (legacyWar) value.fighters[side].war = { ...value.fighters[side].war,
+      weapon: { ...warDefaults().weapon, ...value.fighters[side].war.weapon },
+      abilities: { ...warDefaults().abilities, ...value.fighters[side].war.abilities } };
     for (const id of ids) validateStats(id, value.fighters[side][id], value.advanced);
   }
   const fighters = Object.fromEntries(activeSlots(value.arena.fighterCount)

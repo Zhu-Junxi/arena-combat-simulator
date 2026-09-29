@@ -77,9 +77,9 @@ test('valid older browser settings migrate only when no project file exists', as
     throw new Error('Unexpected request');
   };
   const storage = await createProjectStorage(browser, fetcher);
-  assert.equal(migrated.version, 4);
+  assert.equal(migrated.version, 5);
   assert.equal(migrated.fighters.left.warrior.health, 144);
-  assert.equal(JSON.parse(storage.getItem(MATCH_SETTINGS_STORAGE_KEY)).version, 4);
+  assert.equal(JSON.parse(storage.getItem(MATCH_SETTINGS_STORAGE_KEY)).version, 5);
 });
 
 test('offline edits survive a reload and keep their recorded file revision', async () => {

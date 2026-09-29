@@ -2,8 +2,6 @@
 
 .dock { transition: height 420ms var(--ui-ease); }
 .settings-toggle, .settings-toggle span, .category, .character, .avatar, .start-control button { transition-timing-function: var(--ui-ease); }
-.dock[data-step="properties"] .settings-toggle span { transform: none; }
-.dock[data-step="grid"] .settings-toggle span, .dock[data-step="properties-return"] .settings-toggle span { transform: rotate(180deg); }
 .feedback-toast, .settings-sheet-reveal, .preset-dialog[open], .preset-dialog[open]::backdrop, .preset-dialog[open] .preset-tile, .preset-inline-panel:not([hidden]) { animation-timing-function: var(--ui-ease); }
 .settings-panel { transition: opacity var(--ui-fast) var(--ui-ease), transform var(--ui-medium) var(--ui-ease), visibility 0s linear var(--ui-medium); }
 .dock[data-expanded="true"][data-grid-open="true"] .settings-panel { opacity: 0; visibility: hidden; transform: translateY(-10px); pointer-events: none; transition-delay: 0s, 0s, var(--ui-medium); }

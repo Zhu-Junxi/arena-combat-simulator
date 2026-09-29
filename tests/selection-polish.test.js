@@ -45,11 +45,11 @@ test('grid renders all characters, locked cards, side controls, and independent 
   assert.match(elements['roster-grid-cards'].innerHTML, /data-character="warrior"/);
 });
 
-test('one arrow visits compact, properties, full grid, properties, then compact', () => {
+test('top arrow closes properties while the selection arrow opens the fighter grid', () => {
   const previousDocument = globalThis.document;
   globalThis.document = node();
   try {
-    const ids = ['dock', 'dock-main', 'settings-toggle', 'settings-panel', 'roster-grid-panel',
+    const ids = ['dock', 'dock-main', 'settings-toggle', 'roster-grid-toggle', 'settings-panel', 'roster-grid-panel',
       'roster-grid-sides', 'settings-tabs', 'settings-content', 'settings-reset-all', 'advanced-tuning', 'start-control'];
     const elements = Object.fromEntries(ids.map(id => [id, node()]));
     const state = { phase: 'select', side: 'left', left: { id: 'warrior' }, right: { id: 'archer' } };
@@ -60,15 +60,23 @@ test('one arrow visits compact, properties, full grid, properties, then compact'
       panels, feedback: {}, i18n: { t: key => localePrefix + key }, onGridOpen: () => { gridOpens += 1; } });
     controller.bind();
     const pressArrow = () => elements['settings-toggle'].listeners.click();
+    const pressGridArrow = () => elements['roster-grid-toggle'].listeners.click();
     assert.equal(controller.getStep(), 'compact');
+    assert.equal(elements['roster-grid-toggle'].hidden, true);
     assert.equal(elements['settings-toggle'].attributes['aria-label'], 'customization.open_properties');
     pressArrow();
     assert.equal(controller.getStep(), 'properties');
-    assert.equal(elements['settings-toggle'].attributes['aria-label'], 'selection.grid_open');
+    assert.equal(elements['settings-toggle'].attributes['aria-label'], 'customization.close_properties');
+    assert.equal(elements['roster-grid-toggle'].attributes['aria-label'], 'selection.grid_open');
+    assert.equal(elements['roster-grid-toggle'].hidden, false);
     assert.equal(elements['settings-panel'].inert, false);
     assert.equal(elements['dock-main'].inert, false);
     pressArrow();
+    assert.equal(controller.getStep(), 'compact');
+    pressArrow();
+    pressGridArrow();
     assert.equal(controller.getStep(), 'grid');
+    assert.equal(elements['roster-grid-toggle'].hidden, true);
     assert.equal(elements['settings-toggle'].attributes['aria-label'], 'selection.grid_back_properties');
     assert.equal(elements['settings-panel'].inert, true);
     assert.equal(elements['roster-grid-panel'].inert, false);
@@ -76,8 +84,9 @@ test('one arrow visits compact, properties, full grid, properties, then compact'
     assert.equal(elements['dock-main'].attributes['aria-hidden'], 'true');
     assert.equal(gridOpens, 1);
     pressArrow();
-    assert.equal(controller.getStep(), 'properties-return');
+    assert.equal(controller.getStep(), 'properties');
     assert.equal(elements['settings-toggle'].attributes['aria-label'], 'customization.close_properties');
+    assert.equal(elements['roster-grid-toggle'].hidden, false);
     assert.equal(elements['settings-toggle'].focused, true);
     assert.equal(elements['dock-main'].inert, false);
     pressArrow();
@@ -87,21 +96,22 @@ test('one arrow visits compact, properties, full grid, properties, then compact'
     assert.deepEqual(state, { phase: 'select', side: 'left', left: { id: 'warrior' }, right: { id: 'archer' } });
 
     pressArrow();
-    pressArrow();
+    pressGridArrow();
     assert.equal(gridOpens, 2);
     localePrefix = 'zh:';
     controller.refreshLocalization();
     assert.equal(elements['settings-toggle'].attributes['aria-label'], 'zh:selection.grid_back_properties');
+    assert.equal(elements['roster-grid-toggle'].attributes['aria-label'], 'zh:selection.grid_open');
     let prevented = false;
     const escape = () => globalThis.document.listeners.keydown({ key: 'Escape', target: node(),
       preventDefault() { prevented = true; } });
     escape();
-    assert.equal(controller.getStep(), 'properties-return');
+    assert.equal(controller.getStep(), 'properties');
     escape();
     assert.equal(controller.getStep(), 'compact');
     assert.equal(prevented, true);
     pressArrow();
-    pressArrow();
+    pressGridArrow();
     controller.setExpanded(false);
     assert.equal(controller.getStep(), 'compact');
     assert.equal(elements['dock-main'].inert, false);
@@ -221,14 +231,15 @@ test('win, draw, and reset update the result reveal without stale sides', () => 
 });
 
 test('new controls and restrained results have localized, reduced-motion styling', async () => {
-  const [html, css, translations, renderer] = await Promise.all([
+  const [html, css, customizationCss, translations, renderer] = await Promise.all([
     readFile(new URL('../index.html', import.meta.url), 'utf8'),
     readFile(new URL('../src/styles/polish.css', import.meta.url), 'utf8'),
+    readFile(new URL('../src/styles/customization.css', import.meta.url), 'utf8'),
     readFile(new URL('../src/locales/translations.csv', import.meta.url), 'utf8'),
     readFile(new URL('../src/scripts/battle/combat-renderer.js', import.meta.url), 'utf8')
   ]);
-  assert.doesNotMatch(html, /id="roster-grid-toggle"/);
-  assert.doesNotMatch(css, /roster-grid-toggle/);
+  assert.match(html, /id="roster-grid-toggle"[^>]*aria-controls="roster-grid-panel"/);
+  assert.match(customizationCss, /roster-grid-toggle/);
   assert.match(html, /id="settings-toggle"[^>]*aria-controls="settings-panel roster-grid-panel"/);
   assert.match(css, /\[data-step="grid"\] \.roster-grid-panel \{ bottom: 0/);
   assert.match(css, /\[data-step="grid"\] \.dock-main \{ visibility: hidden/);

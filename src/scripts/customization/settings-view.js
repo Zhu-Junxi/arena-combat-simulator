@@ -1,4 +1,4 @@
-import { ARENA_CONTROLS, COLLISION_MODES, FIGHTER_CONTROLS, MAGE_ABILITY_CONTROLS, MAGE_CYCLES, MAGE_SPELL_SLOTS, PRIEST_ABILITY_CONTROLS, SUMMON_ABILITY_CONTROLS, TRAIT_CONTROLS, WEAPON_TUNING_CONTROLS, GUARDIAN_ABILITY_CONTROLS, GUARDIAN_ABILITY_SWITCHES, STAR_ABILITY_CONTROLS, STAR_ABILITY_SWITCHES } from '../config/customization.js';
+import { ARENA_CONTROLS, COLLISION_MODES, FIGHTER_CONTROLS, MAGE_ABILITY_CONTROLS, MAGE_CYCLES, MAGE_SPELL_SLOTS, PRIEST_ABILITY_CONTROLS, SUMMON_ABILITY_CONTROLS, TRAIT_CONTROLS, WEAPON_TUNING_CONTROLS, GUARDIAN_ABILITY_CONTROLS, GUARDIAN_ABILITY_SWITCHES, STAR_ABILITY_CONTROLS, STAR_ABILITY_SWITCHES, WAR_ABILITY_CONTROLS } from '../config/customization.js';
 import { displayControl, presentationFor, settingTooltip, toDisplayValue } from './setting-presentation.js';
 
 const SIDES = Object.freeze(['left', 'right']);
@@ -48,11 +48,12 @@ export function createSettingsView({ state, settings, elements, i18n }) {
     });
     const trait = key => valueControl({ id: `${side}-trait-${key}`, label: t(TRAIT_CONTROLS[character.trait.id][key].labelKey),
       value: values.trait[key], ...TRAIT_CONTROLS[character.trait.id][key], scope: side, key: 'trait', magePath: key, presentationKey: key });
+    const specialKind = character.id === 'guardian' ? 'guardian' : character.id === 'war' ? 'war' : 'star';
     const ability = (kind, key, controls, path = key) => valueControl({
-      id: `${side}-${kind === 'special' ? character.id === 'guardian' ? 'guardian' : 'star' : kind}-${key}`,
-      label: t(controls[key].labelKey ?? `customization.${kind === 'special' ? character.id === 'guardian' ? 'guardian' : 'star' : kind}_${key}`),
+      id: `${side}-${kind === 'special' ? specialKind : kind}-${key}`,
+      label: t(controls[key].labelKey ?? `customization.${kind === 'special' ? specialKind : kind}_${key}`),
       value: values.abilities[key] ?? values.abilities.effects?.[key],
-      ...controls[key], scope: side, key: kind, magePath: path, presentationKey: kind === 'special' ? `${character.id === 'guardian' ? 'guardian' : 'star'}_${key}` : key
+      ...controls[key], scope: side, key: kind, magePath: path, presentationKey: kind === 'special' ? `${specialKind}_${key}` : key
     });
     const signature = ({
       warrior: () => [basic('attack', 0), basic('attackCD', 0), trait('reduction')],
@@ -86,11 +87,12 @@ export function createSettingsView({ state, settings, elements, i18n }) {
     const priestRows = character.id === 'priest' ? renderPriestAbilities(side, values.abilities) : '';
     const summonRows = character.id === 'beastmaster' ? renderSummonAbilities(side, values.abilities) : '';
     const specialRows = character.id === 'guardian' ? renderSpecialAbilities(side, 'guardian', values.abilities, GUARDIAN_ABILITY_CONTROLS, GUARDIAN_ABILITY_SWITCHES) :
-      character.id === 'dongfang-changfan' ? renderSpecialAbilities(side, 'star', values.abilities, STAR_ABILITY_CONTROLS, STAR_ABILITY_SWITCHES) : '';
+      character.id === 'dongfang-changfan' ? renderSpecialAbilities(side, 'star', values.abilities, STAR_ABILITY_CONTROLS, STAR_ABILITY_SWITCHES) :
+        character.id === 'war' ? `<section class="mage-abilities"><h4>${t('customization.war_combat_tuning')}</h4><div class="settings-grid">${Object.keys(WAR_ABILITY_CONTROLS).map(key => ability('special', key, WAR_ABILITY_CONTROLS)).join('')}</div></section>` : '';
     const traitRows = renderTraitSettings(side, character, values.trait, character.id === 'warrior' ? ['reduction'] : character.id === 'archer' ? ['every'] : []);
     const weaponRows = values.weapon ? `<section class="mage-abilities"><h4>${t('customization.weapon_tuning')}</h4><div class="settings-grid">${Object.entries(WEAPON_TUNING_CONTROLS[character.id]).map(([key, control]) =>
       valueControl({ id: `${side}-weapon-${key}`, label: t(control.labelKey), value: values.weapon[key], ...control,
-        scope: side, key: 'weapon', magePath: key, presentationKey: `weapon_${key}` })).join('')}</div></section>` : '';
+        scope: side, key: 'weapon', magePath: key, presentationKey: character.id === 'war' ? 'war_blade_width' : `weapon_${key}` })).join('')}</div></section>` : '';
     const detailedBasics = (character.id === 'beastmaster' ? attackRows + cooldownRows : '') +
       (values.projectileSpeed == null ? '' : basic('projectileSpeed')) +
       (values.attackRange == null || character.id === 'war' ? '' : basic('attackRange'));

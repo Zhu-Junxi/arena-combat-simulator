@@ -6,7 +6,7 @@ const arenaData = await readProjectJson('settings/factory-arena.json');
 if (arenaData.format !== 'arena-duel.arena-default' || arenaData.version !== 1) throw new Error('Invalid factory arena data');
 
 export const MATCH_SETTINGS_STORAGE_KEY = 'arena-duel.match-settings.v1';
-export const MATCH_SETTINGS_VERSION = 4;
+export const MATCH_SETTINGS_VERSION = 5;
 export const MOVEMENT_UNITS_PER_STAT = 44;
 export const COLLISION_MODES = Object.freeze(['bounce', 'stop', 'pass']);
 
@@ -92,6 +92,9 @@ export const SUMMON_ABILITY_CONTROLS = Object.freeze({
 // Only controls that change combat belong here. Defaults stay tied to the
 // weapon definition so old saved settings retain the original weapon behavior.
 export const WEAPON_TUNING_CONTROLS = Object.freeze({
+  war: Object.freeze({
+    width: Object.freeze({ min: 4, max: 80, step: 0.001, default: CHARACTER_BY_ID.war.defaultSettings.weapon.width, labelKey: 'customization.war_blade_width' })
+  }),
   warrior: Object.freeze({
     width: Object.freeze({ min: 4, max: 50, step: 0.001, default: CHARACTER_BY_ID.warrior.defaultSettings.weapon.width, labelKey: 'customization.sword_width' }),
     active: Object.freeze({ min: 0.05, max: 0.5, step: 0.001, default: CHARACTER_BY_ID.warrior.defaultSettings.weapon.active, labelKey: 'customization.sword_active' })
@@ -100,6 +103,15 @@ export const WEAPON_TUNING_CONTROLS = Object.freeze({
     radius: Object.freeze({ min: 1, max: 25, step: 0.001, default: CHARACTER_BY_ID.archer.defaultSettings.weapon.radius, labelKey: 'customization.arrow_radius' }),
     windup: Object.freeze({ min: 0.05, max: 0.6, step: 0.001, default: CHARACTER_BY_ID.archer.defaultSettings.weapon.windup, labelKey: 'customization.arrow_windup' })
   })
+});
+
+export const WAR_ABILITY_CONTROLS = Object.freeze({
+  chargeDistance: Object.freeze({ min: 1, max: 1200, step: 0.001, default: CHARACTER_BY_ID.war.defaultSettings.abilities.chargeDistance, labelKey: 'customization.war_charge_distance' }),
+  speedMultiplier: Object.freeze({ min: 0.25, max: 8, step: 0.001, default: CHARACTER_BY_ID.war.defaultSettings.abilities.speedMultiplier, labelKey: 'customization.war_speed_multiplier' }),
+  swingDuration: Object.freeze({ min: 0.005, max: 0.3, step: 0.001, default: CHARACTER_BY_ID.war.defaultSettings.abilities.swingDuration, labelKey: 'customization.war_swing_duration' }),
+  recovery: Object.freeze({ min: 0.01, max: 1, step: 0.001, default: CHARACTER_BY_ID.war.defaultSettings.abilities.recovery, labelKey: 'customization.war_recovery' }),
+  knockbackDistance: Object.freeze({ min: 0, max: 500, step: 0.001, default: CHARACTER_BY_ID.war.defaultSettings.abilities.knockbackDistance, labelKey: 'customization.war_knockback_distance' }),
+  knockbackDuration: Object.freeze({ min: 0.01, max: 1, step: 0.001, default: CHARACTER_BY_ID.war.defaultSettings.abilities.knockbackDuration, labelKey: 'customization.war_knockback_duration' })
 });
 
 // Fighter-specific controls live with the rest of the match schema so saved
@@ -194,6 +206,10 @@ export function defaultGuardianAbilities() {
 
 export function defaultStarAbilities() {
   return clone(CHARACTER_BY_ID['dongfang-changfan'].defaultSettings.abilities);
+}
+
+export function defaultWarAbilities() {
+  return clone(CHARACTER_BY_ID.war.defaultSettings.abilities);
 }
 
 export function defaultArenaSettings() {

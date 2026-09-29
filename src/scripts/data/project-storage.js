@@ -1,4 +1,4 @@
-import { MATCH_SETTINGS_STORAGE_KEY } from '../config/customization.js';
+import { MATCH_SETTINGS_STORAGE_KEY, MATCH_SETTINGS_VERSION } from '../config/customization.js';
 import { PRESET_LIBRARY_KEY, createDuelPresetLibrary } from '../share/duel-preset-library.js';
 import { CHARACTERS } from '../config/characters.js';
 import { createMatchSettingsStore } from '../customization/settings-store.js';
@@ -76,10 +76,10 @@ export async function createProjectStorage(browserStorage, fetcher = fetch) {
     if (!value || value.format !== 'arena-duel.backup' || value.version !== 1 ||
         Object.keys(value).sort().join(',') !== 'format,presets,settings,version') throw new Error('Invalid backup');
     if (value.settings !== null) {
-      if (value.settings?.version !== 4) throw new Error('Invalid backup settings');
+      if (![4, MATCH_SETTINGS_VERSION].includes(value.settings?.version)) throw new Error('Invalid backup settings');
       const normalized = createMatchSettingsStore({ characters: CHARACTERS,
         storage: { getItem: () => JSON.stringify(value.settings), setItem: () => {} } }).exportData();
-      if (canonical(normalized) !== canonical(value.settings)) throw new Error('Invalid backup settings');
+      if (value.settings.version === MATCH_SETTINGS_VERSION && canonical(normalized) !== canonical(value.settings)) throw new Error('Invalid backup settings');
     }
     if (value.presets !== null) {
       if (value.presets?.version !== 1 || !Array.isArray(value.presets.entries)) throw new Error('Invalid backup presets');
@@ -92,7 +92,7 @@ export async function createProjectStorage(browserStorage, fetcher = fetch) {
     if (!legacy[kind]) return null;
     const parsed = JSON.parse(legacy[kind]);
     if (kind === 'settings') {
-      if (![1, 2, 3, 4].includes(parsed?.version)) return null;
+      if (![1, 2, 3, 4, MATCH_SETTINGS_VERSION].includes(parsed?.version)) return null;
       return JSON.stringify(createMatchSettingsStore({ characters: CHARACTERS,
         storage: { getItem: () => legacy[kind], setItem: () => {} } }).exportData());
     }
