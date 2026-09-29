@@ -35,9 +35,15 @@ function validateStats(id, stats, advanced = false) {
 function validateSettings(value) {
   if (!value || value.version !== MATCH_SETTINGS_VERSION || typeof value.advanced !== 'boolean' ||
       !value.fighters || !value.arena || !value.characterDefaults) fail('Invalid match settings');
+  value = clone(value);
+  // Existing version-4 project files predate War; keep every saved fighter and
+  // add only the new roster member's factory defaults when its entry is absent.
+  const warDefaults = () => defaultFighterSettings(CHARACTERS.find(character => character.id === 'war'));
+  if (!Object.hasOwn(value.characterDefaults, 'war')) value.characterDefaults.war = warDefaults();
   for (const id of ids) validateStats(id, value.characterDefaults[id], value.advanced);
   for (const side of ['left', 'right', 'third', 'fourth']) {
     if (!value.fighters[side]) fail('Missing fighter settings');
+    if (!Object.hasOwn(value.fighters[side], 'war')) value.fighters[side].war = clone(value.characterDefaults.war);
     for (const id of ids) validateStats(id, value.fighters[side][id], value.advanced);
   }
   const fighters = Object.fromEntries(activeSlots(value.arena.fighterCount)
@@ -75,13 +81,13 @@ async function settingsState() {
   }
   const base = match ?? (Object.keys(overrides).length ? createMatchSettingsStore({ characters: CHARACTERS,
     storage: { getItem: () => null, setItem: () => {} } }).exportData() : null);
-  const result = base ? { ...base, characterDefaults: Object.fromEntries(CHARACTERS.map(character => [character.id,
+  let result = base ? { ...base, characterDefaults: Object.fromEntries(CHARACTERS.map(character => [character.id,
     overrides[character.id]?.stats ?? defaultFighterSettings(character)])) } : null;
   if (result && Object.values(overrides).some(value => value.advanced)) result.advanced = true;
   if (result && !match) for (const side of ['left', 'right', 'third', 'fourth']) {
     for (const [id, value] of Object.entries(overrides)) result.fighters[side][id] = clone(value.stats);
   }
-  if (result) validateSettings(result);
+  if (result) result = validateSettings(result);
   return { value: result, overrides, revision: hash({ matchRaw, overrideFiles }), exists: Boolean(match || Object.keys(overrides).length),
     matchExists: Boolean(match), overrideIds: Object.keys(overrides) };
 }
