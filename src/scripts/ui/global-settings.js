@@ -2,6 +2,8 @@ export function createGlobalSettings({ elements }) {
   const toggle = elements['global-settings-toggle'];
   const popover = elements['global-settings-popover'];
   const closeButton = elements['global-settings-close'];
+  const preview = elements['storage-preview-dialog'];
+  const conflictDialog = elements['storage-conflict-dialog'];
   let open = false;
 
   function setOpen(nextOpen, { restoreFocus = false } = {}) {
@@ -18,9 +20,12 @@ export function createGlobalSettings({ elements }) {
     toggle.addEventListener('click', () => setOpen(!open));
     closeButton.addEventListener('click', () => setOpen(false, { restoreFocus: true }));
     document.addEventListener('pointerdown', event => {
+      if ((preview?.open && preview.contains(event.target)) ||
+          (conflictDialog?.open && conflictDialog.contains(event.target))) return;
       if (open && !popover.contains(event.target) && !toggle.contains(event.target)) setOpen(false, { restoreFocus: true });
     });
     document.addEventListener('keydown', event => {
+      if (preview?.open || conflictDialog?.open) return;
       if (open && event.key === 'Escape') {
         event.preventDefault();
         event.stopImmediatePropagation();

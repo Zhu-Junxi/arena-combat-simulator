@@ -3,6 +3,7 @@ import { PRESET_LIBRARY_KEY, createDuelPresetLibrary } from '../share/duel-prese
 import { CHARACTERS } from '../config/characters.js';
 import { createMatchSettingsStore } from '../customization/settings-store.js';
 import { mergeProjectSection, chooseConflictValues } from './merge-project-data.js';
+import { validateBackup } from './backup-codec.js';
 
 const keys = { [MATCH_SETTINGS_STORAGE_KEY]: 'settings', [PRESET_LIBRARY_KEY]: 'presets' };
 const pendingKey = kind => `arena-duel.project-pending.${kind}`;
@@ -18,6 +19,8 @@ export async function createProjectStorage(browserStorage, fetcher = fetch) {
   const timers = {};
   const inflight = {};
   const dirty = {};
+  let disposed = false;
+  let retryTimer = null;
   const bases = {};
   const listeners = new Set();
   let saveState = 'waiting-for-server';
@@ -71,22 +74,6 @@ export async function createProjectStorage(browserStorage, fetcher = fetch) {
   function clearBackup() {
     backupPending = null;
     try { browserStorage?.removeItem?.(pendingBackupKey); } catch { /* Server data remains authoritative. */ }
-  }
-  function validBackup(value) {
-    if (!value || value.format !== 'arena-duel.backup' || value.version !== 1 ||
-        Object.keys(value).sort().join(',') !== 'format,presets,settings,version') throw new Error('Invalid backup');
-    if (value.settings !== null) {
-      if (![4, MATCH_SETTINGS_VERSION].includes(value.settings?.version)) throw new Error('Invalid backup settings');
-      const normalized = createMatchSettingsStore({ characters: CHARACTERS,
-        storage: { getItem: () => JSON.stringify(value.settings), setItem: () => {} } }).exportData();
-      if (value.settings.version === MATCH_SETTINGS_VERSION && canonical(normalized) !== canonical(value.settings)) throw new Error('Invalid backup settings');
-    }
-    if (value.presets !== null) {
-      if (value.presets?.version !== 1 || !Array.isArray(value.presets.entries)) throw new Error('Invalid backup presets');
-      const library = createDuelPresetLibrary({ characters: CHARACTERS,
-        storage: { getItem: () => JSON.stringify(value.presets), setItem: () => {} } });
-      if (canonical(library.list()) !== canonical(value.presets.entries)) throw new Error('Invalid backup presets');
-    }
   }
   function normalizeLegacy(kind) {
     if (!legacy[kind]) return null;
@@ -354,8 +341,8 @@ export async function createProjectStorage(browserStorage, fetcher = fetch) {
     return promise;
   }
   if (typeof setInterval === 'function') {
-    const retryTimer = setInterval(() => {
-      if (conflict) return;
+    retryTimer = setInterval(() => {
+      if (disposed || conflict) return;
       if (backupPending) {
         if (!backupSync) {
           backupSync = syncBackup();
@@ -394,7 +381,7 @@ export async function createProjectStorage(browserStorage, fetcher = fetch) {
     return !conflict && !dirty.settings && !dirty.presets && saveState === 'saved';
   }
   async function importBackup(value) {
-    validBackup(value);
+    value = validateBackup(value);
     if (!fileAvailable) {
       clearPending('settings');
       clearPending('presets');
@@ -482,5 +469,6 @@ export async function createProjectStorage(browserStorage, fetcher = fetch) {
     getSaveState: () => ({ state: saveState, error: lastError, conflict: conflictDetails, liveServer, remoteMerge }),
     subscribeSaveState: listener => { listeners.add(listener); listener({ state: saveState, error: lastError, conflict: conflictDetails, liveServer, remoteMerge }); return () => listeners.delete(listener); },
     resolveConflict,
-    reload: async () => { discardLocalEdits(); await load(); return clone(serverData); } });
+    reload: async () => { discardLocalEdits(); await load(); return clone(serverData); },
+    dispose: () => { disposed = true; clearInterval(retryTimer); for (const timer of Object.values(timers)) clearTimeout(timer); } });
 }

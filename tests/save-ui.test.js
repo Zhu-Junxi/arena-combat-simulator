@@ -67,7 +67,7 @@ test('project tab imports a valid handoff before acknowledging the source tab', 
     const storage = { getSaveState: () => ({ state: 'saved' }),
       subscribeSaveState: listener => listener(storage.getSaveState()),
       exportBackup: async () => ({ ...backup, presets: null }),
-      importBackup: async value => { imported.push(value); } };
+      switchMode: async (mode, options) => { assert.equal(mode, 'project'); imported.push(options.sourceBackup); return true; } };
     bindSaveUI({ storage, i18n, ...controls() });
     assert.equal(messages[0].message.phase, 'ready');
     await events.message({ origin: source, source: opener,

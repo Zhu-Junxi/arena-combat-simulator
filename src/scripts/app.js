@@ -17,13 +17,14 @@ import { populateThemeSelector } from './theme/theme-view.js';
 import { requireElements } from './ui/dom.js';
 import { createFloatingTooltip } from './ui/floating-tooltip.js';
 import { createFeedback } from './ui/feedback.js';
-import { createProjectStorage } from './data/project-storage.js';
+import { createSelectableStorage } from './data/selectable-storage.js';
 import { bindDataTransfer } from './data/data-transfer-controller.js';
 import { projectCatalog, readProjectJson } from './data/project-files.js';
 import { parseCharacterDefault } from './data/character-default-codec.js';
 import { createTransitions } from './ui/transitions.js';
 import { createGlobalSettings } from './ui/global-settings.js';
 import { bindSaveUI } from './data/save-ui.js';
+import { bindStorageSettings, createStorageConflictPrompt } from './data/storage-settings.js';
 
 const bootstrapElements = requireElements(['bootstrap-error', 'bootstrap-retry', 'bootstrap-status']);
 bootstrapElements['bootstrap-retry'].addEventListener('click', () => location.reload());
@@ -40,6 +41,10 @@ async function initialize() {
     'countdown', 'dock', 'dock-main', 'fighter-left', 'fighter-right', 'language-select', 'panel-left', 'panel-right',
     'roster-grid-panel', 'roster-grid-toggle', 'roster-grid-sides', 'roster-grid-filters', 'roster-grid-cards', 'roster-grid-start',
     'global-settings-toggle', 'global-settings-popover', 'global-settings-close',
+    'storage-mode', 'storage-location', 'storage-save-state', 'storage-folder-help', 'storage-unsupported', 'storage-change-folder', 'storage-reconnect',
+    'storage-preview', 'storage-export', 'storage-import', 'storage-import-file', 'storage-error',
+    'storage-preview-dialog', 'storage-preview-json', 'storage-preview-close', 'storage-preview-copy',
+    'storage-conflict-dialog', 'storage-conflict-message', 'storage-conflict-current', 'storage-conflict-destination', 'storage-conflict-cancel',
     'save-banner', 'save-message', 'save-move', 'save-browser', 'save-project', 'save-retry',
     'projectile-effects', 'roster', 'selection-label', 'settings-content', 'settings-presets', 'settings-panel', 'settings-reset-all', 'advanced-tuning', 'adjustment-step',
     'settings-tabs', 'settings-toggle', 'stage', 'start', 'start-control', 'status', 'theme-select', 'view-label',
@@ -53,7 +58,7 @@ async function initialize() {
   ]);
 
   const theme = createThemeController({ storage });
-  const projectStorage = await createProjectStorage(storage);
+  const projectStorage = await createSelectableStorage(storage);
   localizeDocument(i18n);
   createFloatingTooltip();
   populateLanguageSelector(elements['language-select'], i18n);
@@ -63,8 +68,10 @@ async function initialize() {
   const settings = createMatchSettingsStore({ characters: CHARACTERS, storage: projectStorage });
   const feedback = createFeedback({ i18n, mainStatus: elements.status, dialogStatus: elements['preset-status'],
     mainToast: elements['feedback-toast'], dialogToast: elements['preset-feedback-toast'], dialog: elements['preset-dialog'] });
-  bindSaveUI({ storage: projectStorage, i18n, banner: elements['save-banner'], message: elements['save-message'],
-    move: elements['save-move'], browser: elements['save-browser'], project: elements['save-project'], retry: elements['save-retry'] });
+  const chooseOverlaps = createStorageConflictPrompt(elements, i18n);
+  const saveUI = bindSaveUI({ storage: projectStorage, i18n, banner: elements['save-banner'], message: elements['save-message'],
+    move: elements['save-move'], browser: elements['save-browser'], project: elements['save-project'], retry: elements['save-retry'], chooseOverlaps });
+  bindStorageSettings({ elements, storage: projectStorage, i18n, saveUI, chooseOverlaps });
   const selected = () => ({ left: state.left, right: state.right });
   const panels = [elements['panel-left'], elements['panel-right']];
   // The UI is temporarily duel-only.  The store and engine retain FFA data,

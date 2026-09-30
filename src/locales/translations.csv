@@ -559,20 +559,48 @@ global_settings.placeholder,More settings coming soon.,更多设置即将推出�
 customization.open_properties,Open properties,打开属性面板
 customization.close_properties,Close character panel,关闭角色面板
 selection.grid_back_properties,Back to properties,返回属性面板
-save.saving,Saving to project files…,正在保存到项目文件…
-save.saved,Saved to project files,已保存到项目文件
-save.waiting_for_server,Edits are kept in this browser. Start Arena Duel: Open & Save in VS Code to save project files.,更改已保留在此浏览器中。请在 VS Code 中运行 Arena Duel: Open & Save 以保存项目文件。
+save.saving,Saving to {mode}…,正在保存到{mode}…
+save.saved,Saved to {mode},已保存到{mode}
+save.saved_browser,Saved in this browser,已保存在此浏览器中
+save.saved_project,Saved in project files,已保存到项目文件
+save.saved_folder,Saved in linked folder,已保存到已连接文件夹
+save.waiting_for_server,Edits are kept here. Start the project server to save its files.,更改已保留在此处。请启动项目服务器以保存文件。
 save.live_server,Live Server cannot write project files. Run Arena Duel: Open & Save in VS Code then move these edits.,Live Server 无法写入项目文件。请在 VS Code 中运行 Arena Duel: Open & Save 然后转移这些更改。
-save.retrying,Project file save interrupted. Retrying automatically; your edits remain here.,项目文件保存中断。正在自动重试；更改仍保留在此处。
-save.conflict,Some project values changed in another tab. Choose which values to keep for overlapping edits.,部分项目数值已在其他标签页更改。请选择重叠更改要保留的数值。
-save.file_error,Project file save was refused. Check file permissions then retry; your edits remain here.,项目文件保存被拒绝。请检查文件权限后重试；更改仍保留在此处。
+save.retrying,Save to {mode} was interrupted. Retrying; your edits remain here.,保存到{mode}时中断。正在重试；更改仍保留在此处。
+save.conflict,Saved values changed elsewhere. Choose which values to keep for overlapping edits.,已保存的数值在其他位置发生更改。请选择重叠更改要保留的数值。
+save.file_error,Could not save to {mode}. Check access and retry; your edits remain here.,无法保存到{mode}。请检查访问权限并重试；更改仍保留在此处。
 save.move,Move edits to project server,转移更改到项目服务器
 save.keep_browser,Keep browser edits,保留浏览器更改
-save.keep_project,Keep project values,保留项目数值
+save.keep_project,Keep saved values,保留已保存的数值
 save.retry,Retry save,重试保存
 save.allow_popup,Allow the project server tab to open then try again.,请允许打开项目服务器标签页后重试。
 save.handoff_failed,Transfer did not finish. Your edits are still in this browser.,转移未完成。更改仍保留在此浏览器中。
-save.overlap_confirm,There are {count} overlapping changes. OK keeps browser values; Cancel keeps project values. Other changes are merged.,有 {count} 处重叠更改。确定保留浏览器数值；取消保留项目数值。其他更改将合并。
+storage.heading,Gameplay storage,游戏数据存储
+storage.choose,Save data in,保存数据的位置
+storage.mode_browser,Browser storage,浏览器存储
+storage.mode_project,Project files,项目文件
+storage.mode_folder,Linked local folder,已连接的本地文件夹
+storage.location_browser,Stored in this browser for this site.,保存在此站点的浏览器中。
+storage.location_project,Stored in this project's data/ directory.,保存在此项目的 data/ 目录中。
+storage.location_folder,Stored in {folder},保存在 {folder}
+storage.folder_help,Choose a parent folder. Arena Duel writes player files inside its data/ subfolder.,请选择父文件夹。Arena Duel 会将玩家文件写入其 data/ 子文件夹。
+storage.unsupported,Direct folder access is unavailable in this browser. Browser storage and project files remain available.,此浏览器不支持直接访问文件夹。仍可使用浏览器存储和项目文件。
+storage.change_folder,Choose another folder,选择其他文件夹
+storage.reconnect,Reconnect folder,重新连接文件夹
+storage.preview,View JSON,查看 JSON
+storage.preview_heading,Current gameplay data,当前游戏数据
+storage.copy,Copy JSON,复制 JSON
+storage.close,Close data preview,关闭数据预览
+storage.export,Export JSON,导出 JSON
+storage.import,Import JSON,导入 JSON
+storage.operation_failed,Storage action did not finish. Your current data remains available.,存储操作未完成。当前数据仍可使用。
+storage.permission_needed,Folder access is needed to save there. Reconnect or choose another folder.,保存到该文件夹需要访问权限。请重新连接或选择其他文件夹。
+storage.copy_failed,Could not copy automatically. Select the JSON text to copy it.,无法自动复制。请选择 JSON 文本进行复制。
+storage.start_project_server,Start Arena Duel: Open & Save in VS Code then try the transfer in the opened tab.,请在 VS Code 中运行 Arena Duel: Open & Save 然后在打开的标签页中重试转移。
+storage.conflict_heading,Choose overlapping values,选择重叠的数值
+storage.overlap_message,{count} values differ in both locations. Independent changes will still be merged.,两个位置有 {count} 处数值不同。其他独立更改仍会合并。
+storage.keep_current,Keep current values,保留当前数值
+storage.keep_destination,Keep destination values,保留目标位置的数值
 customization.war_combat_tuning,Charge and Sweep,冲锋与横扫
 customization.war_charge_distance,Charge Distance,冲锋距离
 customization.war_speed_multiplier,Charge Speed Multiplier,冲锋速度倍率

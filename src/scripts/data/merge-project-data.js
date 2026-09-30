@@ -58,3 +58,21 @@ export function chooseConflictValues(kind, base, local, remote, choice) {
   if (choice === 'browser') return mergeProjectSection(kind, base, local, remote).value;
   return mergeProjectSection(kind, base, remote, local).value;
 }
+
+export function mergeBackupForSwitch(source, destination, settingsBaseline, preference = 'source') {
+  const value = { format: 'arena-duel.backup', version: 1, settings: null, presets: null };
+  const conflicts = [];
+  for (const kind of ['settings', 'presets']) {
+    if (source[kind] === null) value[kind] = copy(destination[kind]);
+    else if (destination[kind] === null) value[kind] = copy(source[kind]);
+    else {
+      const base = kind === 'settings' ? settingsBaseline : { version: 1, entries: [] };
+      const merged = preference === 'source'
+        ? mergeProjectSection(kind, base, source[kind], destination[kind])
+        : mergeProjectSection(kind, base, destination[kind], source[kind]);
+      value[kind] = merged.value;
+      conflicts.push(...merged.conflicts);
+    }
+  }
+  return { value, conflicts };
+}
